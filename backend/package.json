@@ -1,0 +1,39 @@
+{
+  "name": "celufix-backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "migrate:existing": "tsx src/scripts/migrate-existing-data.ts",
+    "db:generate": "prisma generate && prisma generate --schema prisma/sqlite/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:postgres:start": "node tools/postgres-dev.mjs",
+    "migrate:postgres": "tsx src/scripts/migrate-sqlite-to-postgres.ts",
+    "migrate:postgres:dry-run": "tsx src/scripts/migrate-sqlite-to-postgres.ts --dry-run",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.12.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.6.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^4.0.10"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.0.10",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "prisma": "^6.12.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.8.3"
+  }
+}

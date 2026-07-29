@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RepairStatus {
+  RECEIVED
+  REVIEW
+  BUDGET
+  APPROVED
+  REPAIRING
+  TESTING
+  READY
+  DELIVERED
+}
+
+enum UserRole {
+  OWNER
+  TECHNICIAN
+}
+
+model Business {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String?        @unique
+  phone         String?
+  address       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  users         User[]
+  clients       Client[]
+  repairs       Repair[]
+  stockItems    StockItem[]
+  cashMovements CashMovement[]
+  payments      Payment[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  businessId   String
+  name         String
+  firstName    String?
+  lastName     String?
+  phone        String?
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(TECHNICIAN)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  business     Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  businessId String
+  name      String
+  phone     String?
+  createdAt DateTime @default(now())
+  repairs   Repair[]
+  payments  Payment[]
+  business  Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model Repair {
+  id            String       @id @default(cuid())
+  businessId    String
+  number        Int
+  clientId      String
+  deviceBrand   String
+  deviceModel   String
+  imei          String?
+  color         String?
+  issue         String
+  diagnosis     String?
+  notes         String?
+  status        RepairStatus  @default(RECEIVED)
+  total         Int          @default(0)
+  paid          Int          @default(0)
+  trackingToken String       @unique @default(cuid())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  client        Client       @relation(fields: [clientId], references: [id])
+  payments      Payment[]
+  parts         RepairPart[]
+  business      Business      @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@unique([businessId, number])
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+  OTHER
+}
+
+model Payment {
+  id        String        @id @default(cuid())
+  businessId String
+  repairId  String
+  clientId  String
+  amount    Int
+  method    PaymentMethod
+  note      String?
+  createdAt DateTime      @default(now())
+  repair    Repair        @relation(fields: [repairId], references: [id])
+  client    Client        @relation(fields: [clientId], references: [id])
+  business  Business      @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model StockItem {
+  id             String   @id @default(cuid())
+  businessId     String
+  name           String
+  category       String
+  compatibleBrand String?
+  compatibleModel String?
+  quantity       Int      @default(0)
+  minimumStock   Int      @default(0)
+  cost           Int      @default(0)
+  salePrice      Int      @default(0)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  repairParts    RepairPart[]
+  business       Business @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}
+
+model RepairPart {
+  id               String    @id @default(cuid())
+  repairId         String
+  stockItemId      String
+  quantity         Int
+  unitCost         Int
+  unitPrice        Int
+  itemNameSnapshot String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  repair           Repair    @relation(fields: [repairId], references: [id])
+  stockItem        StockItem @relation(fields: [stockItemId], references: [id])
+
+  @@index([repairId])
+  @@index([stockItemId])
+}
+
+enum CashMovementType {
+  INCOME
+  EXPENSE
+}
+
+model CashMovement {
+  id          String           @id @default(cuid())
+  businessId  String
+  type        CashMovementType
+  description String
+  amount      Int
+  method      PaymentMethod?
+  repairId    String?
+  clientName  String?
+  createdAt   DateTime         @default(now())
+  business    Business         @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+}

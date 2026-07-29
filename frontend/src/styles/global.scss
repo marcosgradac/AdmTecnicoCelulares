@@ -1,0 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+html { scroll-behavior: smooth; }
+body { background: #F8F9FC; overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
+button, input, textarea { font: inherit; }
+:focus-visible { outline: 3px solid rgba(91, 63, 214, .3); outline-offset: 2px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CED2DC; border-radius: 8px; }

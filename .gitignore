@@ -1,0 +1,17 @@
+backend/.env
+**/.env
+backend/backups/
+backend/generated/
+backend/.postgres-data/
+backend/prisma/*.db
+backend/prisma/*.db-journal
+backend/postgres-dev*.log
+backend/api-test*.log
+cellufix-dev*.log
+*.log
+**/node_modules/
+**/dist/
+.pnp.*
+**/.pnp.*
+.yarn/install-state.gz
+**/.yarn/install-state.gz
