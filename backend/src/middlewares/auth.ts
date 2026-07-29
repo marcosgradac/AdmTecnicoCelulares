@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import type { UserRole } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 
-export interface AuthData { userId: string; businessId: string; role: UserRole }
+export interface AuthData { userId: string; businessId: string; role: UserRole; tokenVersion: number }
 
 declare global {
   namespace Express {
@@ -26,11 +26,12 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const payload = jwt.verify(token, jwtSecret) as AuthData
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, businessId: true, role: true, isActive: true },
+      select: { id: true, businessId: true, role: true, isActive: true, tokenVersion: true },
     })
     if (!user || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
+    if ((payload.tokenVersion ?? 0) !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    req.auth = { userId: user.id, businessId: user.businessId, role: user.role }
+    req.auth = { userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion }
     next()
   } catch {
     return unauthorized(res, 'Token inválido o expirado')

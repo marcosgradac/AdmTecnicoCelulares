@@ -10,8 +10,9 @@ import { CashMovementType, PaymentMethod, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
 import { teamRouter } from './modules/team/team.routes'
+import { passwordResetRouter } from './modules/auth/password-reset.routes'
 
-const app = express()
+export const app = express()
 app.use(helmet())
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? false }))
 app.use(express.json({ limit: '1mb' }))
@@ -49,6 +50,7 @@ const userResponse = <T extends {
 })
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
+app.use('/api/auth', passwordResetRouter)
 
 const publicRepairSelect = {
   id: true, number: true, deviceBrand: true, deviceModel: true, issue: true,
@@ -103,7 +105,7 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
         include: { business: true },
       })
     })
-    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role })
+    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion })
     return res.status(201).json({ token, user: userResponse(user) })
   } catch (error) {
     if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
@@ -120,7 +122,7 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email: parsed.data.email.toLowerCase() }, include: { business: true } })
     if (!user || !await bcrypt.compare(parsed.data.password, user.passwordHash)) return unauthorized(res, 'Email o contraseña incorrectos')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role })
+    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion })
     return res.json({ token, user: userResponse(user) })
   } catch { return res.status(500).json({ success: false, message: 'Error iniciando sesión' }) }
 })
@@ -355,4 +357,5 @@ app.get('/api/dashboard/summary', async (req, res) => {
 })
 
 const port = Number(process.env.PORT ?? 3000)
-app.listen(port, () => console.log(`CelluFix API running on http://localhost:${port}`))
+export const startServer = () => app.listen(port, () => console.log(`CelluFix API running on http://localhost:${port}`))
+if (require.main === module) startServer()

@@ -28,3 +28,7 @@ export const register = async (input: RegisterInput) => (await api.post<AuthResp
 export const getMe = async () => (await api.get<AuthUser>('/auth/me')).data
 export const getProfile = async () => (await api.get<AuthUser>('/profile')).data
 export const updateProfile = async (input: ProfileInput) => (await api.patch<AuthUser>('/profile', input)).data
+export const forgotPassword = async (email: string) =>
+  (await api.post<{ success: true; message: string }>('/auth/forgot-password', { email })).data
+export const resetPassword = async (token: string, password: string) =>
+  (await api.post<{ success: true; message: string }>('/auth/reset-password', { token, password })).data

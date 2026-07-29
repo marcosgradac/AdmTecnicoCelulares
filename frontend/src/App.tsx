@@ -16,6 +16,8 @@ import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ProfilePage } from './pages/ProfilePage'
 import { TeamPage } from './pages/TeamPage'
 import { RoleGuard } from './auth/RoleGuard'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 
 export default function App() {
   return (
@@ -23,6 +25,8 @@ export default function App() {
       <Route path="/seguimiento/:token" element={<TrackingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/olvide-mi-contrasena" element={<ForgotPasswordPage />} />
+      <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/inicio" replace />} />
