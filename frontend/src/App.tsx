@@ -14,6 +14,8 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ProfilePage } from './pages/ProfilePage'
+import { TeamPage } from './pages/TeamPage'
+import { RoleGuard } from './auth/RoleGuard'
 
 export default function App() {
   return (
@@ -31,9 +33,10 @@ export default function App() {
           <Route path="/clientes" element={<ClientsPage />} />
           <Route path="/clientes/:id" element={<ClientDetailPage />} />
           <Route path="/stock" element={<StockPage />} />
-          <Route path="/caja" element={<CashPage />} />
-          <Route path="/reportes" element={<ReportsPage />} />
+          <Route path="/caja" element={<RoleGuard roles={['OWNER']}><CashPage /></RoleGuard>} />
+          <Route path="/reportes" element={<RoleGuard roles={['OWNER']}><ReportsPage /></RoleGuard>} />
           <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="/equipo" element={<RoleGuard roles={['OWNER']}><TeamPage /></RoleGuard>} />
         </Route>
       </Route>
     </Routes>

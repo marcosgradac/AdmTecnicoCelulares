@@ -14,8 +14,12 @@ import { UiState } from '../components/common/UiState'
 import { formatDate, formatMoney } from '../utils/format'
 import type { RepairStatus } from '../types'
 import { repairStatusConfig } from '../config/repairStatus'
+import { useAuth } from '../auth/AuthContext'
+import { canAccess } from '../auth/permissions'
 
 export function DashboardPage() {
+  const { user } = useAuth()
+  const canViewFinancials = canAccess(user, 'cash:manage')
   const navigate = useNavigate()
   const mobile = useMediaQuery(useTheme().breakpoints.down('sm'))
   const [repairs, setRepairs] = useState<Repair[]>([])
@@ -24,10 +28,10 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   useEffect(() => {
-    Promise.all([getRepairs(), getDashboardSummary(), getCashMovements()])
+    Promise.all([getRepairs(), getDashboardSummary(), canViewFinancials ? getCashMovements() : Promise.resolve([])])
       .then(([repairData, summaryData, movementData]) => { setRepairs(repairData); setSummary(summaryData); setMovements(movementData) })
       .catch(() => setError(true)).finally(() => setLoading(false))
-  }, [])
+  }, [canViewFinancials])
   const statusData = Object.entries(repairs.reduce<Record<string, number>>((acc, repair) => ({ ...acc, [repair.status]: (acc[repair.status] || 0) + 1 }), {}))
     .map(([status, value]) => ({ status: status as RepairStatus, value }))
   const cashFlow = Array.from({ length: 6 }, (_, index) => {
@@ -44,12 +48,12 @@ export function DashboardPage() {
       <Grid container spacing={2.2} mb={2.2}>
         <Grid size={{ xs: 12, sm: 6, xl: 3 }}><StatCard label="Reparaciones activas" value={String(summary.activeRepairs)} icon={<BuildRounded />} /></Grid>
         <Grid size={{ xs: 12, sm: 6, xl: 3 }}><StatCard label="Ingresadas hoy" value={String(summary.repairsToday)} icon={<ReceiptLongRounded />} tone="info" /></Grid>
-        <Grid size={{ xs: 12, sm: 6, xl: 3 }}><StatCard label="Ingresos del mes" value={formatMoney(summary.monthlyIncome)} icon={<PaymentsRounded />} tone="success" /></Grid>
+        {canViewFinancials && <Grid size={{ xs: 12, sm: 6, xl: 3 }}><StatCard label="Ingresos del mes" value={formatMoney(summary.monthlyIncome)} icon={<PaymentsRounded />} tone="success" /></Grid>}
         <Grid size={{ xs: 12, sm: 6, xl: 3 }}><StatCard label="Clientes registrados" value={String(summary.clients)} icon={<PeopleRounded />} tone="warning" /></Grid>
       </Grid>
       <Grid container spacing={2.2} mb={2.2}>
-        <Grid size={{ xs: 12, lg: 8 }}><Card><CardContent><Stack direction="row" justifyContent="space-between" mb={2}><Box><Typography variant="h2">Ingresos y egresos</Typography><Typography variant="body2" color="text.secondary">Evolución de los últimos 7 meses</Typography></Box><Button size="small">Este año</Button></Stack><IncomeExpenseChart data={cashFlow} /></CardContent></Card></Grid>
-        <Grid size={{ xs: 12, lg: 4 }}><Card sx={{ height: '100%' }}><CardContent><Typography variant="h2">Reparaciones por estado</Typography><Typography variant="body2" color="text.secondary" mb={2}>Distribución actual</Typography><RepairsByStatusChart data={statusData} /></CardContent></Card></Grid>
+        {canViewFinancials && <Grid size={{ xs: 12, lg: 8 }}><Card><CardContent><Stack direction="row" justifyContent="space-between" mb={2}><Box><Typography variant="h2">Ingresos y egresos</Typography><Typography variant="body2" color="text.secondary">Evolución de los últimos 7 meses</Typography></Box><Button size="small">Este año</Button></Stack><IncomeExpenseChart data={cashFlow} /></CardContent></Card></Grid>}
+        <Grid size={{ xs: 12, lg: canViewFinancials ? 4 : 12 }}><Card sx={{ height: '100%' }}><CardContent><Typography variant="h2">Reparaciones por estado</Typography><Typography variant="body2" color="text.secondary" mb={2}>Distribución actual</Typography><RepairsByStatusChart data={statusData} /></CardContent></Card></Grid>
       </Grid>
       <Grid container spacing={2.2}>
         <Grid size={{ xs: 12, lg: 8 }}><Card><CardContent>

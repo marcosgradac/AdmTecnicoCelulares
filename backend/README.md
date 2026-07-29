@@ -110,3 +110,42 @@ API: `http://localhost:3000`.
 Login y registro tienen rate limiting configurable. Los usuarios históricos
 pueden iniciar sesión y reciben `profileComplete: false` hasta completar nombre
 y apellido. Las respuestas públicas nunca incluyen `passwordHash`.
+
+## Equipo y roles
+
+- `OWNER` (Propietario): administración completa del negocio y del Equipo.
+- `TECHNICIAN` (Técnico): reparaciones, clientes, consulta de stock, repuestos
+  utilizados y perfil propio.
+
+| Función | OWNER | TECHNICIAN |
+|---|---:|---:|
+| Reparaciones y clientes | Sí | Sí |
+| Consultar stock | Sí | Sí |
+| Crear/desactivar stock y editar costes | Sí | No |
+| Pagos y caja | Sí | No |
+| Reportes financieros | Sí | No |
+| Administrar Equipo | Sí | No |
+
+Endpoints privados de Equipo, todos exclusivos para `OWNER`:
+
+- `GET /api/team`
+- `POST /api/team`
+- `GET /api/team/:id`
+- `PATCH /api/team/:id`
+- `POST /api/team/:id/reset-password`
+
+Los usuarios no se borran físicamente: se desactivan mediante `isActive`. El
+backend impide desactivar al usuario autenticado y garantiza dentro de una
+transacción que cada negocio conserve al menos un propietario activo.
+
+Desde la interfaz, un propietario puede abrir **Equipo → Agregar usuario**,
+crear un técnico con contraseña temporal y luego editarlo, desactivarlo,
+reactivarlo o restablecer su contraseña.
+
+Las pruebas requieren una base PostgreSQL aislada y la API apuntando a ella:
+
+```bash
+node tests/team-permissions.mjs
+node tests/postgres-api.mjs
+node tests/auth-profile.mjs
+```

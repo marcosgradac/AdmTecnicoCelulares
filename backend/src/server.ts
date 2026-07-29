@@ -1,28 +1,27 @@
 import 'dotenv/config'
-import express, { type NextFunction, type Request, type Response } from 'express'
+import express, { type Request, type Response } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { rateLimit } from 'express-rate-limit'
-import { CashMovementType, PaymentMethod, PrismaClient, RepairStatus } from '@prisma/client'
+import { CashMovementType, PaymentMethod, RepairStatus } from '@prisma/client'
+import { prisma } from './lib/prisma'
+import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
+import { teamRouter } from './modules/team/team.routes'
 
-const prisma = new PrismaClient()
 const app = express()
 app.use(helmet())
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? false }))
 app.use(express.json({ limit: '1mb' }))
 
-interface AuthData { userId: string; businessId: string; role: 'OWNER' | 'TECHNICIAN' }
-interface AuthRequest extends Request { auth?: AuthData }
 const jwtSecret = process.env.JWT_SECRET
 if (!jwtSecret) throw new Error('JWT_SECRET es obligatorio')
 
 const signToken = (auth: AuthData) => jwt.sign(auth, jwtSecret, {
   expiresIn: (process.env.JWT_EXPIRES_IN ?? '8h') as SignOptions['expiresIn']
 })
-const authOf = (req: Request) => (req as AuthRequest).auth as AuthData
 const unauthorized = (res: Response, message = 'No autorizado') => res.status(401).json({ success: false, message })
 const normalizePhone = (value?: string | null) => {
   const normalized = value?.trim().replace(/\D/g, '')
@@ -48,21 +47,6 @@ const userResponse = <T extends {
   profileComplete: Boolean(user.firstName && user.lastName),
   business: { id: user.business.id, name: user.business.name },
 })
-
-const authenticate = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : ''
-  if (!token) return unauthorized(res)
-  try {
-    const payload = jwt.verify(token, jwtSecret) as AuthData
-    const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true, businessId: true, role: true, isActive: true } })
-    if (!user || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
-    if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    ;(req as AuthRequest).auth = { userId: user.id, businessId: user.businessId, role: user.role }
-    next()
-  } catch {
-    return unauthorized(res, 'Token inválido o expirado')
-  }
-}
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
@@ -179,6 +163,7 @@ app.patch('/api/profile', authenticate, async (req, res) => {
 })
 
 app.use('/api', authenticate)
+app.use('/api/team', teamRouter)
 const includeRepair = { client: true, payments: true } as const
 
 app.get('/api/repairs', async (req, res) => {
@@ -261,11 +246,11 @@ app.post('/api/clients', async (req, res) => {
   return res.status(201).json(await prisma.client.create({ data: { businessId, name: parsed.data.name, phone } }))
 })
 
-app.post('/api/repairs/:id/payments', async (req, res) => {
+app.post('/api/repairs/:id/payments', requireRole('OWNER'), async (req, res) => {
   const parsed = z.object({ amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod), note: z.string().optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de pago inválidos' })
   const businessId = authOf(req).businessId
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId }, include: { client: true } })
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId }, include: { client: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   const payment = await prisma.$transaction(async tx => {
     const changed = await tx.repair.updateMany({
@@ -327,7 +312,7 @@ app.delete('/api/repairs/:repairId/parts/:partId', async (req, res) => {
 
 const stockSchema = z.object({ name: z.string().trim().min(2), category: z.string().trim().min(2), compatibleBrand: z.string().optional().nullable(), compatibleModel: z.string().optional().nullable(), quantity: z.number().int().nonnegative(), minimumStock: z.number().int().nonnegative(), cost: z.number().int().nonnegative(), salePrice: z.number().int().nonnegative() })
 app.get('/api/stock', async (req, res) => res.json(await prisma.stockItem.findMany({ where: { businessId: authOf(req).businessId, active: true }, orderBy: { name: 'asc' } })))
-app.post('/api/stock', async (req, res) => {
+app.post('/api/stock', requireRole('OWNER'), async (req, res) => {
   const parsed = stockSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de repuesto inválidos' })
   return res.status(201).json(await prisma.stockItem.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
@@ -335,30 +320,36 @@ app.post('/api/stock', async (req, res) => {
 app.patch('/api/stock/:id', async (req, res) => {
   const parsed = stockSchema.partial().safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de repuesto inválidos' })
-  const item = await prisma.stockItem.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId } })
+  if (authOf(req).role !== 'OWNER' && ('cost' in parsed.data || 'salePrice' in parsed.data)) {
+    return res.status(403).json({ success: false, message: 'No tenés permisos para editar costes o precios' })
+  }
+  const item = await prisma.stockItem.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
   if (!item) return res.status(404).json({ success: false, message: 'Repuesto no encontrado' })
   return res.json(await prisma.stockItem.update({ where: { id: item.id }, data: parsed.data }))
 })
-app.delete('/api/stock/:id', async (req, res) => {
-  const item = await prisma.stockItem.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId } })
+app.delete('/api/stock/:id', requireRole('OWNER'), async (req, res) => {
+  const item = await prisma.stockItem.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
   if (!item) return res.status(404).json({ success: false, message: 'Repuesto no encontrado' })
   await prisma.stockItem.update({ where: { id: item.id }, data: { active: false } })
   return res.status(204).send()
 })
 
-app.get('/api/cash/movements', async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
-app.post('/api/cash/movements', async (req, res) => {
+app.get('/api/cash/movements', requireRole('OWNER'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
+app.post('/api/cash/movements', requireRole('OWNER'), async (req, res) => {
   const parsed = z.object({ type: z.nativeEnum(CashMovementType), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })
   return res.status(201).json(await prisma.cashMovement.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
 })
 app.get('/api/dashboard/summary', async (req, res) => {
   const businessId = authOf(req).businessId
+  const canViewFinancials = authOf(req).role === 'OWNER'
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
   const [repairs, clients, payments] = await Promise.all([
     prisma.repair.findMany({ where: { businessId }, include: { client: true }, orderBy: { createdAt: 'desc' } }),
     prisma.client.count({ where: { businessId } }),
-    prisma.payment.aggregate({ where: { businessId, createdAt: { gte: month } }, _sum: { amount: true } })
+    canViewFinancials
+      ? prisma.payment.aggregate({ where: { businessId, createdAt: { gte: month } }, _sum: { amount: true } })
+      : Promise.resolve({ _sum: { amount: null } }),
   ])
   return res.json({ activeRepairs: repairs.filter(r => r.status !== 'DELIVERED').length, repairsToday: repairs.filter(r => r.createdAt >= today).length, monthlyIncome: payments._sum.amount ?? 0, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: repairs.filter(r => r.status === status).length })), recentRepairs: repairs.slice(0, 5) })
 })

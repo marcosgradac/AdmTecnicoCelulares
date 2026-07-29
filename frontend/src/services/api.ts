@@ -18,6 +18,9 @@ api.interceptors.response.use(
       localStorage.removeItem('cellufix_access_token')
       window.dispatchEvent(new Event('cellufix:unauthorized'))
     }
+    if (error.response?.status === 403 && !error.response.data?.message) {
+      error.response.data = { success: false, message: 'No tenés permisos para realizar esta acción' }
+    }
     return Promise.reject(error)
   }
 )

@@ -34,7 +34,8 @@ async function register(label) {
     method: 'POST',
     body: {
       businessName: `Negocio ${label} ${suffix}`,
-      name: `Dueño ${label}`,
+      firstName: 'Dueño',
+      lastName: label.toUpperCase(),
       email: `owner-${label}-${suffix}@example.com`,
       password: 'Password-2026!',
     },

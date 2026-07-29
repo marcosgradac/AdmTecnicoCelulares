@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppBar, Avatar, Badge, Box, Divider, Drawer, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AccountCircleRounded, AddRounded, AssessmentRounded, BuildRounded, DashboardRounded, Inventory2Rounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded } from '@mui/icons-material'
+import { AccountCircleRounded, AddRounded, AssessmentRounded, BuildRounded, DashboardRounded, GroupsRounded, Inventory2Rounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
+import { canAccess, type Permission } from '../../auth/permissions'
 import styles from './AppShell.module.scss'
 
-const navItems = [
+const navItems: Array<{ label: string; path: string; icon: typeof DashboardRounded; permission?: Permission }> = [
   { label: 'Inicio', path: '/inicio', icon: DashboardRounded },
   { label: 'Reparaciones', path: '/reparaciones', icon: BuildRounded },
   { label: 'Clientes', path: '/clientes', icon: PeopleRounded },
   { label: 'Stock', path: '/stock', icon: Inventory2Rounded },
-  { label: 'Caja', path: '/caja', icon: PointOfSaleRounded },
-  { label: 'Reportes', path: '/reportes', icon: AssessmentRounded },
+  { label: 'Caja', path: '/caja', icon: PointOfSaleRounded, permission: 'cash:manage' },
+  { label: 'Reportes', path: '/reportes', icon: AssessmentRounded, permission: 'reports:view' },
+  { label: 'Equipo', path: '/equipo', icon: GroupsRounded, permission: 'team:manage' },
 ]
 
 export function AppShell() {
@@ -28,11 +30,12 @@ export function AppShell() {
   const initials = user?.fullName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U'
   const roleLabel = user?.role === 'OWNER' ? 'Propietario' : 'Técnico'
   const closeAccount = () => setAccountAnchor(null)
+  const visibleNavItems = navItems.filter(item => !item.permission || canAccess(user, item.permission))
 
   const drawer = <Box className={styles.drawer}>
     <Box className={styles.brand}><Box className={styles.logo}><BuildRounded /></Box><Box><Typography fontWeight={800}>CelluFix</Typography><Typography variant="caption" color="text.secondary">Gestión técnica</Typography></Box></Box>
     <Typography className={styles.navLabel}>MENÚ PRINCIPAL</Typography>
-    <List className={styles.nav}>{navItems.map(({ label, path, icon: Icon }) => <ListItemButton key={path} selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton>)}</List>
+    <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => <ListItemButton key={path} selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton>)}</List>
     <Box className={styles.bottom}>
       <ListItemButton onClick={logout}><ListItemIcon><LogoutRounded /></ListItemIcon><ListItemText primary="Cerrar sesión" /></ListItemButton>
       <Box className={styles.account}><Avatar>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name} · {roleLabel}</Typography></Box></Box>
