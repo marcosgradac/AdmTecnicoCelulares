@@ -1,35 +1,60 @@
-import type { ReactNode } from 'react'
-import { Box, Paper, Stack, Typography } from '@mui/material'
-import { BuildRounded, PhoneAndroidRounded } from '@mui/icons-material'
+import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react'
+import { Box, CircularProgress, Paper, Stack, Typography } from '@mui/material'
+import { BuildRounded } from '@mui/icons-material'
+import type { AuthVisualVariant } from './auth-visual.types'
 
-export function AuthLayout({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  return <Box minHeight="100vh" display="grid" sx={{
-    gridTemplateColumns: { xs: '1fr', md: 'minmax(360px, 0.9fr) minmax(520px, 1.1fr)' },
-    bgcolor: '#f6f7fb',
+function AuthVisualFallback() {
+  return <Box height="100%" minHeight={{ xs: 240, md: '100vh' }} display="grid" color="#fff" sx={{
+    placeItems: 'center',
+    background: 'radial-gradient(circle at 70% 30%, rgba(90,205,255,.38), transparent 35%), linear-gradient(145deg, #4325be, #6848df 52%, #268fd8)',
   }}>
-    <Box sx={{
-      display: { xs: 'none', md: 'flex' }, position: 'relative', overflow: 'hidden', p: 7,
-      color: '#fff', flexDirection: 'column', justifyContent: 'space-between',
-      background: 'linear-gradient(145deg, #5536d9 0%, #7658e9 48%, #42b8ed 100%)',
-      '&::before': { content: '""', position: 'absolute', width: 360, height: 360, borderRadius: '50%', bgcolor: 'rgba(255,255,255,.09)', top: -120, right: -100 },
-      '&::after': { content: '""', position: 'absolute', width: 280, height: 280, borderRadius: '42%', border: '1px solid rgba(255,255,255,.16)', bottom: -90, left: -80, transform: 'rotate(28deg)' },
-    }}>
-      <Stack direction="row" spacing={1.5} alignItems="center" zIndex={1}>
-        <Box width={48} height={48} display="grid" borderRadius={3} bgcolor="rgba(255,255,255,.18)" sx={{ placeItems: 'center', backdropFilter: 'blur(8px)' }}><BuildRounded /></Box>
-        <Box><Typography fontSize={22} fontWeight={900}>CelluFix</Typography><Typography variant="body2" sx={{ opacity: .8 }}>Gestión técnica, simple y conectada</Typography></Box>
-      </Stack>
-      <Box zIndex={1}>
-        <Box width={230} height={230} mx="auto" mb={5} display="grid" sx={{ placeItems: 'center', position: 'relative' }}>
-          <Box position="absolute" borderRadius="50%" bgcolor="rgba(255,255,255,.1)" sx={{ inset: 0 }} />
-          <Box width={118} height={174} border="5px solid rgba(255,255,255,.92)" borderRadius={5} display="grid" sx={{ placeItems: 'center', transform: 'rotate(-7deg)', boxShadow: '0 24px 60px rgba(22,12,70,.25)' }}>
-            <PhoneAndroidRounded sx={{ fontSize: 56 }} />
-          </Box>
-          <Box position="absolute" right={18} bottom={24} width={68} height={68} borderRadius="50%" bgcolor="#fff" color="primary.main" display="grid" sx={{ placeItems: 'center' }}><BuildRounded fontSize="large" /></Box>
-        </Box>
-        <Typography variant="h3" fontWeight={850} maxWidth={480}>Todo tu servicio técnico en un solo lugar.</Typography>
-        <Typography mt={2} sx={{ opacity: .82, maxWidth: 460 }}>Reparaciones, clientes, stock y caja protegidos para cada negocio.</Typography>
-      </Box>
-      <Typography variant="caption" sx={{ opacity: .65 }} zIndex={1}>© 2026 CelluFix</Typography>
+    <Stack alignItems="center" spacing={1.5}>
+      <Box width={72} height={72} display="grid" borderRadius={4} bgcolor="rgba(255,255,255,.16)" sx={{ placeItems: 'center' }}><BuildRounded fontSize="large" /></Box>
+      <Typography fontSize={24} fontWeight={900}>CelluFix</Typography>
+      <Typography fontSize={13} sx={{ opacity: .75 }}>Gestión técnica inteligente</Typography>
+    </Stack>
+  </Box>
+}
+
+const AuthVisualHero = lazy(() =>
+  import('./AuthVisualHero').catch(error => {
+    console.error('No se pudo cargar el hero de autenticación', error)
+    return { default: AuthVisualFallback }
+  }),
+)
+
+class AuthVisualErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() { return { failed: true } }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Error renderizando el hero de autenticación', error, info)
+  }
+  render() {
+    return this.state.failed ? <AuthVisualFallback /> : this.props.children
+  }
+}
+
+export function AuthLayout({ title, description, children, variant = 'login' }: {
+  title: string
+  description: string
+  children: ReactNode
+  variant?: AuthVisualVariant
+}) {
+  return <Box minHeight="100vh" display="grid" sx={{
+    gridTemplateColumns: { xs: '1fr', md: 'minmax(420px, 1fr) minmax(520px, 1.05fr)' },
+    gridTemplateRows: { xs: '240px auto', md: '1fr' },
+    bgcolor: '#f6f7fb',
+    '@media (max-width: 480px) and (max-height: 700px)': {
+      gridTemplateRows: '0 auto',
+      '& > .auth-visual-slot': { display: 'none' },
+    },
+  }}>
+    <Box minWidth={0} className="auth-visual-slot">
+      <AuthVisualErrorBoundary>
+        <Suspense fallback={<Box height="100%" display="grid" bgcolor="#5536d9" color="#fff" sx={{ placeItems: 'center' }}><CircularProgress color="inherit" size={28} /></Box>}>
+          <AuthVisualHero variant={variant} />
+        </Suspense>
+      </AuthVisualErrorBoundary>
     </Box>
     <Box display="grid" px={{ xs: 2, sm: 4, md: 7 }} py={{ xs: 3, md: 5 }} sx={{ placeItems: 'center' }}>
       <Paper elevation={0} sx={{ width: '100%', maxWidth: 560, borderRadius: 5, p: { xs: 3, sm: 4.5 }, border: '1px solid', borderColor: 'divider', boxShadow: '0 24px 70px rgba(35,27,78,.10)' }}>

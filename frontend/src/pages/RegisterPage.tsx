@@ -54,7 +54,7 @@ export function RegisterPage() {
     } finally { setSaving(false) }
   }
 
-  return <AuthLayout title="Creá tu cuenta" description="Empezá a gestionar tu servicio técnico en pocos pasos.">
+  return <AuthLayout variant="register" title="Creá tu cuenta" description="Empezá a gestionar tu servicio técnico en pocos pasos.">
     {error && <Alert severity="error">{error}</Alert>}
     <Box component="form" onSubmit={submit} display="grid" gap={2}>
       <Typography fontWeight={800}>Datos personales</Typography>

@@ -35,7 +35,7 @@ export function ResetPasswordPage() {
     } finally { setSaving(false) }
   }
 
-  return <AuthLayout title="Creá una nueva contraseña" description="La nueva contraseña cerrará las sesiones anteriores de tu cuenta.">
+  return <AuthLayout variant="reset-password" title="Creá una nueva contraseña" description="La nueva contraseña cerrará las sesiones anteriores de tu cuenta.">
     {!token && <Alert severity="error">El enlace es inválido o está incompleto.</Alert>}
     {success && <Alert severity="success">{success}</Alert>}
     {error && <Alert severity="error">{error}</Alert>}

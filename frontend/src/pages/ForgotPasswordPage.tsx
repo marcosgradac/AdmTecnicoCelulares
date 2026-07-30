@@ -25,7 +25,7 @@ export function ForgotPasswordPage() {
     } finally { setSaving(false) }
   }
 
-  return <AuthLayout title="Recuperá tu contraseña" description="Ingresá tu email y te enviaremos un enlace seguro para elegir una nueva contraseña.">
+  return <AuthLayout variant="forgot-password" title="Recuperá tu contraseña" description="Ingresá tu email y te enviaremos un enlace seguro para elegir una nueva contraseña.">
     {message && <Alert severity="success">{message}</Alert>}
     {error && <Alert severity="error">{error}</Alert>}
     <Box component="form" onSubmit={submit} display="grid" gap={2}>
