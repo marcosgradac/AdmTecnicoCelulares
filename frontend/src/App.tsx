@@ -19,7 +19,7 @@ import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { RepairDetailPage } from './pages/RepairDetailPage'
 import { RepairsPage } from './pages/RepairsPage'
-import { ReportsPage } from './pages/ReportsPage'
+import { ReportsPage } from './features/reports/ReportsPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { TeamPage } from './pages/TeamPage'
 import { TrackingPage } from './pages/TrackingPage'
@@ -38,7 +38,7 @@ export default function App(){return <><ScrollToTop/><Routes>
       <Route path="clientes" element={<ClientsPage/>}/><Route path="clientes/:id" element={<ClientDetailPage/>}/><Route path="stock" element={<InventoryPage/>}/><Route path="stock/:id" element={<InventoryItemPage/>}/>
       <Route path="caja" element={<RoleGuard roles={['OWNER']}><CashPage/></RoleGuard>}/><Route path="reportes" element={<RoleGuard roles={['OWNER']}><ReportsPage/></RoleGuard>}/>
       <Route path="perfil" element={<ProfilePage/>}/><Route path="equipo" element={<RoleGuard roles={['OWNER']}><TeamPage/></RoleGuard>}/>
-      <Route path="equipos" element={<PlaceholderPage title="Equipos" description="El catálogo de equipos estará disponible próximamente."/>}/><Route path="estadisticas" element={<PlaceholderPage title="Estadísticas" description="Estamos preparando los indicadores avanzados del negocio."/>}/><Route path="garantias" element={<PlaceholderPage title="Garantías" description="La gestión de garantías estará disponible próximamente."/>}/><Route path="configuracion" element={<PlaceholderPage title="Configuración" description="Administrá las preferencias de tu servicio técnico."/>}/>
+      <Route path="equipos" element={<PlaceholderPage title="Equipos" description="El catálogo de equipos estará disponible próximamente."/>}/><Route path="estadisticas" element={<RoleGuard roles={['OWNER']}><ReportsPage/></RoleGuard>}/><Route path="garantias" element={<PlaceholderPage title="Garantías" description="La gestión de garantías estará disponible próximamente."/>}/><Route path="configuracion" element={<PlaceholderPage title="Configuración" description="Administrá las preferencias de tu servicio técnico."/>}/>
     </Route>
     <Route path="/inicio" element={<Navigate to="/admin" replace/>}/><Route path="/dashboard" element={<Navigate to="/admin" replace/>}/><Route path="/reparaciones" element={<Navigate to="/admin/reparaciones" replace/>}/><Route path="/reparaciones/nueva" element={<Navigate to="/admin/reparaciones/nueva" replace/>}/><Route path="/reparaciones/:id" element={<ParamRedirect base="/admin/reparaciones"/>}/>
     <Route path="/clientes" element={<Navigate to="/admin/clientes" replace/>}/><Route path="/clientes/:id" element={<ParamRedirect base="/admin/clientes"/>}/><Route path="/stock" element={<Navigate to="/admin/stock" replace/>}/><Route path="/stock/:id" element={<ParamRedirect base="/admin/stock"/>}/><Route path="/caja" element={<Navigate to="/admin/caja" replace/>}/><Route path="/reportes" element={<Navigate to="/admin/reportes" replace/>}/>

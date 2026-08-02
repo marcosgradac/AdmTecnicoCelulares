@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Box, Button, Card, CardContent, Chip, Grid, IconButton, InputAdornment, LinearProgress, Stack, TextField, Tooltip, Typography } from '@mui/material'
 import { AddRounded, ContentCopyRounded, OpenInNewRounded, SearchRounded, WhatsApp } from '@mui/icons-material'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { Repair, RepairStatus } from '../types'
 import { getRepairs } from '../services/repairs'
 import { repairStatusConfig, repairStatuses } from '../config/repairStatus'
@@ -17,7 +17,10 @@ export function RepairsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<RepairStatus | 'all'>('all')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusParam = searchParams.get('status') as RepairStatus | null
+  const filter: RepairStatus | 'all' = statusParam && repairStatuses.includes(statusParam) ? statusParam : 'all'
+  const setFilter = (status: RepairStatus | 'all') => setSearchParams(status === 'all' ? {} : { status })
   const load = useCallback(async () => {
     setLoading(true); setError(false)
     try {

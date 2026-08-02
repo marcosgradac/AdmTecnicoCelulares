@@ -13,6 +13,7 @@ import { authenticate, authOf, requireRole, type AuthData } from './middlewares/
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { inventoryRouter } from './modules/inventory/inventory.routes'
+import { reportsRouter } from './modules/reports/reports.routes'
 
 export const app = express()
 app.use(helmet())
@@ -193,6 +194,7 @@ app.patch('/api/profile', authenticate, async (req, res) => {
 app.use('/api', authenticate)
 app.use('/api/team', teamRouter)
 app.use('/api/inventory', inventoryRouter)
+app.use('/api/reports', reportsRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true } as const
 
 app.get('/api/repairs', async (req, res) => {

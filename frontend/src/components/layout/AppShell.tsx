@@ -14,9 +14,8 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
   { label: 'Equipos', path: '/admin/equipos', icon: DevicesRounded },
   { label: 'Stock', path: '/admin/stock', icon: Inventory2Rounded },
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash:manage' },
-  { label: 'Reportes', path: '/admin/reportes', icon: AssessmentRounded, permission: 'reports:view' },
   { label: 'Equipo', path: '/admin/equipo', icon: GroupsRounded, permission: 'team:manage' },
-  { label: 'Estadísticas', path: '/admin/estadisticas', icon: AssessmentRounded },
+  { label: 'Estadísticas y reportes', path: '/admin/estadisticas', icon: AssessmentRounded, permission: 'reports:view' },
   { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded },
   { label: 'Configuración', path: '/admin/configuracion', icon: SettingsRounded },
 ]
