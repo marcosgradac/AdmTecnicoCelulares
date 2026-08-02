@@ -46,13 +46,13 @@ Las migraciones se ejecutan con `prisma migrate deploy`. No usar `prisma migrate
 5. Agregar la variable de build:
 
    ```env
-   VITE_API_URL=https://URL-DE-RAILWAY/api
+   VITE_API_URL=https://URL-DE-RAILWAY
    ```
 
 6. Desplegar y copiar la URL definitiva de Vercel.
 7. Volver a Railway, configurar `FRONTEND_URL` y `CORS_ORIGINS` con esa URL exacta (sin `/` final) y volver a desplegar el backend.
 
-`frontend/vercel.json` redirige las rutas de la SPA a `index.html`, por lo que recargar `/login`, `/dashboard`, `/reparaciones/:id` o `/seguimiento/:token` no debe producir un 404.
+El cliente HTTP agrega el prefijo `/api` de forma centralizada. No se debe incluir ese prefijo en `VITE_API_URL`. `frontend/vercel.json` redirige las rutas de la SPA a `index.html`, por lo que recargar `/login`, `/dashboard`, `/reparaciones/:id` o `/seguimiento/:token` no debe producir un 404.
 
 ## Base vacía y datos demo
 

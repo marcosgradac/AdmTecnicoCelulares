@@ -4,11 +4,16 @@ if (!configuredApiUrl) {
   throw new Error('Falta configurar VITE_API_URL')
 }
 
-const apiUrl = new URL(configuredApiUrl, window.location.origin)
-if (import.meta.env.DEV && apiUrl.hostname === 'localhost' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
-  apiUrl.hostname = window.location.hostname
+const backendUrl = new URL(configuredApiUrl, window.location.origin)
+if (import.meta.env.DEV && backendUrl.hostname === 'localhost' && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+  backendUrl.hostname = window.location.hostname
 }
 
+const configuredPath = backendUrl.pathname.replace(/\/+$/, '')
+backendUrl.pathname = configuredPath === '/api' ? '' : configuredPath
+const backendOrigin = backendUrl.toString().replace(/\/$/, '')
+
 export const env = {
-  apiUrl: apiUrl.toString().replace(/\/$/, ''),
+  backendUrl: backendOrigin,
+  apiUrl: `${backendOrigin}/api`,
 }
