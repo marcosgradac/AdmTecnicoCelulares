@@ -16,6 +16,7 @@
     "migrate:postgres": "tsx src/scripts/migrate-sqlite-to-postgres.ts",
     "migrate:postgres:dry-run": "tsx src/scripts/migrate-sqlite-to-postgres.ts --dry-run",
     "test:password-reset": "tsx tests/password-reset.ts",
+    "test:inventory": "tsx tests/inventory.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",

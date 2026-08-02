@@ -12,6 +12,7 @@ import { prisma } from './lib/prisma'
 import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
+import { inventoryRouter } from './modules/inventory/inventory.routes'
 
 export const app = express()
 app.use(helmet())
@@ -191,6 +192,7 @@ app.patch('/api/profile', authenticate, async (req, res) => {
 
 app.use('/api', authenticate)
 app.use('/api/team', teamRouter)
+app.use('/api/inventory', inventoryRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true } as const
 
 app.get('/api/repairs', async (req, res) => {
@@ -346,66 +348,53 @@ app.patch('/api/repairs/:id/tracking-link', async (req, res) => {
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
-const serializePart = (part: { id: string; stockItemId: string; itemNameSnapshot: string; quantity: number; unitCost: number; unitPrice: number; createdAt: Date }) => ({ id: part.id, stockItemId: part.stockItemId, name: part.itemNameSnapshot, quantity: part.quantity, unitCost: part.unitCost, unitPrice: part.unitPrice, subtotal: part.quantity * part.unitPrice, createdAt: part.createdAt })
-app.get('/api/repairs/:id/parts', async (req, res) => {
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+const serializePart = (part: { id: string; stockItemId: string; itemNameSnapshot: string; quantity: number; unitCost: number; unitPrice: number; createdAt: Date }) => ({ id: part.id, inventoryItemId: part.stockItemId, stockItemId: part.stockItemId, name: part.itemNameSnapshot, quantity: part.quantity, unitCost: part.unitCost, unitPrice: part.unitPrice, totalCost: part.quantity * part.unitCost, subtotal: part.quantity * part.unitCost, saleSubtotal: part.quantity * part.unitPrice, createdAt: part.createdAt })
+app.get('/api/repairs/:repairId/parts', async (req, res) => {
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json((await prisma.repairPart.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } })).map(serializePart))
 })
-app.post('/api/repairs/:id/parts', async (req, res) => {
-  const parsed = z.object({ stockItemId: z.string().min(1), quantity: z.number().int().positive(), unitPrice: z.number().int().nonnegative() }).safeParse(req.body)
+app.post('/api/repairs/:repairId/parts', async (req, res) => {
+  const parsed = z.object({ inventoryItemId: z.string().min(1).optional(), stockItemId: z.string().min(1).optional(), quantity: z.number().int().positive(), unitPrice: z.number().int().nonnegative().optional() }).refine(data => Boolean(data.inventoryItemId || data.stockItemId)).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de repuesto inválidos' })
-  const businessId = authOf(req).businessId
+  const auth = authOf(req)
+  const businessId = auth.businessId
+  const inventoryItemId = parsed.data.inventoryItemId ?? parsed.data.stockItemId as string
   const result = await prisma.$transaction(async tx => {
-    const repair = await tx.repair.findFirst({ where: { id: req.params.id, businessId }, select: { id: true } })
+    const repair = await tx.repair.findFirst({ where: { id: req.params.repairId, businessId }, select: { id: true } })
     if (!repair) return { status: 404 as const, message: 'Reparación no encontrada' }
-    const item = await tx.stockItem.findFirst({ where: { id: parsed.data.stockItemId, businessId } })
+    const item = await tx.stockItem.findFirst({ where: { id: inventoryItemId, businessId } })
     if (!item) return { status: 404 as const, message: 'Repuesto no encontrado' }
     if (!item.active) return { status: 400 as const, message: 'El repuesto está inactivo' }
     const changed = await tx.stockItem.updateMany({ where: { id: item.id, businessId, active: true, quantity: { gte: parsed.data.quantity } }, data: { quantity: { decrement: parsed.data.quantity } } })
     if (changed.count !== 1) return { status: 409 as const, message: 'Stock insuficiente' }
-    const part = await tx.repairPart.create({ data: { repairId: repair.id, stockItemId: item.id, quantity: parsed.data.quantity, unitCost: item.cost, unitPrice: parsed.data.unitPrice, itemNameSnapshot: item.name } })
+    const newStock = item.quantity - parsed.data.quantity
+    const part = await tx.repairPart.create({ data: { repairId: repair.id, stockItemId: item.id, quantity: parsed.data.quantity, unitCost: item.cost, unitPrice: parsed.data.unitPrice ?? item.salePrice, itemNameSnapshot: item.name } })
+    await tx.inventoryMovement.create({ data: { businessId, stockItemId: item.id, repairId: repair.id, type: 'REPAIR_USAGE', quantity: parsed.data.quantity, unitCost: item.cost, totalCost: parsed.data.quantity * item.cost, previousStock: item.quantity, newStock, notes: `Uso en reparación`, createdByUserId: auth.userId } })
+    const parts = await tx.repairPart.findMany({ where: { repairId: repair.id }, select: { quantity: true, unitCost: true } })
+    await tx.repair.update({ where: { id: repair.id }, data: { partsCost: parts.reduce((sum, current) => sum + current.quantity * current.unitCost, 0) } })
     return { status: 201 as const, part }
   })
   if ('message' in result) return res.status(result.status).json({ success: false, message: result.message })
   return res.status(201).json(serializePart(result.part))
 })
 app.delete('/api/repairs/:repairId/parts/:partId', async (req, res) => {
-  const businessId = authOf(req).businessId
+  const auth = authOf(req)
+  const businessId = auth.businessId
   const result = await prisma.$transaction(async tx => {
     const repair = await tx.repair.findFirst({ where: { id: req.params.repairId, businessId }, select: { id: true } })
     if (!repair) return false
     const part = await tx.repairPart.findFirst({ where: { id: req.params.partId, repairId: repair.id }, include: { stockItem: true } })
     if (!part || part.stockItem.businessId !== businessId) return false
+    const previousStock = part.stockItem.quantity
     await tx.stockItem.update({ where: { id: part.stockItemId }, data: { quantity: { increment: part.quantity } } })
+    await tx.inventoryMovement.create({ data: { businessId, stockItemId: part.stockItemId, repairId: repair.id, type: 'CANCELLED_REPAIR_RETURN', quantity: part.quantity, unitCost: part.unitCost, totalCost: part.quantity * part.unitCost, previousStock, newStock: previousStock + part.quantity, notes: 'Repuesto retirado de la reparación', createdByUserId: auth.userId } })
     await tx.repairPart.delete({ where: { id: part.id } })
+    const remaining = await tx.repairPart.findMany({ where: { repairId: repair.id }, select: { quantity: true, unitCost: true } })
+    await tx.repair.update({ where: { id: repair.id }, data: { partsCost: remaining.reduce((sum, current) => sum + current.quantity * current.unitCost, 0) } })
     return true
   })
   return result ? res.json({ success: true }) : res.status(404).json({ success: false, message: 'Repuesto utilizado no encontrado' })
-})
-
-const stockSchema = z.object({ name: z.string().trim().min(2), category: z.string().trim().min(2), compatibleBrand: z.string().optional().nullable(), compatibleModel: z.string().optional().nullable(), quantity: z.number().int().nonnegative(), minimumStock: z.number().int().nonnegative(), cost: z.number().int().nonnegative(), salePrice: z.number().int().nonnegative() })
-app.get('/api/stock', async (req, res) => res.json(await prisma.stockItem.findMany({ where: { businessId: authOf(req).businessId, active: true }, orderBy: { name: 'asc' } })))
-app.post('/api/stock', requireRole('OWNER'), async (req, res) => {
-  const parsed = stockSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de repuesto inválidos' })
-  return res.status(201).json(await prisma.stockItem.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
-})
-app.patch('/api/stock/:id', async (req, res) => {
-  const parsed = stockSchema.partial().safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de repuesto inválidos' })
-  if (authOf(req).role !== 'OWNER' && ('cost' in parsed.data || 'salePrice' in parsed.data)) {
-    return res.status(403).json({ success: false, message: 'No tenés permisos para editar costes o precios' })
-  }
-  const item = await prisma.stockItem.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
-  if (!item) return res.status(404).json({ success: false, message: 'Repuesto no encontrado' })
-  return res.json(await prisma.stockItem.update({ where: { id: item.id }, data: parsed.data }))
-})
-app.delete('/api/stock/:id', requireRole('OWNER'), async (req, res) => {
-  const item = await prisma.stockItem.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
-  if (!item) return res.status(404).json({ success: false, message: 'Repuesto no encontrado' })
-  await prisma.stockItem.update({ where: { id: item.id }, data: { active: false } })
-  return res.status(204).send()
 })
 
 app.get('/api/cash/movements', requireRole('OWNER'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
@@ -418,14 +407,16 @@ app.get('/api/dashboard/summary', async (req, res) => {
   const businessId = authOf(req).businessId
   const canViewFinancials = authOf(req).role === 'OWNER'
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
-  const [repairs, clients, payments] = await Promise.all([
+  const [repairs, clients, payments, inventoryItems, inventoryMovements] = await Promise.all([
     prisma.repair.findMany({ where: { businessId }, include: { client: true }, orderBy: { createdAt: 'desc' } }),
     prisma.client.count({ where: { businessId } }),
     canViewFinancials
       ? prisma.payment.aggregate({ where: { businessId, createdAt: { gte: month } }, _sum: { amount: true } })
       : Promise.resolve({ _sum: { amount: null } }),
+    prisma.stockItem.findMany({ where: { businessId, active: true } }),
+    prisma.inventoryMovement.findMany({ where: { businessId }, include: { stockItem: { select: { id: true, name: true, sku: true } } }, orderBy: { createdAt: 'desc' }, take: 5 }),
   ])
-  return res.json({ activeRepairs: repairs.filter(r => r.status !== 'DELIVERED').length, repairsToday: repairs.filter(r => r.createdAt >= today).length, monthlyIncome: payments._sum.amount ?? 0, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: repairs.filter(r => r.status === status).length })), recentRepairs: repairs.slice(0, 5) })
+  return res.json({ activeRepairs: repairs.filter(r => r.status !== 'DELIVERED').length, repairsToday: repairs.filter(r => r.createdAt >= today).length, monthlyIncome: payments._sum.amount ?? 0, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: repairs.filter(r => r.status === status).length })), recentRepairs: repairs.slice(0, 5), inventory: { lowStockItems: inventoryItems.filter(item => item.quantity > 0 && item.quantity <= item.minimumStock).length, outOfStockItems: inventoryItems.filter(item => item.quantity === 0).length, inventoryValue: inventoryItems.reduce((sum, item) => sum + item.quantity * item.cost, 0), recentMovements: inventoryMovements.map(movement => ({ id: movement.id, type: movement.type.toLowerCase(), quantity: movement.quantity, previousStock: movement.previousStock, newStock: movement.newStock, createdAt: movement.createdAt, item: movement.stockItem })) } })
 })
 
 const port = Number(process.env.PORT ?? 3000)

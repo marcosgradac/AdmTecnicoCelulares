@@ -4,15 +4,17 @@ import { Alert, Box, Button, Card, CardContent, Dialog, DialogActions, DialogCon
 import { AddRounded, DeleteOutlineRounded, Inventory2Rounded } from '@mui/icons-material'
 import { UiState } from '../common/UiState'
 import { formatMoney } from '../../utils/format'
-import { getStock, type StockItem } from '../../services/operations'
 import { addRepairPart, getRepairParts, removeRepairPart, type RepairPart } from '../../services/repairParts'
+import { listInventory } from '../../features/inventory/api/inventory.api'
+import type { InventoryItem } from '../../features/inventory/types/inventory.types'
+import { StockStatusChip } from '../../features/inventory/components/StockStatusChip'
 
 const apiMessage = (error: unknown, fallback: string) =>
   axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? fallback : fallback
 
 export function RepairPartsSection({ repairId, repairTotal }: { repairId: string; repairTotal: number }) {
   const [parts, setParts] = useState<RepairPart[]>([])
-  const [stock, setStock] = useState<StockItem[]>([])
+  const [stock, setStock] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -20,26 +22,26 @@ export function RepairPartsSection({ repairId, repairTotal }: { repairId: string
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [removing, setRemoving] = useState<RepairPart | null>(null)
-  const [form, setForm] = useState({ stockItemId: '', quantity: 1, unitPrice: 0 })
+  const [form, setForm] = useState({ inventoryItemId: '', quantity: 1 })
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [partData, stockData] = await Promise.all([getRepairParts(repairId), getStock()])
-      setParts(partData); setStock(stockData)
+      const [partData, stockData] = await Promise.all([getRepairParts(repairId), listInventory({ pageSize: 100, active: 'true' })])
+      setParts(partData); setStock(stockData.items)
     } catch (loadError) { setError(apiMessage(loadError, 'No pudimos cargar los repuestos utilizados.')) }
     finally { setLoading(false) }
   }, [repairId])
   useEffect(() => { void load() }, [load])
-  const selected = stock.find(item => item.id === form.stockItemId)
-  const visibleStock = useMemo(() => stock.filter(item => `${item.name} ${item.compatibleBrand ?? ''} ${item.compatibleModel ?? ''}`.toLowerCase().includes(search.toLowerCase())), [stock, search])
+  const selected = stock.find(item => item.id === form.inventoryItemId)
+  const visibleStock = useMemo(() => stock.filter(item => `${item.name} ${item.sku ?? ''} ${item.brand ?? ''} ${item.compatibleModels.join(' ')}`.toLowerCase().includes(search.toLowerCase())), [stock, search])
   const partsTotal = parts.reduce((sum, part) => sum + part.subtotal, 0)
-  const openAdd = () => { setForm({ stockItemId: '', quantity: 1, unitPrice: 0 }); setSearch(''); setError(''); setSuccess(''); setOpen(true) }
+  const openAdd = () => { setForm({ inventoryItemId: '', quantity: 1 }); setSearch(''); setError(''); setSuccess(''); setOpen(true) }
   const selectItem = (id: string) => {
     const item = stock.find(stockItem => stockItem.id === id)
-    setForm({ stockItemId: id, quantity: 1, unitPrice: item?.salePrice ?? 0 })
+    setForm({ inventoryItemId: id, quantity: 1 })
   }
   const add = async () => {
-    if (!selected || form.quantity <= 0 || form.quantity > selected.quantity || form.unitPrice < 0) return
+    if (!selected || form.quantity <= 0 || form.quantity > selected.currentStock) return
     setSaving(true); setError(''); setSuccess('')
     try {
       await addRepairPart(repairId, form)
@@ -66,8 +68,8 @@ export function RepairPartsSection({ repairId, repairTotal }: { repairId: string
     {loading ? <UiState loading/> : !parts.length ? <UiState title="No hay repuestos utilizados" description="Agregá un repuesto cuando sea necesario para esta reparación."/> : <Stack divider={<Divider/>}>{parts.map(part => <Grid container spacing={1.5} alignItems="center" py={1.7} key={part.id}>
       <Grid size={{ xs: 12, md: 4 }}><Typography fontWeight={750}>{part.name}</Typography><Typography variant="caption" color="text.secondary">Cantidad: {part.quantity}</Typography></Grid>
       <Grid size={{ xs: 6, md: 2 }}><Typography variant="caption" color="text.secondary">Costo unitario</Typography><Typography>{formatMoney(part.unitCost)}</Typography></Grid>
-      <Grid size={{ xs: 6, md: 2 }}><Typography variant="caption" color="text.secondary">Precio unitario</Typography><Typography>{formatMoney(part.unitPrice)}</Typography></Grid>
-      <Grid size={{ xs: 8, md: 2 }}><Typography variant="caption" color="text.secondary">Subtotal</Typography><Typography fontWeight={800}>{formatMoney(part.subtotal)}</Typography></Grid>
+      <Grid size={{ xs: 6, md: 2 }}><Typography variant="caption" color="text.secondary">Costo total</Typography><Typography>{formatMoney(part.totalCost)}</Typography></Grid>
+      <Grid size={{ xs: 8, md: 2 }}><Typography variant="caption" color="text.secondary">Total</Typography><Typography fontWeight={800}>{formatMoney(part.totalCost)}</Typography></Grid>
       <Grid size={{ xs: 4, md: 2 }} textAlign="right"><Button color="error" startIcon={<DeleteOutlineRounded/>} onClick={() => setRemoving(part)}>Eliminar</Button></Grid>
     </Grid>)}</Stack>}
     <Divider sx={{ my: 2 }}/>
@@ -77,12 +79,12 @@ export function RepairPartsSection({ repairId, repairTotal }: { repairId: string
       <DialogTitle>Agregar repuesto</DialogTitle><DialogContent>
         <Stack spacing={2} mt={1}>
           <TextField label="Buscar repuesto" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nombre, marca o modelo"/>
-          <TextField select label="Repuesto activo" value={form.stockItemId} onChange={event => selectItem(event.target.value)}>{visibleStock.map(item => <MenuItem key={item.id} value={item.id} disabled={item.quantity === 0}>{item.name} · Stock {item.quantity}</MenuItem>)}</TextField>
-          {selected && <Alert severity={selected.quantity ? 'info' : 'warning'}>Stock disponible: {selected.quantity} · Costo actual: {formatMoney(selected.cost)}</Alert>}
-          <Grid container spacing={2}><Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth type="number" label="Cantidad" value={form.quantity} inputProps={{ min: 1, max: selected?.quantity ?? 1, step: 1 }} onChange={event => setForm(current => ({ ...current, quantity: Number(event.target.value) }))} error={Boolean(selected && form.quantity > selected.quantity)} helperText={selected && form.quantity > selected.quantity ? 'Supera el stock disponible' : ''}/></Grid><Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth type="number" label="Precio de venta unitario" value={form.unitPrice} inputProps={{ min: 0, step: 1 }} onChange={event => setForm(current => ({ ...current, unitPrice: Number(event.target.value) }))}/></Grid></Grid>
-          <Stack direction="row" justifyContent="space-between"><Typography color="text.secondary">Subtotal</Typography><Typography fontWeight={800}>{formatMoney(Math.max(0, form.quantity) * Math.max(0, form.unitPrice))}</Typography></Stack>
+          <TextField select label="Repuesto activo" value={form.inventoryItemId} onChange={event => selectItem(event.target.value)}>{visibleStock.map(item => <MenuItem key={item.id} value={item.id} disabled={item.currentStock === 0}>{item.sku ? `${item.sku} · ` : ''}{item.name} · Stock {item.currentStock}</MenuItem>)}</TextField>
+          {selected && <Alert severity={selected.currentStock ? 'info' : 'warning'}><Stack direction="row" justifyContent="space-between" alignItems="center"><span>Stock disponible: {selected.currentStock} · Costo: {formatMoney(selected.purchaseCost)}</span><StockStatusChip item={selected}/></Stack></Alert>}
+          <TextField fullWidth type="number" label="Cantidad" value={form.quantity} inputProps={{ min: 1, max: selected?.currentStock ?? 1, step: 1 }} onChange={event => setForm(current => ({ ...current, quantity: Number(event.target.value) }))} error={Boolean(selected && form.quantity > selected.currentStock)} helperText={selected && form.quantity > selected.currentStock ? 'Supera el stock disponible' : ''}/>
+          <Stack direction="row" justifyContent="space-between"><Typography color="text.secondary">Costo total</Typography><Typography fontWeight={800}>{formatMoney(Math.max(0, form.quantity) * (selected?.purchaseCost ?? 0))}</Typography></Stack>
         </Stack>
-      </DialogContent><DialogActions><Button onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button><Button variant="contained" disabled={saving || !selected || form.quantity <= 0 || form.quantity > (selected?.quantity ?? 0) || form.unitPrice < 0 || !Number.isInteger(form.quantity)} onClick={() => void add()}>{saving ? 'Agregando…' : 'Confirmar'}</Button></DialogActions>
+      </DialogContent><DialogActions><Button onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button><Button variant="contained" disabled={saving || !selected || form.quantity <= 0 || form.quantity > (selected?.currentStock ?? 0) || !Number.isInteger(form.quantity)} onClick={() => void add()}>{saving ? 'Agregando…' : 'Confirmar'}</Button></DialogActions>
     </Dialog>
     <Dialog open={Boolean(removing)} onClose={() => !saving && setRemoving(null)}><DialogTitle>Eliminar repuesto utilizado</DialogTitle><DialogContent><DialogContentText>¿Confirmás que querés eliminar “{removing?.name}”? Se devolverán {removing?.quantity} unidades al stock.</DialogContentText></DialogContent><DialogActions><Button onClick={() => setRemoving(null)} disabled={saving}>Cancelar</Button><Button variant="contained" color="error" disabled={saving} onClick={() => void remove()}>{saving ? 'Eliminando…' : 'Eliminar y devolver stock'}</Button></DialogActions></Dialog>
   </CardContent></Card>

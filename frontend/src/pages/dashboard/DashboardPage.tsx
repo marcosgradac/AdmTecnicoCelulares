@@ -1,23 +1,17 @@
-import { BuildRounded, FactCheckRounded, PaymentsRounded, TaskAltRounded } from '@mui/icons-material'
+import { useEffect, useState } from 'react'
+import { BuildRounded, FactCheckRounded, Inventory2Rounded, PaymentsRounded, TaskAltRounded, WarningAmberRounded } from '@mui/icons-material'
+import { Alert, Card, CardContent, Divider, Stack, Typography } from '@mui/material'
 import { useAuth } from '../../auth/AuthContext'
 import { DashboardHeader } from '../../components/dashboard/DashboardHeader'
 import { MetricCard } from '../../components/dashboard/MetricCard'
 import { QuickActions } from '../../components/dashboard/QuickActions'
 import { RecentRepairs } from '../../components/dashboard/RecentRepairs'
-import { dashboardSummary, recentDashboardRepairs } from '../../data/dashboard.mock'
+import { UiState } from '../../components/common/UiState'
+import { getDashboardSummary, type DashboardSummary } from '../../services/operations'
+import { formatMoney } from '../../utils/format'
+import type { DashboardRepair } from '../../types/dashboard.types'
+import type { WorkflowRepairStatus } from '../../types/repair.types'
 import './dashboard.scss'
 
-export function DashboardPage() {
-  const { user } = useAuth()
-  const firstName = user?.fullName.split(' ')[0] || 'Marcos'
-  return <div className="dashboard-page">
-    <DashboardHeader name={firstName} /><QuickActions />
-    <div className="dashboard-metrics">
-      <MetricCard label="Reparaciones activas" value={String(dashboardSummary.activeRepairs)} icon={<BuildRounded />} tone="primary" />
-      <MetricCard label="En revisión" value={String(dashboardSummary.inReview)} icon={<FactCheckRounded />} tone="warning" />
-      <MetricCard label="Listos para entregar" value={String(dashboardSummary.ready)} icon={<TaskAltRounded />} tone="success" />
-      <MetricCard label="Ingresos del mes" value={`$${dashboardSummary.monthlyIncome.toLocaleString('es-AR')}`} icon={<PaymentsRounded />} tone="info" />
-    </div>
-    <RecentRepairs repairs={recentDashboardRepairs} />
-  </div>
-}
+const statusMap:Record<string,WorkflowRepairStatus>={RECEIVED:'recibido',REVIEW:'en_revision',BUDGET:'presupuesto_informado',APPROVED:'presupuesto_aceptado',WAITING_PART:'esperando_repuesto',REPAIRING:'en_reparacion',TESTING:'control_calidad',READY:'listo_retirar',DELIVERED:'entregado',CANCELLED:'cancelado',WARRANTY:'garantia'}
+export function DashboardPage(){const{user}=useAuth();const[summary,setSummary]=useState<DashboardSummary|null>(null);const[error,setError]=useState('');useEffect(()=>{void getDashboardSummary().then(setSummary).catch(()=>setError('No pudimos cargar el dashboard.'))},[]);if(!summary&&!error)return <UiState loading/>;if(!summary)return <Alert severity="error">{error}</Alert>;const repairs:DashboardRepair[]=summary.recentRepairs.map(repair=>({id:repair.id,number:repair.number,client:repair.client.name,device:`${repair.deviceBrand} ${repair.deviceModel}`,issue:repair.issue,status:statusMap[repair.status]??'recibido',receivedAt:repair.createdAt,total:repair.total}));const inReview=summary.byStatus.find(item=>item.status==='REVIEW')?.value??0;const ready=summary.byStatus.find(item=>item.status==='READY')?.value??0;return <div className="dashboard-page"><DashboardHeader name={user?.fullName.split(' ')[0]||'Usuario'}/><QuickActions/><div className="dashboard-metrics"><MetricCard label="Reparaciones activas" value={String(summary.activeRepairs)} icon={<BuildRounded/>} tone="primary"/><MetricCard label="En revisión" value={String(inReview)} icon={<FactCheckRounded/>} tone="warning"/><MetricCard label="Listos para entregar" value={String(ready)} icon={<TaskAltRounded/>} tone="success"/><MetricCard label="Ingresos del mes" value={formatMoney(summary.monthlyIncome)} icon={<PaymentsRounded/>} tone="info"/></div><div className="dashboard-metrics"><MetricCard label="Stock bajo" value={String(summary.inventory.lowStockItems)} icon={<WarningAmberRounded/>} tone="warning"/><MetricCard label="Sin stock" value={String(summary.inventory.outOfStockItems)} icon={<Inventory2Rounded/>} tone="warning"/><MetricCard label="Valor aproximado del stock" value={formatMoney(summary.inventory.inventoryValue)} icon={<Inventory2Rounded/>} tone="info"/></div><RecentRepairs repairs={repairs}/><Card><CardContent><Typography variant="h2">Movimientos recientes de stock</Typography>{!summary.inventory.recentMovements.length?<Typography mt={2} color="text.secondary">Todavía no hay movimientos.</Typography>:<Stack divider={<Divider/>} mt={1}>{summary.inventory.recentMovements.map(movement=><Stack key={movement.id} direction="row" justifyContent="space-between" py={1.2}><span><Typography fontWeight={750}>{movement.item.name}</Typography><Typography variant="caption" color="text.secondary">{new Date(movement.createdAt).toLocaleString('es-AR')}</Typography></span><Typography fontWeight={800}>{movement.previousStock} → {movement.newStock}</Typography></Stack>)}</Stack>}</CardContent></Card></div>}

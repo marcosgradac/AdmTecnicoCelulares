@@ -2,19 +2,21 @@ import { api } from './api'
 
 export interface RepairPart {
   id: string
+  inventoryItemId: string
   stockItemId: string
   name: string
   quantity: number
   unitCost: number
   unitPrice: number
+  totalCost: number
   subtotal: number
+  saleSubtotal: number
   createdAt: string
 }
 
 export interface AddRepairPartInput {
-  stockItemId: string
+  inventoryItemId: string
   quantity: number
-  unitPrice: number
 }
 
 export const getRepairParts = async (repairId: string) =>
