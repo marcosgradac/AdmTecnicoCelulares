@@ -12,10 +12,13 @@ enum RepairStatus {
   REVIEW
   BUDGET
   APPROVED
+  WAITING_PART
   REPAIRING
   TESTING
   READY
   DELIVERED
+  CANCELLED
+  WARRANTY
 }
 
 enum UserRole {
@@ -29,6 +32,7 @@ model Business {
   slug          String?        @unique
   phone         String?
   address       String?
+  logoUrl       String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   users         User[]
@@ -37,24 +41,26 @@ model Business {
   stockItems    StockItem[]
   cashMovements CashMovement[]
   payments      Payment[]
+  devices       Device[]
 }
 
 model User {
-  id           String   @id @default(cuid())
-  businessId   String
-  name         String
-  firstName    String?
-  lastName     String?
-  phone        String?
-  email        String   @unique
-  passwordHash String
-  role         UserRole @default(TECHNICIAN)
-  isActive     Boolean  @default(true)
-  tokenVersion Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  business     Business @relation(fields: [businessId], references: [id])
+  id                  String                @id @default(cuid())
+  businessId          String
+  name                String
+  firstName           String?
+  lastName            String?
+  phone               String?
+  email               String                @unique
+  passwordHash        String
+  role                UserRole              @default(TECHNICIAN)
+  isActive            Boolean               @default(true)
+  tokenVersion        Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  business            Business              @relation(fields: [businessId], references: [id])
   passwordResetTokens PasswordResetToken[]
+  repairStatusHistory RepairStatusHistory[]
 
   @@index([businessId])
 }
@@ -73,43 +79,107 @@ model PasswordResetToken {
 }
 
 model Client {
-  id        String   @id @default(cuid())
+  id         String    @id @default(cuid())
   businessId String
-  name      String
-  phone     String?
-  createdAt DateTime @default(now())
-  repairs   Repair[]
-  payments  Payment[]
-  business  Business @relation(fields: [businessId], references: [id])
+  name       String
+  phone      String?
+  whatsapp   String?
+  email      String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  repairs    Repair[]
+  devices    Device[]
+  payments   Payment[]
+  business   Business  @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
 }
 
-model Repair {
-  id            String       @id @default(cuid())
-  businessId    String
-  number        Int
-  clientId      String
-  deviceBrand   String
-  deviceModel   String
-  imei          String?
-  color         String?
-  issue         String
-  diagnosis     String?
-  notes         String?
-  status        RepairStatus  @default(RECEIVED)
-  total         Int          @default(0)
-  paid          Int          @default(0)
-  trackingToken String       @unique @default(cuid())
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  client        Client       @relation(fields: [clientId], references: [id])
-  payments      Payment[]
-  parts         RepairPart[]
-  business      Business      @relation(fields: [businessId], references: [id])
+model Device {
+  id                  String   @id @default(cuid())
+  businessId          String
+  clientId            String
+  brand               String
+  model               String
+  imei                String?
+  color               String?
+  storage             String?
+  unlockCodeEncrypted String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  business            Business @relation(fields: [businessId], references: [id])
+  client              Client   @relation(fields: [clientId], references: [id])
+  repairs             Repair[]
 
   @@index([businessId])
+  @@index([clientId])
+}
+
+model Repair {
+  id                    String                @id @default(cuid())
+  businessId            String
+  number                Int
+  clientId              String
+  deviceId              String?
+  deviceBrand           String
+  deviceModel           String
+  imei                  String?
+  color                 String?
+  issue                 String
+  diagnosis             String?
+  notes                 String?
+  physicalCondition     String?
+  accessories           String?
+  estimatedDeliveryDate DateTime?
+  estimatedDuration     String?
+  partsCost             Int                   @default(0)
+  laborCost             Int                   @default(0)
+  status                RepairStatus          @default(RECEIVED)
+  total                 Int                   @default(0)
+  paid                  Int                   @default(0)
+  trackingToken         String?               @unique
+  trackingEnabled       Boolean               @default(false)
+  deliveredAt           DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  client                Client                @relation(fields: [clientId], references: [id])
+  device                Device?               @relation(fields: [deviceId], references: [id])
+  payments              Payment[]
+  parts                 RepairPart[]
+  business              Business              @relation(fields: [businessId], references: [id])
+  statusHistory         RepairStatusHistory[]
+  photos                RepairPhoto[]
+
   @@unique([businessId, number])
+  @@index([businessId])
+}
+
+model RepairStatusHistory {
+  id              String        @id @default(cuid())
+  repairId        String
+  previousStatus  RepairStatus?
+  newStatus       RepairStatus
+  publicMessage   String?
+  internalNote    String?
+  changedByUserId String
+  createdAt       DateTime      @default(now())
+  repair          Repair        @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  changedBy       User          @relation(fields: [changedByUserId], references: [id])
+
+  @@index([repairId, createdAt])
+}
+
+model RepairPhoto {
+  id        String   @id @default(cuid())
+  repairId  String
+  url       String
+  type      String
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  repair    Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+
+  @@index([repairId])
 }
 
 enum PaymentMethod {
@@ -120,37 +190,37 @@ enum PaymentMethod {
 }
 
 model Payment {
-  id        String        @id @default(cuid())
+  id         String        @id @default(cuid())
   businessId String
-  repairId  String
-  clientId  String
-  amount    Int
-  method    PaymentMethod
-  note      String?
-  createdAt DateTime      @default(now())
-  repair    Repair        @relation(fields: [repairId], references: [id])
-  client    Client        @relation(fields: [clientId], references: [id])
-  business  Business      @relation(fields: [businessId], references: [id])
+  repairId   String
+  clientId   String
+  amount     Int
+  method     PaymentMethod
+  note       String?
+  createdAt  DateTime      @default(now())
+  repair     Repair        @relation(fields: [repairId], references: [id])
+  client     Client        @relation(fields: [clientId], references: [id])
+  business   Business      @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
 }
 
 model StockItem {
-  id             String   @id @default(cuid())
-  businessId     String
-  name           String
-  category       String
+  id              String       @id @default(cuid())
+  businessId      String
+  name            String
+  category        String
   compatibleBrand String?
   compatibleModel String?
-  quantity       Int      @default(0)
-  minimumStock   Int      @default(0)
-  cost           Int      @default(0)
-  salePrice      Int      @default(0)
-  active         Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  repairParts    RepairPart[]
-  business       Business @relation(fields: [businessId], references: [id])
+  quantity        Int          @default(0)
+  minimumStock    Int          @default(0)
+  cost            Int          @default(0)
+  salePrice       Int          @default(0)
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  repairParts     RepairPart[]
+  business        Business     @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
 }

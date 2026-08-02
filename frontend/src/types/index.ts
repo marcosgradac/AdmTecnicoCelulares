@@ -3,10 +3,21 @@ export type RepairStatus =
   | 'review'
   | 'budget'
   | 'approved'
+  | 'waiting_part'
   | 'repairing'
   | 'testing'
   | 'ready'
   | 'delivered'
+  | 'cancelled'
+  | 'warranty'
+
+export interface RepairHistory {
+  id?: string
+  newStatus: RepairStatus
+  publicMessage?: string | null
+  internalNote?: string | null
+  createdAt: string
+}
 
 export interface Repair {
   id: string
@@ -27,5 +38,8 @@ export interface Repair {
   paid: number
   createdAt: string
   updatedAt: string
-  trackingToken: string
+  trackingToken?: string
+  trackingEnabled?: boolean
+  estimatedDeliveryDate?: string
+  history?: RepairHistory[]
 }

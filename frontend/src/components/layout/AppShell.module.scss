@@ -1,5 +1,6 @@
 $sidebar: 248px;
 $header: 72px;
+$sidebar-collapsed: 78px;
 
 .shell { min-height: 100vh; background: #F8F9FC; }
 .drawer { width: $sidebar; height: 100vh; padding: 20px 14px; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #E8EAF0; }
@@ -20,6 +21,13 @@ $header: 72px;
 .content { padding: calc($header + 28px) 28px 40px calc($sidebar + 28px); min-height: 100vh; }
 .inner { max-width: 1480px; margin: 0 auto; }
 .mobileNav { display: none; }
+.collapsed { width: $sidebar-collapsed; }
+.collapsed .brand { justify-content: center; padding-inline: 4px; }
+.collapsed .brand > div:last-child, .collapsed .navLabel, .collapsed :global(.MuiListItemText-root), .collapsed .account > div:last-child { display: none; }
+.collapsed .nav :global(.MuiListItemButton-root), .collapsed .bottom :global(.MuiListItemButton-root) { justify-content: center; padding-inline: 10px; }
+.collapsed .nav :global(.MuiListItemIcon-root), .collapsed .bottom :global(.MuiListItemIcon-root) { min-width: 0; }
+.shellCollapsed .header { left: $sidebar-collapsed !important; width: calc(100% - $sidebar-collapsed) !important; }
+.shellCollapsed .content { padding-left: calc($sidebar-collapsed + 28px); }
 
 @media (max-width: 899px) {
   .header { left: 0 !important; width: 100% !important; height: 64px; }

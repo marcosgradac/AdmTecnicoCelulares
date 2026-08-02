@@ -1,0 +1,2 @@
+import { Button, Container, Typography } from '@mui/material';import { Link } from 'react-router-dom'
+export function LegalPage({title}:{title:string}){return <Container maxWidth="md" sx={{py:8}}><Typography variant="h1">{title}</Typography><Typography color="text.secondary" my={3}>Esta página informativa está preparada para incorporar el contenido legal definitivo de CelluFix.</Typography><Button component={Link} to="/">Volver al inicio</Button></Container>}

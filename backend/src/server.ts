@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { rateLimit } from 'express-rate-limit'
+import { randomBytes } from 'node:crypto'
 import { CashMovementType, PaymentMethod, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
@@ -14,7 +15,18 @@ import { passwordResetRouter } from './modules/auth/password-reset.routes'
 
 export const app = express()
 app.use(helmet())
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? false }))
+const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+  .split(',')
+  .map(value => value.trim().replace(/\/$/, ''))
+  .filter(Boolean)
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true)
+    return callback(new Error('Origen no permitido por CORS'))
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  credentials: false,
+}))
 app.use(express.json({ limit: '1mb' }))
 
 const jwtSecret = process.env.JWT_SECRET
@@ -49,17 +61,30 @@ const userResponse = <T extends {
   business: { id: user.business.id, name: user.business.name },
 })
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }))
+const health = async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    return res.status(200).json({ status: 'ok', ok: true, environment: process.env.NODE_ENV ?? 'development', timestamp: new Date().toISOString() })
+  } catch {
+    console.error('Health check: la base de datos no está disponible')
+    return res.status(503).json({ status: 'error', ok: false, timestamp: new Date().toISOString() })
+  }
+}
+app.get('/api/health', health)
+app.get('/health', health)
 app.use('/api/auth', passwordResetRouter)
 
 const publicRepairSelect = {
   id: true, number: true, deviceBrand: true, deviceModel: true, issue: true,
-  status: true, total: true, paid: true, trackingToken: true, createdAt: true, updatedAt: true
+  status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
+  estimatedDeliveryDate: true, createdAt: true, updatedAt: true,
+  business: { select: { name: true, logoUrl: true } },
+  statusHistory: { where: { publicMessage: { not: null } }, select: { newStatus: true, publicMessage: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
 } as const
 app.get('/api/tracking/:token', async (req, res) => {
   try {
     const repair = await prisma.repair.findUnique({ where: { trackingToken: req.params.token }, select: publicRepairSelect })
-    if (!repair) return res.status(404).json({ success: false, message: 'Seguimiento no encontrado' })
+    if (!repair?.trackingEnabled) return res.status(404).json({ success: false, message: 'Seguimiento no encontrado' })
     return res.json({ ...repair, clientId: '', imei: null, color: null, diagnosis: null, notes: null, client: { id: '', name: '', phone: null, createdAt: repair.createdAt } })
   } catch { return res.status(500).json({ success: false, message: 'Error obteniendo seguimiento' }) }
 })
@@ -166,10 +191,33 @@ app.patch('/api/profile', authenticate, async (req, res) => {
 
 app.use('/api', authenticate)
 app.use('/api/team', teamRouter)
-const includeRepair = { client: true, payments: true } as const
+const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true } as const
 
 app.get('/api/repairs', async (req, res) => {
-  try { return res.json(await prisma.repair.findMany({ where: { businessId: authOf(req).businessId }, include: includeRepair, orderBy: { createdAt: 'desc' } })) }
+  const parsed = z.object({
+    page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().optional(), status: z.nativeEnum(RepairStatus).optional(),
+    from: z.coerce.date().optional(), to: z.coerce.date().optional(), order: z.enum(['asc', 'desc']).default('desc'),
+  }).safeParse(req.query)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Filtros inválidos' })
+  try {
+    const { page, pageSize, search, status, from, to, order } = parsed.data
+    const where = {
+      businessId: authOf(req).businessId, ...(status ? { status } : {}),
+      ...(from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+      ...(search ? { OR: [
+        { client: { name: { contains: search, mode: 'insensitive' as const } } },
+        { deviceBrand: { contains: search, mode: 'insensitive' as const } },
+        { deviceModel: { contains: search, mode: 'insensitive' as const } },
+        { issue: { contains: search, mode: 'insensitive' as const } },
+      ] } : {}),
+    }
+    const [items, total] = await prisma.$transaction([
+      prisma.repair.findMany({ where, include: includeRepair, orderBy: { createdAt: order }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.repair.count({ where }),
+    ])
+    return res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
+  }
   catch { return res.status(500).json({ success: false, message: 'Error obteniendo reparaciones' }) }
 })
 app.get('/api/repairs/:id', async (req, res) => {
@@ -197,7 +245,7 @@ app.post('/api/repairs', async (req, res) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
       const client = existing ?? await tx.client.create({ data: { businessId, name: data.clientName, phone: normalizedPhone } })
       const last = await tx.repair.findFirst({ where: { businessId }, orderBy: { number: 'desc' } })
-      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei, color: data.color, issue: data.issue, diagnosis: data.diagnosis, notes: data.notes, total: data.total }, include: includeRepair })
+      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei, color: data.color, issue: data.issue, diagnosis: data.diagnosis, notes: data.notes, total: data.total, trackingToken: randomBytes(32).toString('hex'), trackingEnabled: true }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.status(201).json(repair)
   } catch { return res.status(500).json({ success: false, message: 'Error creando reparación' }) }
@@ -220,11 +268,16 @@ app.patch('/api/repairs/:id', async (req, res) => {
   return res.json(repair)
 })
 app.patch('/api/repairs/:id/status', async (req, res) => {
-  const parsed = z.object({ status: z.nativeEnum(RepairStatus) }).safeParse(req.body)
+  const parsed = z.object({ status: z.nativeEnum(RepairStatus), publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Estado inválido' })
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
   if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  return res.json(await prisma.repair.update({ where: { id: current.id }, data: { status: parsed.data.status }, include: includeRepair }))
+  const auth = authOf(req)
+  const repair = await prisma.$transaction(async tx => {
+    await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: parsed.data.status, publicMessage: parsed.data.publicMessage || null, internalNote: parsed.data.internalNote || null, changedByUserId: auth.userId } })
+    return tx.repair.update({ where: { id: current.id }, data: { status: parsed.data.status, deliveredAt: parsed.data.status === 'DELIVERED' ? new Date() : null }, include: includeRepair })
+  })
+  return res.json(repair)
 })
 const setRepairStatus = (status: RepairStatus) => async (req: Request, res: Response) => {
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
@@ -272,6 +325,25 @@ app.get('/api/repairs/:id/payments', async (req, res) => {
   const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.payment.findMany({ where: { repairId: repair.id, businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } }))
+})
+
+app.get('/api/repairs/:id/history', async (req, res) => {
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+  if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+  return res.json(await prisma.repairStatusHistory.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } }))
+})
+
+app.post('/api/repairs/:id/tracking-link', async (req, res) => {
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+  if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+  const trackingToken = randomBytes(32).toString('hex')
+  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true }, select: { trackingToken: true, trackingEnabled: true } }))
+})
+
+app.patch('/api/repairs/:id/tracking-link', async (req, res) => {
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+  if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
 const serializePart = (part: { id: string; stockItemId: string; itemNameSnapshot: string; quantity: number; unitCost: number; unitPrice: number; createdAt: Date }) => ({ id: part.id, stockItemId: part.stockItemId, name: part.itemNameSnapshot, quantity: part.quantity, unitCost: part.unitCost, unitPrice: part.unitPrice, subtotal: part.quantity * part.unitPrice, createdAt: part.createdAt })
@@ -357,5 +429,7 @@ app.get('/api/dashboard/summary', async (req, res) => {
 })
 
 const port = Number(process.env.PORT ?? 3000)
-export const startServer = () => app.listen(port, () => console.log(`CelluFix API running on http://localhost:${port}`))
+export const startServer = () => app.listen(port, '0.0.0.0', () => {
+  console.log(`CelluFix API iniciada en el puerto ${port} (${process.env.NODE_ENV ?? 'development'})`)
+})
 if (require.main === module) startServer()

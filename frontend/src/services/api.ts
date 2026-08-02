@@ -1,9 +1,18 @@
 import axios from 'axios'
+import { env } from '../config/env'
+
+export const API_URL = env.apiUrl
+
+if (import.meta.env.DEV) console.info(`[CelluFix] API de desarrollo: ${new URL(API_URL).origin}`)
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' }
 })
+
+export async function checkApiHealth() {
+  return (await api.get<{ ok: boolean }>('/health', { timeout: 5000 })).data.ok
+}
 
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('cellufix_access_token')

@@ -1,7 +1,7 @@
 import { api } from './api'
 import type { Repair, RepairStatus } from '../types'
 
-export type ApiRepairStatus = 'RECEIVED' | 'REVIEW' | 'BUDGET' | 'APPROVED' | 'REPAIRING' | 'TESTING' | 'READY' | 'DELIVERED'
+export type ApiRepairStatus = 'RECEIVED' | 'REVIEW' | 'BUDGET' | 'APPROVED' | 'WAITING_PART' | 'REPAIRING' | 'TESTING' | 'READY' | 'DELIVERED' | 'CANCELLED' | 'WARRANTY'
 
 interface ApiClient {
   id: string
@@ -24,7 +24,10 @@ interface ApiRepair {
   status: ApiRepairStatus
   total: number
   paid: number
-  trackingToken: string
+  trackingToken: string | null
+  trackingEnabled: boolean
+  estimatedDeliveryDate: string | null
+  statusHistory?: Array<{ id?: string; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
   createdAt: string
   updatedAt: string
   client: ApiClient
@@ -49,10 +52,13 @@ const statusFromApi: Record<ApiRepairStatus, RepairStatus> = {
   REVIEW: 'review',
   BUDGET: 'budget',
   APPROVED: 'approved',
+  WAITING_PART: 'waiting_part',
   REPAIRING: 'repairing',
   TESTING: 'testing',
   READY: 'ready',
   DELIVERED: 'delivered',
+  CANCELLED: 'cancelled',
+  WARRANTY: 'warranty',
 }
 
 const statusToApi: Record<RepairStatus, ApiRepairStatus> = {
@@ -60,10 +66,13 @@ const statusToApi: Record<RepairStatus, ApiRepairStatus> = {
   review: 'REVIEW',
   budget: 'BUDGET',
   approved: 'APPROVED',
+  waiting_part: 'WAITING_PART',
   repairing: 'REPAIRING',
   testing: 'TESTING',
   ready: 'READY',
   delivered: 'DELIVERED',
+  cancelled: 'CANCELLED',
+  warranty: 'WARRANTY',
 }
 
 const mapRepair = (repair: ApiRepair): Repair => ({
@@ -85,12 +94,15 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   paid: repair.paid,
   createdAt: repair.createdAt,
   updatedAt: repair.updatedAt,
-  trackingToken: repair.trackingToken,
+  trackingToken: repair.trackingToken ?? undefined,
+  trackingEnabled: repair.trackingEnabled,
+  estimatedDeliveryDate: repair.estimatedDeliveryDate ?? undefined,
+  history: (repair.statusHistory ?? []).map(item => ({ ...item, newStatus: statusFromApi[item.newStatus] })),
 })
 
 export async function getRepairs() {
-  const response = await api.get<ApiRepair[]>('/repairs')
-  return response.data.map(mapRepair)
+  const response = await api.get<{ items: ApiRepair[] }>('/repairs')
+  return response.data.items.map(mapRepair)
 }
 
 export async function getRepair(id: string) {
@@ -108,9 +120,17 @@ export async function createRepair(input: CreateRepairInput) {
   return mapRepair(response.data)
 }
 
-export async function updateRepairStatus(id: string, status: RepairStatus) {
-  const response = await api.patch<ApiRepair>(`/repairs/${id}/status`, { status: statusToApi[status] })
+export async function updateRepairStatus(id: string, status: RepairStatus, messages?: { publicMessage?: string; internalNote?: string }) {
+  const response = await api.patch<ApiRepair>(`/repairs/${id}/status`, { status: statusToApi[status], ...messages })
   return mapRepair(response.data)
+}
+
+export async function generateTrackingLink(id: string) {
+  return (await api.post<{ trackingToken: string; trackingEnabled: boolean }>(`/repairs/${id}/tracking-link`)).data
+}
+
+export async function disableTrackingLink(id: string) {
+  return (await api.patch<{ trackingToken: string; trackingEnabled: boolean }>(`/repairs/${id}/tracking-link`)).data
 }
 
 export type UpdateRepairInput = Pick<CreateRepairInput, 'clientId' | 'deviceBrand' | 'deviceModel' | 'imei' | 'color' | 'issue' | 'diagnosis' | 'notes' | 'total'>

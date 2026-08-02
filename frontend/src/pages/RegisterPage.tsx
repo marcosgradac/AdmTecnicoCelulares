@@ -24,7 +24,7 @@ export function RegisterPage() {
     /\d/.test(form.password),
     /[^A-Za-z0-9]/.test(form.password),
   ].filter(Boolean).length, [form.password])
-  if (user) return <Navigate to="/inicio" replace />
+  if (user) return <Navigate to="/admin" replace />
 
   const invalid = {
     firstName: !form.firstName.trim(),

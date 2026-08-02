@@ -10,12 +10,19 @@ export const clearFakeOutbox = () => { fakeOutbox.length = 0 }
 export const getFakeOutbox = () => [...fakeOutbox]
 
 export const sendPasswordResetEmail = async (to: string, token: string) => {
-  const frontendUrl = (process.env.FRONTEND_URL ?? 'http://localhost:5173').replace(/\/$/, '')
+  const configuredFrontendUrl = process.env.FRONTEND_URL
+  if (!configuredFrontendUrl && process.env.NODE_ENV === 'production') throw new Error('FRONTEND_URL es obligatorio en producción')
+  const frontendUrl = (configuredFrontendUrl ?? 'http://localhost:5173').replace(/\/$/, '')
   const resetUrl = `${frontendUrl}/restablecer-contrasena?token=${encodeURIComponent(token)}`
   const mail = { to, subject: 'Restablecé tu contraseña de CelluFix', resetUrl }
 
   if ((process.env.MAIL_MODE ?? 'console') === 'fake') {
     fakeOutbox.push(mail)
+    return
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('[mail:console] Solicitud de restablecimiento generada, pero no hay un proveedor de correo configurado')
     return
   }
 

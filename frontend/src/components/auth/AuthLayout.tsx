@@ -1,7 +1,9 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react'
 import { Box, CircularProgress, Paper, Stack, Typography } from '@mui/material'
 import { BuildRounded } from '@mui/icons-material'
+import { Link } from 'react-router-dom'
 import type { AuthVisualVariant } from './auth-visual.types'
+import './auth-mobile.scss'
 
 function AuthVisualFallback() {
   return <Box height="100%" minHeight={{ xs: 240, md: '100vh' }} display="grid" color="#fff" sx={{
@@ -40,7 +42,7 @@ export function AuthLayout({ title, description, children, variant = 'login' }: 
   children: ReactNode
   variant?: AuthVisualVariant
 }) {
-  return <Box minHeight="100vh" display="grid" sx={{
+  return <Box className="auth-page" minHeight="100vh" display="grid" sx={{
     gridTemplateColumns: { xs: '1fr', md: 'minmax(420px, 1fr) minmax(520px, 1.05fr)' },
     gridTemplateRows: { xs: '240px auto', md: '1fr' },
     bgcolor: '#f6f7fb',
@@ -56,8 +58,9 @@ export function AuthLayout({ title, description, children, variant = 'login' }: 
         </Suspense>
       </AuthVisualErrorBoundary>
     </Box>
-    <Box display="grid" px={{ xs: 2, sm: 4, md: 7 }} py={{ xs: 3, md: 5 }} sx={{ placeItems: 'center' }}>
-      <Paper elevation={0} sx={{ width: '100%', maxWidth: 560, borderRadius: 5, p: { xs: 3, sm: 4.5 }, border: '1px solid', borderColor: 'divider', boxShadow: '0 24px 70px rgba(35,27,78,.10)' }}>
+    <Box className="auth-form-region" display="grid" px={{ xs: 2, sm: 4, md: 7 }} py={{ xs: 3, md: 5 }} sx={{ placeItems: 'center' }}>
+      <Paper className="auth-form-surface" elevation={0} sx={{ width: '100%', maxWidth: 520, borderRadius: 5, p: { xs: 3, sm: 4.5 }, border: '1px solid', borderColor: 'divider', boxShadow: '0 24px 70px rgba(35,27,78,.10)' }}>
+        <Link className="auth-back-link" to="/">← Volver al inicio</Link>
         <Stack direction="row" spacing={1.25} alignItems="center" mb={3} sx={{ display: { md: 'none' } }}>
           <Box width={42} height={42} display="grid" borderRadius={2.5} bgcolor="primary.main" color="#fff" sx={{ placeItems: 'center' }}><BuildRounded /></Box>
           <Typography fontSize={20} fontWeight={900}>CelluFix</Typography>
