@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && prisma generate --schema prisma/sqlite/schema.prisma",
     "dev": "tsx watch src/server.ts",
     "migrate:existing": "tsx src/scripts/migrate-existing-data.ts",
     "db:generate": "prisma generate && prisma generate --schema prisma/sqlite/schema.prisma",

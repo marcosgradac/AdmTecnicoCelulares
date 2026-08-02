@@ -6,7 +6,17 @@ import {
   RepairStatus,
   UserRole,
 } from '@prisma/client'
-import { PrismaClient as SqliteClient } from '../../generated/sqlite-client'
+import {
+  PrismaClient as SqliteClient,
+  type Business as SourceBusiness,
+  type CashMovement as SourceCashMovement,
+  type Client as SourceClient,
+  type Payment as SourcePayment,
+  type Repair as SourceRepair,
+  type RepairPart as SourceRepairPart,
+  type StockItem as SourceStockItem,
+  type User as SourceUser,
+} from '../../generated/sqlite-client'
 
 const dryRun = process.argv.includes('--dry-run')
 const sqliteUrl = process.env.SQLITE_DATABASE_URL ?? 'file:../dev.db'
@@ -19,7 +29,16 @@ if (!dryRun && !/^postgres(ql)?:\/\//i.test(postgresUrl)) {
 const source = new SqliteClient({ datasourceUrl: sqliteUrl })
 const target = dryRun ? null : new PostgresClient({ datasourceUrl: postgresUrl })
 
-type SourceData = Awaited<ReturnType<typeof readSource>>
+interface SourceData {
+  businesses: SourceBusiness[]
+  users: SourceUser[]
+  clients: SourceClient[]
+  repairs: SourceRepair[]
+  stockItems: SourceStockItem[]
+  payments: SourcePayment[]
+  cashMovements: SourceCashMovement[]
+  repairParts: SourceRepairPart[]
+}
 
 async function readSource() {
   const [businesses, users, clients, repairs, stockItems, payments, cashMovements, repairParts] =
@@ -39,10 +58,10 @@ async function readSource() {
 
 function validate(data: SourceData) {
   const errors: string[] = []
-  const businesses = new Set(data.businesses.map((row) => row.id))
-  const clients = new Map(data.clients.map((row) => [row.id, row]))
-  const repairs = new Map(data.repairs.map((row) => [row.id, row]))
-  const stockItems = new Map(data.stockItems.map((row) => [row.id, row]))
+  const businesses = new Set(data.businesses.map((row: SourceBusiness) => row.id))
+  const clients = new Map(data.clients.map((row: SourceClient) => [row.id, row]))
+  const repairs = new Map(data.repairs.map((row: SourceRepair) => [row.id, row]))
+  const stockItems = new Map(data.stockItems.map((row: SourceStockItem) => [row.id, row]))
 
   for (const row of data.users) {
     if (!businesses.has(row.businessId)) errors.push(`User ${row.id}: businessId huérfano`)
@@ -89,29 +108,31 @@ function validate(data: SourceData) {
 }
 
 function summarize(data: SourceData) {
-  const totalsByBusiness = data.businesses.map((business) => {
-    const repairs = data.repairs.filter((row) => row.businessId === business.id)
-    const payments = data.payments.filter((row) => row.businessId === business.id)
-    const cash = data.cashMovements.filter((row) => row.businessId === business.id)
+  const totalsByBusiness = data.businesses.map((business: SourceBusiness) => {
+    const repairs = data.repairs.filter((row: SourceRepair) => row.businessId === business.id)
+    const payments = data.payments.filter((row: SourcePayment) => row.businessId === business.id)
+    const cash = data.cashMovements.filter((row: SourceCashMovement) => row.businessId === business.id)
     return {
       businessId: business.id,
-      clients: data.clients.filter((row) => row.businessId === business.id).length,
+      clients: data.clients.filter((row: SourceClient) => row.businessId === business.id).length,
       repairs: repairs.length,
       stockQuantity: data.stockItems
-        .filter((row) => row.businessId === business.id)
-        .reduce((sum, row) => sum + row.quantity, 0),
-      repairTotal: repairs.reduce((sum, row) => sum + row.total, 0),
-      repairPaid: repairs.reduce((sum, row) => sum + row.paid, 0),
-      paymentTotal: payments.reduce((sum, row) => sum + row.amount, 0),
-      cashTotal: cash.reduce((sum, row) => sum + row.amount, 0),
+        .filter((row: SourceStockItem) => row.businessId === business.id)
+        .reduce((sum: number, row: SourceStockItem) => sum + row.quantity, 0),
+      repairTotal: repairs.reduce((sum: number, row: SourceRepair) => sum + row.total, 0),
+      repairPaid: repairs.reduce((sum: number, row: SourceRepair) => sum + row.paid, 0),
+      paymentTotal: payments.reduce((sum: number, row: SourcePayment) => sum + row.amount, 0),
+      cashTotal: cash.reduce((sum: number, row: SourceCashMovement) => sum + row.amount, 0),
     }
   })
   return {
-    counts: Object.fromEntries(Object.entries(data).map(([name, rows]) => [name, rows.length])),
+    counts: Object.fromEntries(
+      (Object.keys(data) as Array<keyof SourceData>).map((name: keyof SourceData) => [name, data[name].length]),
+    ),
     totalsByBusiness,
-    repairPartsByRepair: data.repairs.map((repair) => ({
+    repairPartsByRepair: data.repairs.map((repair: SourceRepair) => ({
       repairId: repair.id,
-      count: data.repairParts.filter((part) => part.repairId === repair.id).length,
+      count: data.repairParts.filter((part: SourceRepairPart) => part.repairId === repair.id).length,
     })),
   }
 }
