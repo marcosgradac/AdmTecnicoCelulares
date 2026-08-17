@@ -10,6 +10,7 @@ import { PageHeader } from '../components/common/PageHeader'
 import { StatusChip } from '../components/common/StatusChip'
 import { StatCard } from '../components/common/StatCard'
 import { UiState } from '../components/common/UiState'
+import { NewRepairDrawer } from '../components/repairs/NewRepairDrawer'
 
 export function RepairsPage() {
   const navigate = useNavigate()
@@ -19,6 +20,10 @@ export function RepairsPage() {
   const [query, setQuery] = useState('')
   const [searchParams, setSearchParams] = useSearchParams()
   const statusParam = searchParams.get('status') as RepairStatus | null
+  const drawerOpen = searchParams.get('new') === '1'
+  const initialClientId = searchParams.get('clientId') ?? undefined
+  const openDrawer = (clientId?: string) => { const next = new URLSearchParams(searchParams); next.set('new', '1'); if (clientId) next.set('clientId', clientId); setSearchParams(next) }
+  const closeDrawer = () => { const next = new URLSearchParams(searchParams); next.delete('new'); next.delete('clientId'); setSearchParams(next) }
   const filter: RepairStatus | 'all' = statusParam && repairStatuses.includes(statusParam) ? statusParam : 'all'
   const setFilter = (status: RepairStatus | 'all') => setSearchParams(status === 'all' ? {} : { status })
   const load = useCallback(async () => {
@@ -36,7 +41,7 @@ export function RepairsPage() {
   const count = (statuses: RepairStatus[]) => repairs.filter(repair => statuses.includes(repair.status)).length
   return (
     <Box>
-      <PageHeader eyebrow="GESTIÓN DE TALLER" title="Reparaciones" description="Seguimiento claro de cada equipo, presupuesto y pago." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => navigate('/reparaciones/nueva')}>Nueva reparación</Button>} />
+      <PageHeader eyebrow="GESTIÓN DE TALLER" title="Reparaciones" description="Seguimiento claro de cada ingreso, presupuesto y pago." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => openDrawer()}>Nueva reparación</Button>} />
       <Grid container spacing={1.5} mb={2.2}>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Total activas" value={String(count(repairStatuses.slice(0, 7)))} icon={<OpenInNewRounded />} /></Grid>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="En revisión" value={String(count(['review']))} icon={<SearchRounded />} tone="info" /></Grid>
@@ -76,6 +81,7 @@ export function RepairsPage() {
           </CardContent></Card>
         })}</Stack>
       )}
+      <NewRepairDrawer open={drawerOpen} initialClientId={initialClientId} onClose={closeDrawer} onCreated={repair => { closeDrawer(); void load(); navigate(`/admin/reparaciones/${repair.id}`) }}/>
     </Box>
   )
 }

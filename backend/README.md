@@ -1,6 +1,6 @@
-# CelluFix Backend
+# TecnoDesk Backend
 
-API de CelluFix con Node.js, Express, TypeScript, Prisma y PostgreSQL.
+API de TecnoDesk con Node.js, Express, TypeScript, Prisma y PostgreSQL.
 
 ## Configuración
 

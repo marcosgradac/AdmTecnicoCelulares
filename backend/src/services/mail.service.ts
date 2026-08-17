@@ -14,7 +14,7 @@ export const sendPasswordResetEmail = async (to: string, token: string) => {
   if (!configuredFrontendUrl && process.env.NODE_ENV === 'production') throw new Error('FRONTEND_URL es obligatorio en producción')
   const frontendUrl = (configuredFrontendUrl ?? 'http://localhost:5173').replace(/\/$/, '')
   const resetUrl = `${frontendUrl}/restablecer-contrasena?token=${encodeURIComponent(token)}`
-  const mail = { to, subject: 'Restablecé tu contraseña de CelluFix', resetUrl }
+  const mail = { to, subject: 'Restablecé tu contraseña de TecnoDesk', resetUrl }
 
   if ((process.env.MAIL_MODE ?? 'console') === 'fake') {
     fakeOutbox.push(mail)

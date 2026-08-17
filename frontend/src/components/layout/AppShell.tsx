@@ -1,20 +1,19 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppBar, Avatar, Badge, Box, Divider, Drawer, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AccountCircleRounded, AddRounded, AssessmentRounded, BuildRounded, DashboardRounded, DevicesRounded, GroupsRounded, Inventory2Rounded, KeyboardDoubleArrowLeftRounded, KeyboardDoubleArrowRightRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded } from '@mui/icons-material'
+import { AccountCircleRounded, AddRounded, AssessmentRounded, BuildRounded, DashboardRounded, GroupsRounded, KeyboardDoubleArrowLeftRounded, KeyboardDoubleArrowRightRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
 import styles from './AppShell.module.scss'
+import { BrandLogo } from '../brand/BrandLogo'
 
 const navItems: Array<{ label: string; path: string; icon: typeof DashboardRounded; permission?: Permission }> = [
   { label: 'Inicio', path: '/admin', icon: DashboardRounded },
   { label: 'Reparaciones', path: '/admin/reparaciones', icon: BuildRounded },
   { label: 'Clientes', path: '/admin/clientes', icon: PeopleRounded },
-  { label: 'Equipos', path: '/admin/equipos', icon: DevicesRounded },
-  { label: 'Stock', path: '/admin/stock', icon: Inventory2Rounded },
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash:manage' },
-  { label: 'Equipo', path: '/admin/equipo', icon: GroupsRounded, permission: 'team:manage' },
+  { label: 'Empleados', path: '/admin/empleados', icon: GroupsRounded, permission: 'team:manage' },
   { label: 'Estadísticas y reportes', path: '/admin/estadisticas', icon: AssessmentRounded, permission: 'reports:view' },
   { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded },
   { label: 'Configuración', path: '/admin/configuracion', icon: SettingsRounded },
@@ -37,9 +36,9 @@ export function AppShell() {
   const visibleNavItems = navItems.filter(item => !item.permission || canAccess(user, item.permission))
 
   const drawer = <Box className={`${styles.drawer} ${collapsed && !mobile ? styles.collapsed : ''}`}>
-    <Box className={styles.brand}><Box className={styles.logo}><BuildRounded /></Box><Box><Typography fontWeight={800}>CelluFix</Typography><Typography variant="caption" color="text.secondary">Gestión técnica</Typography></Box></Box>
+    <Box className={styles.brand}><BrandLogo compact className={styles.logo} /><Box><Typography fontWeight={800}>TecnoDesk</Typography><Typography variant="caption" color="text.secondary">Gestión técnica</Typography></Box></Box>
     <Typography className={styles.navLabel}>MENÚ PRINCIPAL</Typography>
-    <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => <ListItemButton key={path} selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton>)}</List>
+    <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => <Tooltip key={path} title={collapsed && !mobile ? label : ''} placement="right"><ListItemButton selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton></Tooltip>)}</List>
     <Box className={styles.bottom}>
       {!mobile && <ListItemButton onClick={() => setCollapsed(value => !value)}><ListItemIcon>{collapsed ? <KeyboardDoubleArrowRightRounded /> : <KeyboardDoubleArrowLeftRounded />}</ListItemIcon><ListItemText primary="Contraer menú" /></ListItemButton>}
       <ListItemButton onClick={logout}><ListItemIcon><LogoutRounded /></ListItemIcon><ListItemText primary="Cerrar sesión" /></ListItemButton>
@@ -52,7 +51,7 @@ export function AppShell() {
     <Drawer open={mobile && open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: 272 } }}>{drawer}</Drawer>
     <AppBar className={styles.header} position="fixed" color="inherit" elevation={0}><Toolbar>
       {mobile && <IconButton aria-label="Abrir menú" onClick={() => setOpen(true)}><MenuRounded /></IconButton>}
-      {mobile ? <Typography fontWeight={800} ml={1}>CelluFix</Typography> : <TextField placeholder="Buscar reparación, cliente o equipo…" aria-label="Búsqueda global" className={styles.search} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />}
+      {mobile ? <Box className={styles.mobileBrand}><BrandLogo compact /><Typography fontWeight={800}>TecnoDesk</Typography></Box> : <TextField placeholder="Buscar reparación, cliente o equipo…" aria-label="Búsqueda global" className={styles.search} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />}
       <Box flex={1} /><Tooltip title="Notificaciones"><IconButton aria-label="Notificaciones"><Badge variant="dot" color="error"><NotificationsNoneRounded /></Badge></IconButton></Tooltip>
       <Box className={styles.headerUser} role="button" tabIndex={0} aria-label="Abrir menú de cuenta" onClick={event => setAccountAnchor(event.currentTarget)} onKeyDown={event => { if (event.key === 'Enter') setAccountAnchor(event.currentTarget) }} sx={{ cursor: 'pointer' }}><Avatar>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name}</Typography></Box></Box>
     </Toolbar></AppBar>

@@ -18,6 +18,7 @@
     "test:password-reset": "tsx tests/password-reset.ts",
     "test:inventory": "tsx tests/inventory.ts",
     "test:reports": "tsx tests/reports.ts",
+    "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",

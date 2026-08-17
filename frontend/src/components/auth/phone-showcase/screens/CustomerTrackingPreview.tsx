@@ -1,6 +1,6 @@
 export function CustomerTrackingPreview() {
   return <div className="showcase-screen showcase-tracking">
-    <header><span>CelluFix · Seguimiento</span><b>Tu Galaxy A54</b><small>Reparación #1048 · Ingresó 24/07</small></header>
+    <header><span>TecnoDesk · Seguimiento</span><b>Tu Galaxy A54</b><small>Reparación #1048 · Ingresó 24/07</small></header>
     <div className="showcase-status"><i>4</i><span><small>Estado actual</small><b>En reparación</b></span></div>
     <div className="showcase-progress"><i /></div>
     <div className="showcase-track-labels"><span>Recepción</span><span>Reparación</span><span>Listo</span></div>

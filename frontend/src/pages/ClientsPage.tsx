@@ -15,6 +15,7 @@ export function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
+  const [created, setCreated] = useState<ClientRecord | null>(null)
   const [form, setForm] = useState({ name: '', phone: '' })
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -24,7 +25,7 @@ export function ClientsPage() {
   const filtered = useMemo(() => clients.filter(client => `${client.name} ${client.phone ?? ''}`.toLowerCase().includes(query.toLowerCase())), [clients, query])
   const pending = clients.reduce((sum, client) => sum + client.repairs.reduce((subtotal, repair) => subtotal + Math.max(0, repair.total - repair.paid), 0), 0)
   const save = async () => {
-    try { await createClient({ name: form.name, phone: form.phone || undefined }); setOpen(false); setForm({ name: '', phone: '' }); await load() }
+    try { const client = await createClient({ name: form.name, phone: form.phone || undefined }); setOpen(false); setCreated(client); setForm({ name: '', phone: '' }); await load() }
     catch { setError('No se pudo crear el cliente. El teléfono puede estar duplicado.') }
   }
   return <Box>
@@ -35,5 +36,6 @@ export function ClientsPage() {
       {loading ? <UiState loading/> : !filtered.length ? <UiState title={clients.length ? 'Sin resultados' : 'Todavía no hay clientes'} /> : <Stack divider={<Box borderTop="1px solid" borderColor="divider"/>}>{filtered.map(client => { const balance = client.repairs.reduce((sum, repair) => sum + Math.max(0, repair.total - repair.paid), 0); return <Stack key={client.id} direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={2} py={1.8}><Box flex={1}><Typography fontWeight={750}>{client.name}</Typography><Typography variant="body2" color="text.secondary">{client.phone || 'Sin teléfono'}</Typography></Box><Box minWidth={110}><Typography variant="caption" color="text.secondary">Reparaciones</Typography><Typography fontWeight={700}>{client.repairs.length}</Typography></Box><Box minWidth={130}><Typography variant="caption" color="text.secondary">Saldo pendiente</Typography><Typography fontWeight={700} color={balance ? 'error.main' : 'success.main'}>{formatMoney(balance)}</Typography></Box><Button endIcon={<ArrowForwardRounded />} onClick={() => navigate(`/clientes/${client.id}`)}>Ver historial</Button></Stack>})}</Stack>}
     </CardContent></Card>
     <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs"><DialogTitle>Nuevo cliente</DialogTitle><DialogContent><Stack spacing={2} mt={1}><TextField label="Nombre" required value={form.name} onChange={event => setForm(value => ({ ...value, name: event.target.value }))}/><TextField label="Teléfono" value={form.phone} onChange={event => setForm(value => ({ ...value, phone: event.target.value }))}/></Stack></DialogContent><DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" disabled={form.name.trim().length < 2} onClick={() => void save()}>Crear</Button></DialogActions></Dialog>
+    <Dialog open={Boolean(created)} onClose={() => setCreated(null)} fullWidth maxWidth="xs"><DialogTitle>Cliente creado correctamente</DialogTitle><DialogContent><Typography>¿Querés crear una reparación para este cliente?</Typography></DialogContent><DialogActions><Button onClick={() => setCreated(null)}>Ahora no</Button><Button variant="contained" onClick={() => { const id = created?.id; setCreated(null); if (id) navigate(`/admin/reparaciones?new=1&clientId=${encodeURIComponent(id)}`) }}>Crear reparación</Button></DialogActions></Dialog>
   </Box>
 }

@@ -1,6 +1,6 @@
 import type { AuthVisualVariant } from '../auth-visual.types'
 
-export type PhoneScreenKind = 'dashboard' | 'repair' | 'tracking' | 'stock' | 'security'
+export type PhoneScreenKind = 'dashboard' | 'repair' | 'tracking' | 'security'
 
 export interface PhoneScreenDefinition {
   id: string

@@ -47,7 +47,7 @@ export function TeamPage() {
         role: filters.role || undefined,
         isActive: filters.isActive === '' ? undefined : filters.isActive === 'true',
       }))
-    } catch (loadError) { setError(apiMessage(loadError, 'No pudimos cargar el equipo')) }
+    } catch (loadError) { setError(apiMessage(loadError, 'No pudimos cargar los empleados')) }
     finally { setLoading(false) }
   }
   useEffect(() => {
@@ -60,22 +60,22 @@ export function TeamPage() {
   const identity = (member: TeamMember) => <Stack direction="row" spacing={1.5} alignItems="center"><Avatar sx={{ bgcolor: member.isActive ? 'primary.main' : 'grey.400' }}>{initials(member.fullName)}</Avatar><Box><Typography fontWeight={800}>{member.fullName}</Typography><Typography variant="caption" color="text.secondary">{member.email}</Typography></Box></Stack>
 
   return <Box>
-    <PageHeader eyebrow="ADMINISTRACIÓN" title="Equipo" description="Administrá las personas que trabajan en tu negocio." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreateOpen(true)}>Agregar usuario</Button>} />
+    <PageHeader eyebrow="ADMINISTRACIÓN" title="Empleados" description="Administrá las personas que trabajan en tu negocio." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => setCreateOpen(true)}>Agregar empleado</Button>} />
     {notice && <Alert severity="success" onClose={() => setNotice('')} sx={{ mb: 2 }}>{notice}</Alert>}
     <Card sx={{ mb: 2 }}><CardContent><Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
       <TextField fullWidth placeholder="Buscar por nombre, email o teléfono" value={filters.search} onChange={event => setFilters(value => ({ ...value, search: event.target.value }))} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />
       <FormControl sx={{ minWidth: 180 }}><InputLabel>Rol</InputLabel><Select label="Rol" value={filters.role} onChange={event => setFilters(value => ({ ...value, role: event.target.value as '' | TeamRole }))}><MenuItem value="">Todos</MenuItem><MenuItem value="OWNER">Propietario</MenuItem><MenuItem value="TECHNICIAN">Técnico</MenuItem></Select></FormControl>
       <FormControl sx={{ minWidth: 180 }}><InputLabel>Estado</InputLabel><Select label="Estado" value={filters.isActive} onChange={event => setFilters(value => ({ ...value, isActive: event.target.value as '' | 'true' | 'false' }))}><MenuItem value="">Todos</MenuItem><MenuItem value="true">Activo</MenuItem><MenuItem value="false">Inactivo</MenuItem></Select></FormControl>
     </Stack></CardContent></Card>
-    {loading ? <UiState loading /> : error ? <UiState title="No pudimos cargar el equipo" description={error} action={() => void load()} /> : users.length === 0 ? <UiState title="No encontramos usuarios" description="Probá cambiar los filtros o agregá una persona." /> : mobile
+    {loading ? <UiState loading /> : error ? <UiState title="No pudimos cargar los empleados" description={error} action={() => void load()} /> : users.length === 0 ? <UiState title="No encontramos empleados" description="Probá cambiar los filtros o agregá una persona." /> : mobile
       ? <Stack spacing={1.5}>{users.map(member => <Card key={member.id}><CardContent><Stack direction="row" justifyContent="space-between">{identity(member)}{actions(member)}</Stack><Stack direction="row" gap={1} mt={2} flexWrap="wrap"><Chip size="small" label={roleLabel(member.role)} color={member.role === 'OWNER' ? 'primary' : 'default'} /><Chip size="small" label={member.isActive ? 'Activo' : 'Inactivo'} color={member.isActive ? 'success' : 'default'} /><Chip size="small" label={member.phone || 'Sin teléfono'} /></Stack><Typography variant="caption" color="text.secondary" display="block" mt={1.5}>Alta: {formatDate(member.createdAt)}</Typography></CardContent></Card>)}</Stack>
-      : <TableContainer component={Card}><Table><TableHead><TableRow><TableCell>Usuario</TableCell><TableCell>Email</TableCell><TableCell>Teléfono</TableCell><TableCell>Rol</TableCell><TableCell>Estado</TableCell><TableCell>Fecha de alta</TableCell><TableCell align="right">Acciones</TableCell></TableRow></TableHead><TableBody>{users.map(member => <TableRow key={member.id} hover><TableCell>{identity(member)}</TableCell><TableCell>{member.email}</TableCell><TableCell>{member.phone || '—'}</TableCell><TableCell><Chip size="small" label={roleLabel(member.role)} color={member.role === 'OWNER' ? 'primary' : 'default'} /></TableCell><TableCell><Chip size="small" label={member.isActive ? 'Activo' : 'Inactivo'} color={member.isActive ? 'success' : 'default'} /></TableCell><TableCell>{formatDate(member.createdAt)}</TableCell><TableCell align="right">{actions(member)}</TableCell></TableRow>)}</TableBody></Table></TableContainer>}
+      : <TableContainer component={Card}><Table><TableHead><TableRow><TableCell>Empleado</TableCell><TableCell>Email</TableCell><TableCell>Teléfono</TableCell><TableCell>Rol</TableCell><TableCell>Estado</TableCell><TableCell>Fecha de alta</TableCell><TableCell align="right">Acciones</TableCell></TableRow></TableHead><TableBody>{users.map(member => <TableRow key={member.id} hover><TableCell>{identity(member)}</TableCell><TableCell>{member.email}</TableCell><TableCell>{member.phone || '—'}</TableCell><TableCell><Chip size="small" label={roleLabel(member.role)} color={member.role === 'OWNER' ? 'primary' : 'default'} /></TableCell><TableCell><Chip size="small" label={member.isActive ? 'Activo' : 'Inactivo'} color={member.isActive ? 'success' : 'default'} /></TableCell><TableCell>{formatDate(member.createdAt)}</TableCell><TableCell align="right">{actions(member)}</TableCell></TableRow>)}</TableBody></Table></TableContainer>}
     <Menu anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(null)}>
       <MenuItem onClick={() => { setEditing(menu?.member ?? null); setMenu(null) }}><EditRounded fontSize="small" sx={{ mr: 1 }} />Editar</MenuItem>
       <MenuItem onClick={() => { setResetting(menu?.member ?? null); setMenu(null) }}><KeyRounded fontSize="small" sx={{ mr: 1 }} />Restablecer contraseña</MenuItem>
     </Menu>
-    <CreateMemberDialog open={createOpen} onClose={() => setCreateOpen(false)} onCompleted={() => completed('Usuario creado correctamente.')} />
-    <EditMemberDialog member={editing} onClose={() => setEditing(null)} onCompleted={() => completed('Usuario actualizado correctamente.')} />
+    <CreateMemberDialog open={createOpen} onClose={() => setCreateOpen(false)} onCompleted={() => completed('Empleado creado correctamente.')} />
+    <EditMemberDialog member={editing} onClose={() => setEditing(null)} onCompleted={() => completed('Empleado actualizado correctamente.')} />
     <ResetPasswordDialog member={resetting} onClose={() => setResetting(null)} onCompleted={() => completed('Contraseña restablecida correctamente.')} />
   </Box>
 }
@@ -99,14 +99,14 @@ function CreateMemberDialog({ open, onClose, onCompleted }: { open: boolean; onC
       const { repeatPassword: _repeat, ...input } = form
       await createTeamMember(input)
       close(); await onCompleted()
-    } catch (submitError) { setError(apiMessage(submitError, 'No pudimos crear el usuario')) }
+    } catch (submitError) { setError(apiMessage(submitError, 'No pudimos crear el empleado')) }
     finally { setSaving(false) }
   }
-  return <Dialog open={open} onClose={close} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Agregar usuario</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
+  return <Dialog open={open} onClose={close} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Agregar empleado</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
     {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack>
     <TextField required label="Email" type="email" value={form.email} onChange={e => setForm(value => ({ ...value, email: e.target.value }))} /><TextField label="Teléfono (opcional)" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl>
     <PasswordField label="Contraseña temporal" value={form.password} onChange={password => setForm(value => ({ ...value, password }))} show={show} toggle={() => setShow(value => !value)} error={Boolean(form.password) && !strong} helperText="Mínimo 8 caracteres, mayúscula, minúscula y número" /><PasswordField label="Repetir contraseña" value={form.repeatPassword} onChange={repeatPassword => setForm(value => ({ ...value, repeatPassword }))} show={show} toggle={() => setShow(value => !value)} error={Boolean(form.repeatPassword) && form.password !== form.repeatPassword} helperText={form.repeatPassword && form.password !== form.repeatPassword ? 'Las contraseñas no coinciden' : ''} />
-  </Stack></DialogContent><DialogActions><Button onClick={close}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !strong || form.password !== form.repeatPassword}>{saving ? 'Creando…' : 'Crear usuario'}</Button></DialogActions></Box></Dialog>
+  </Stack></DialogContent><DialogActions><Button onClick={close}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !strong || form.password !== form.repeatPassword}>{saving ? 'Creando…' : 'Crear empleado'}</Button></DialogActions></Box></Dialog>
 }
 
 function EditMemberDialog({ member, onClose, onCompleted }: { member: TeamMember | null; onClose: () => void; onCompleted: () => Promise<void> }) {
@@ -121,10 +121,10 @@ function EditMemberDialog({ member, onClose, onCompleted }: { member: TeamMember
     if (relevantChange && !window.confirm('¿Confirmás este cambio de rol o estado?')) return
     setSaving(true); setError('')
     try { await updateTeamMember(member.id, form); onClose(); await onCompleted() }
-    catch (submitError) { setError(apiMessage(submitError, 'No pudimos actualizar el usuario')) }
+    catch (submitError) { setError(apiMessage(submitError, 'No pudimos actualizar el empleado')) }
     finally { setSaving(false) }
   }
-  return <Dialog open={Boolean(member)} onClose={() => !saving && onClose()} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Editar usuario</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
+  return <Dialog open={Boolean(member)} onClose={() => !saving && onClose()} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Editar empleado</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
     {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack><TextField label="Teléfono" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl><FormControl><InputLabel>Estado</InputLabel><Select label="Estado" value={form.isActive ? 'active' : 'inactive'} onChange={e => setForm(value => ({ ...value, isActive: e.target.value === 'active' }))}><MenuItem value="active">Activo</MenuItem><MenuItem value="inactive">Inactivo</MenuItem></Select></FormControl>
   </Stack></DialogContent><DialogActions><Button onClick={onClose}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim()}>{saving ? 'Guardando…' : 'Guardar cambios'}</Button></DialogActions></Box></Dialog>
 }

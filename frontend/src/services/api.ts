@@ -3,7 +3,7 @@ import { env } from '../config/env'
 
 export const API_URL = env.apiUrl
 
-if (import.meta.env.DEV) console.info(`[CelluFix] API de desarrollo: ${new URL(API_URL).origin}`)
+if (import.meta.env.DEV) console.info(`[TecnoDesk] API de desarrollo: ${new URL(API_URL).origin}`)
 
 export const api = axios.create({
   baseURL: API_URL,

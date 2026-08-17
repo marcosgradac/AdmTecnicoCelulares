@@ -34,9 +34,7 @@ interface ApiRepair {
 }
 
 export interface CreateRepairInput {
-  clientId?: string
-  clientName: string
-  phone?: string
+  clientId: string
   deviceBrand: string
   deviceModel: string
   imei?: string
@@ -45,6 +43,8 @@ export interface CreateRepairInput {
   diagnosis?: string
   notes?: string
   total: number
+  estimatedDeliveryDate?: string
+  status?: RepairStatus
 }
 
 const statusFromApi: Record<ApiRepairStatus, RepairStatus> = {
@@ -116,7 +116,7 @@ export async function getTrackingRepair(token: string) {
 }
 
 export async function createRepair(input: CreateRepairInput) {
-  const response = await api.post<ApiRepair>('/repairs', input)
+  const response = await api.post<ApiRepair>('/repairs', { ...input, status: input.status ? statusToApi[input.status] : undefined })
   return mapRepair(response.data)
 }
 

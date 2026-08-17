@@ -16,7 +16,7 @@ async function main() {
     const business = await transaction.business.upsert({
       where: { id: DEMO_BUSINESS_ID },
       update: {},
-      create: { id: DEMO_BUSINESS_ID, name: 'CelluFix Demo', slug: 'cellufix-demo' }
+      create: { id: DEMO_BUSINESS_ID, name: 'TecnoDesk Demo', slug: 'cellufix-demo' }
     })
 
     await transaction.$executeRawUnsafe(`UPDATE Client SET businessId = '${DEMO_BUSINESS_ID}' WHERE businessId IS NULL`)

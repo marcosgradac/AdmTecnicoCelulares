@@ -37,7 +37,7 @@ export function LoginPage() {
     } finally { setSaving(false) }
   }
 
-  return <AuthLayout title="Bienvenido de nuevo" description="Ingresá a tu espacio de trabajo de CelluFix.">
+  return <AuthLayout title="Bienvenido de nuevo" description="Ingresá a tu espacio de trabajo de TecnoDesk.">
     {error && <Alert severity="error">{error}</Alert>}
     <Box component="form" onSubmit={submit} display="grid" gap={2}>
       <TextField required label="Email" type="email" autoComplete="email" inputMode="email" value={form.email}

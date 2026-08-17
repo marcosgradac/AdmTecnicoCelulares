@@ -8,7 +8,7 @@ export const phoneShowcaseConfig: PhoneShowcaseConfig = {
   ],
   register: [
     { id: 'dashboard', kind: 'dashboard', indicatorLabel: 'Panel' },
-    { id: 'stock', kind: 'stock', indicatorLabel: 'Stock' },
+    { id: 'tracking', kind: 'tracking', indicatorLabel: 'Seguimiento' },
     { id: 'repair', kind: 'repair', indicatorLabel: 'Órdenes' },
   ],
   'forgot-password': [
@@ -26,10 +26,4 @@ export const phoneShowcaseConfig: PhoneShowcaseConfig = {
 export const dashboardRepairs = [
   { number: '#1048', device: 'Galaxy A54', state: 'En reparación' },
   { number: '#1047', device: 'Moto G84', state: 'Listo' },
-]
-
-export const stockItems = [
-  { name: 'Módulos', quantity: 12 },
-  { name: 'Baterías', quantity: 8 },
-  { name: 'Conectores', quantity: 2, low: true },
 ]

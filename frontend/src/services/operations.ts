@@ -33,6 +33,7 @@ export interface DashboardSummary {
 export const getClients = async () => (await api.get<ClientRecord[]>('/clients')).data
 export const getClient = async (id: string) => (await api.get<ClientRecord>(`/clients/${id}`)).data
 export const createClient = async (input: { name: string; phone?: string }) => (await api.post<ClientRecord>('/clients', input)).data
+export const updateClient = async (id: string, input: { name: string; phone?: string | null }) => (await api.patch<ClientRecord>(`/clients/${id}`, input)).data
 export const getCashMovements = async () => (await api.get<CashMovement[]>('/cash/movements')).data
 export const createCashMovement = async (input: { type: 'INCOME' | 'EXPENSE'; description: string; amount: number; method?: CashMovement['method'] }) => (await api.post<CashMovement>('/cash/movements', input)).data
 export const getDashboardSummary = async () => (await api.get<DashboardSummary>('/dashboard/summary')).data

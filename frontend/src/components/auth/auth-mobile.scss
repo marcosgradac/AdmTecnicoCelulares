@@ -1,4 +1,5 @@
 .auth-back-link{display:inline-block;margin-bottom:20px;color:#5b3fd6;font-size:13px;font-weight:750}
+.auth-mobile-logo{width:42px;height:42px;object-fit:contain}.auth-fallback-logo{width:72px;height:72px;object-fit:contain}
 @media(max-width:767px){
   .auth-page{display:block!important;min-height:100dvh!important;overflow-x:hidden;color:#fff;background:radial-gradient(circle at 80% 15%,#459dff59,transparent 35%),radial-gradient(circle at 10% 80%,#7b49ff66,transparent 40%),linear-gradient(145deg,#3023ae 0%,#326fd5 55%,#3198df 100%)!important}
   .auth-page:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(#ffffff0b 1px,transparent 1px),linear-gradient(90deg,#ffffff0b 1px,transparent 1px);background-size:40px 40px}

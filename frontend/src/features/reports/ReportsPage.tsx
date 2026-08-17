@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Box, Card, CardContent, Chip, Grid, Stack, Typography } from '@mui/material'
-import { AccountBalanceWalletRounded, BuildRounded, Inventory2Rounded, PaidRounded, PeopleRounded, PriceCheckRounded, SavingsRounded, TrendingUpRounded } from '@mui/icons-material'
+import { AccountBalanceWalletRounded, BuildRounded, PaidRounded, PeopleRounded, PriceCheckRounded, TrendingUpRounded } from '@mui/icons-material'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../../components/common/PageHeader'
 import { StatCard } from '../../components/common/StatCard'
@@ -43,25 +43,23 @@ export function ReportsPage() {
     {loading && !data ? <ReportsSkeleton/> : error && !data ? <Card><UiState title="No pudimos cargar los reportes" description="Revisá la conexión e intentá nuevamente." action={() => void load()}/></Card> : data && <>
       {error && <Alert severity="warning" action={<Chip label="Reintentar" onClick={() => void load()}/>}>No se pudo actualizar el reporte. Se muestran los últimos datos disponibles.</Alert>}
       <Typography variant="body2" color="text.secondary" mb={2}>Período UTC: {formatDate(data.period.from)} al {formatDate(data.period.to)}</Typography>
-      {!activity && <Alert severity="info" sx={{ mb: 2 }}>No hubo reparaciones, pagos ni egresos en este período. El inventario se muestra como foto actual.</Alert>}
+      {!activity && <Alert severity="info" sx={{ mb: 2 }}>No hubo reparaciones, pagos ni egresos en este período.</Alert>}
       <Grid container spacing={1.5}>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Cobrado" value={formatMoney(data.summary.collected)} icon={<PaidRounded/>} tone="success"/></Grid>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Por cobrar" value={formatMoney(data.summary.receivable)} icon={<AccountBalanceWalletRounded/>} tone="warning"/></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Ganancia estimada" value={formatMoney(data.summary.estimatedProfit)} helper={`Margen ${percentage(data.summary.estimatedMargin)}`} icon={<SavingsRounded/>}/></Grid>
+        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Facturación generada" value={formatMoney(data.finance.billed)} icon={<TrendingUpRounded/>}/></Grid>
+        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Gastos" value={formatMoney(data.finance.expenses)} icon={<AccountBalanceWalletRounded/>} tone="warning"/></Grid>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Ticket promedio" value={formatMoney(data.summary.averageTicket)} icon={<PriceCheckRounded/>} tone="info"/></Grid>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Ingresadas" value={String(data.summary.repairsIncoming)} icon={<BuildRounded/>}/></Grid>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Entregadas" value={String(data.summary.repairsDelivered)} icon={<TrendingUpRounded/>} tone="success"/></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Repuestos" value={formatMoney(data.summary.partsCost)} icon={<Inventory2Rounded/>} tone="warning"/></Grid>
         <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Clientes nuevos" value={String(data.summary.newClients)} helper={`${data.summary.recurrentClients} recurrentes`} icon={<PeopleRounded/>} tone="info"/></Grid>
       </Grid>
 
-      <Section title="Finanzas" description="Facturación y rentabilidad estimada; no reemplaza un estado contable."><Grid container spacing={2}>
+      <Section title="Finanzas" description="Facturación, cobros, saldos y gastos registrados en TecnoDesk."><Grid container spacing={2}>
         <Grid size={{ xs: 12, lg: 8 }}><Card><CardContent><Typography variant="h3" mb={2}>Evolución del período</Typography>{data.finance.timeline.length ? <FinanceLineChart data={data.finance.timeline}/> : <UiState title="Sin movimientos financieros"/>}</CardContent></Card></Grid>
         <Grid size={{ xs: 12, lg: 4 }}><Card sx={{ height: '100%' }}><CardContent><Typography variant="h3" mb={1.5}>Resumen financiero</Typography><Box className="reports-list">
           {[['Facturación generada', formatMoney(data.finance.billed)], ['Cobrado', formatMoney(data.finance.collected)], ['Pendiente', formatMoney(data.finance.outstanding)], ['Egresos', formatMoney(data.finance.expenses)], ['Mano de obra', formatMoney(data.finance.laborCost)], ['Pagos completos', String(data.finance.fullyPaid)], ['Pagos parciales', String(data.finance.partiallyPaid)]].map(([label, value]) => <Box className="reports-list__row" key={label}><span>{label}</span><strong>{value}</strong></Box>)}
         </Box></CardContent></Card></Grid>
-        <Grid size={{ xs: 12, md: 6 }}><ListCard title="Reparaciones más rentables" rows={data.finance.mostProfitable.map(item => ({ label: item.label, value: item.profit }))} value={row => formatMoney(row.value)}/></Grid>
-        <Grid size={{ xs: 12, md: 6 }}><ListCard title="Menor margen estimado" rows={data.finance.lowestMargin.map(item => ({ label: item.label, value: item.margin }))} value={row => percentage(row.value)}/></Grid>
         <Grid size={{ xs: 12 }}><ListCard title="Cobros por medio de pago" rows={data.finance.paymentMethods.filter(item => item.value > 0)} value={row => formatMoney(row.value)}/></Grid>
       </Grid></Section>
 
@@ -72,11 +70,6 @@ export function ReportsPage() {
         <Grid size={{ xs: 12, md: 6 }}><ListCard title="Servicios más realizados" rows={data.repairs.topServices}/></Grid><Grid size={{ xs: 12, md: 6 }}><Card><CardContent><Typography variant="h3" mb={2}>Ingresos de reparaciones por fecha</Typography>{data.repairs.timeline.length ? <CountBarChart data={data.repairs.timeline}/> : <UiState title="Sin reparaciones en el período"/>}</CardContent></Card></Grid>
       </Grid></Section>
 
-      <Section title="Inventario" description="El valor y alertas son una foto actual; movimientos y consumo respetan el período."><Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 4 }}><ListCard title="Resumen" rows={[{ label: 'Valor actual', value: data.inventory.value }, { label: 'Costo consumido', value: data.inventory.consumedCost }, { label: 'Stock bajo', value: data.inventory.lowStock }, { label: 'Sin stock', value: data.inventory.outOfStock }, { label: 'Entradas', value: data.inventory.entries }, { label: 'Salidas', value: data.inventory.exits }, { label: 'Ajustes', value: data.inventory.adjustments }]} value={row => ['Valor actual', 'Costo consumido'].includes(row.label) ? formatMoney(row.value) : String(row.value)}/></Grid>
-        <Grid size={{ xs: 12, md: 4 }}><ListCard title="Repuestos más usados" rows={data.inventory.mostUsed}/></Grid><Grid size={{ xs: 12, md: 4 }}><ListCard title="Repuestos menos usados" rows={data.inventory.leastUsed}/></Grid>
-        <Grid size={{ xs: 12 }}><Card><CardContent><Typography variant="h3" mb={1.5}>Movimientos recientes</Typography>{data.inventory.recentMovements.length ? <Box className="reports-list">{data.inventory.recentMovements.map(movement => <Box className="reports-list__row" key={movement.id}><span className="reports-list__label">{movement.stockItem.name} · {movement.type.replaceAll('_', ' ').toLowerCase()}</span><strong>{movement.quantity} u.</strong></Box>)}</Box> : <UiState title="Sin movimientos en el período"/>}</CardContent></Card></Grid>
-      </Grid></Section>
 
       <Section title="Clientes"><Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 4 }}><ClientCard title="Más reparaciones" rows={data.clients.topByRepairs} metric={row => String(row.repairs)}/></Grid><Grid size={{ xs: 12, md: 4 }}><ClientCard title="Mayor facturación" rows={data.clients.topByBilled} metric={row => formatMoney(row.billed)}/></Grid><Grid size={{ xs: 12, md: 4 }}><ClientCard title="Mayor saldo pendiente" rows={data.clients.topOutstanding} metric={row => formatMoney(row.outstanding)}/></Grid>

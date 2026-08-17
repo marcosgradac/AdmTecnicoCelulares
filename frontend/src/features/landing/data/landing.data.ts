@@ -2,7 +2,7 @@ import { BuildRounded, DevicesRounded, HistoryRounded, LinkRounded, PaymentsRoun
 
 export const features = [
   { icon: BuildRounded, title: 'Reparaciones organizadas', text: 'Registrá cada equipo, la falla informada, el diagnóstico, el presupuesto y el estado actual.' },
-  { icon: DevicesRounded, title: 'Clientes y equipos', text: 'Consultá el historial de reparaciones de cada cliente y de cada celular.' },
+  { icon: DevicesRounded, title: 'Clientes y reparaciones', text: 'Consultá los datos y el historial completo de reparaciones de cada cliente.' },
   { icon: HistoryRounded, title: 'Estados e historial', text: 'Guardá cada cambio desde que recibís el equipo hasta que lo entregás.' },
   { icon: PaymentsRounded, title: 'Presupuestos y pagos', text: 'Registrá el valor, señas, pagos realizados y saldo pendiente.' },
   { icon: LinkRounded, title: 'Seguimiento mediante enlace', text: 'Compartí un enlace para que el cliente consulte cómo avanza su reparación.' },
@@ -15,7 +15,7 @@ export const workflow = [
   ['04','Actualizás y entregás','El cliente ve el progreso hasta que el equipo está listo para retirar.'],
 ]
 export const faqs = [
-  ['¿Necesito tener un local?','No. CelluFix también está pensado para técnicos que trabajan desde su casa o de manera independiente.'],
+  ['¿Necesito tener un local?','No. TecnoDesk también está pensado para técnicos que trabajan desde su casa o de manera independiente.'],
   ['¿El cliente necesita crear una cuenta?','No. Recibe un enlace y consulta el seguimiento sin iniciar sesión.'],
   ['¿Puedo usarlo desde mi celular?','Sí. La interfaz está diseñada para funcionar correctamente desde dispositivos móviles.'],
   ['¿Puedo registrar pagos parciales?','Sí. Podés registrar señas, distintos pagos y consultar el saldo pendiente.'],

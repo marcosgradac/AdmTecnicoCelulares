@@ -230,10 +230,10 @@ app.get('/api/repairs/:id', async (req, res) => {
 })
 
 const createRepairSchema = z.object({
-  clientId: z.string().min(1).optional(), clientName: z.string().trim().min(2), phone: z.string().optional(),
+  clientId: z.string().min(1),
   deviceBrand: z.string().trim().min(1), deviceModel: z.string().trim().min(1), imei: z.string().optional(),
   color: z.string().optional(), issue: z.string().trim().min(2), diagnosis: z.string().optional(),
-  notes: z.string().optional(), total: z.number().int().nonnegative().default(0)
+  notes: z.string().optional(), total: z.number().int().nonnegative().default(0), estimatedDeliveryDate: z.coerce.date().optional(), status: z.nativeEnum(RepairStatus).default(RepairStatus.RECEIVED)
 })
 app.post('/api/repairs', async (req, res) => {
   const parsed = createRepairSchema.safeParse(req.body)
@@ -241,15 +241,12 @@ app.post('/api/repairs', async (req, res) => {
   const businessId = authOf(req).businessId
   try {
     const data = parsed.data
-    const normalizedPhone = data.phone?.replace(/\D/g, '')
-    const selected = data.clientId ? await prisma.client.findFirst({ where: { id: data.clientId, businessId } }) : null
-    if (data.clientId && !selected) return res.status(400).json({ success: false, message: 'El cliente seleccionado no existe' })
-    const existing = selected ?? (normalizedPhone ? await prisma.client.findFirst({ where: { businessId, phone: normalizedPhone } }) : null)
+    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } })
+    if (!client) return res.status(404).json({ success: false, message: 'El cliente seleccionado no existe' })
     const repair = await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
-      const client = existing ?? await tx.client.create({ data: { businessId, name: data.clientName, phone: normalizedPhone } })
       const last = await tx.repair.findFirst({ where: { businessId }, orderBy: { number: 'desc' } })
-      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei, color: data.color, issue: data.issue, diagnosis: data.diagnosis, notes: data.notes, total: data.total, trackingToken: randomBytes(32).toString('hex'), trackingEnabled: true }, include: includeRepair })
+      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: randomBytes(32).toString('hex'), trackingEnabled: true }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.status(201).json(repair)
   } catch { return res.status(500).json({ success: false, message: 'Error creando reparación' }) }
@@ -303,6 +300,16 @@ app.post('/api/clients', async (req, res) => {
   const phone = parsed.data.phone?.replace(/\D/g, '')
   if (phone && await prisma.client.findFirst({ where: { businessId, phone } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
   return res.status(201).json(await prisma.client.create({ data: { businessId, name: parsed.data.name, phone } }))
+})
+app.patch('/api/clients/:id', async (req, res) => {
+  const parsed = z.object({ name: z.string().trim().min(2).max(120), phone: z.string().min(6).optional().nullable() }).safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
+  const businessId = authOf(req).businessId
+  const current = await prisma.client.findFirst({ where: { id: req.params.id, businessId } })
+  if (!current) return res.status(404).json({ success: false, message: 'Cliente no encontrado' })
+  const phone = parsed.data.phone?.replace(/\D/g, '') || null
+  if (phone && await prisma.client.findFirst({ where: { businessId, phone, NOT: { id: current.id } } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
+  return res.json(await prisma.client.update({ where: { id: current.id }, data: { name: parsed.data.name, phone } }))
 })
 
 app.post('/api/repairs/:id/payments', requireRole('OWNER'), async (req, res) => {
@@ -423,6 +430,6 @@ app.get('/api/dashboard/summary', async (req, res) => {
 
 const port = Number(process.env.PORT ?? 3000)
 export const startServer = () => app.listen(port, '0.0.0.0', () => {
-  console.log(`CelluFix API iniciada en el puerto ${port} (${process.env.NODE_ENV ?? 'development'})`)
+  console.log(`TecnoDesk API iniciada en el puerto ${port} (${process.env.NODE_ENV ?? 'development'})`)
 })
 if (require.main === module) startServer()

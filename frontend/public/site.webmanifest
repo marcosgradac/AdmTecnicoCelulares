@@ -1,0 +1,10 @@
+{
+  "name": "TecnoDesk",
+  "short_name": "TecnoDesk",
+  "description": "Gestión técnica para servicios de reparación de dispositivos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#075CFF",
+  "icons": [{ "src": "/tecnodesk-mark.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }]
+}
