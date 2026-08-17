@@ -26,23 +26,31 @@ enum UserRole {
   TECHNICIAN
 }
 
+enum WarrantyClaimStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
 model Business {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String?        @unique
-  phone         String?
-  address       String?
-  logoUrl       String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  users         User[]
-  clients       Client[]
-  repairs       Repair[]
-  stockItems    StockItem[]
-  cashMovements CashMovement[]
-  payments      Payment[]
-  devices       Device[]
+  id                 String              @id @default(cuid())
+  name               String
+  slug               String?             @unique
+  phone              String?
+  address            String?
+  logoUrl            String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  users              User[]
+  clients            Client[]
+  repairs            Repair[]
+  stockItems         StockItem[]
+  cashMovements      CashMovement[]
+  payments           Payment[]
+  devices            Device[]
   inventoryMovements InventoryMovement[]
+  warrantyClaims     WarrantyClaim[]
 }
 
 model User {
@@ -143,6 +151,12 @@ model Repair {
   trackingToken         String?               @unique
   trackingEnabled       Boolean               @default(false)
   deliveredAt           DateTime?
+  warrantyEnabled       Boolean               @default(false)
+  warrantyDurationDays  Int?
+  warrantyStartedAt     DateTime?
+  warrantyExpiresAt     DateTime?
+  warrantyConditions    String?
+  warrantyDeletedAt     DateTime?
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
   client                Client                @relation(fields: [clientId], references: [id])
@@ -153,9 +167,27 @@ model Repair {
   statusHistory         RepairStatusHistory[]
   photos                RepairPhoto[]
   inventoryMovements    InventoryMovement[]
+  warrantyClaims        WarrantyClaim[]
 
   @@unique([businessId, number])
   @@index([businessId])
+}
+
+model WarrantyClaim {
+  id          String              @id @default(cuid())
+  businessId  String
+  repairId    String
+  description String
+  status      WarrantyClaimStatus @default(OPEN)
+  resolution  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  resolvedAt  DateTime?
+  business    Business            @relation(fields: [businessId], references: [id])
+  repair      Repair              @relation(fields: [repairId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, status])
+  @@index([repairId, createdAt])
 }
 
 model RepairStatusHistory {
@@ -209,30 +241,30 @@ model Payment {
 }
 
 model StockItem {
-  id              String       @id @default(cuid())
-  businessId      String
-  name            String
-  sku             String?
-  category        String
-  compatibleBrand String?
-  compatibleModel String?
-  compatibleModels String[]     @default([])
-  quality         String?
-  supplier        String?
-  notes           String?
-  quantity        Int          @default(0)
-  minimumStock    Int          @default(0)
-  cost            Int          @default(0)
-  salePrice       Int          @default(0)
-  active          Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  repairParts     RepairPart[]
-  movements       InventoryMovement[]
-  business        Business     @relation(fields: [businessId], references: [id])
+  id               String              @id @default(cuid())
+  businessId       String
+  name             String
+  sku              String?
+  category         String
+  compatibleBrand  String?
+  compatibleModel  String?
+  compatibleModels String[]            @default([])
+  quality          String?
+  supplier         String?
+  notes            String?
+  quantity         Int                 @default(0)
+  minimumStock     Int                 @default(0)
+  cost             Int                 @default(0)
+  salePrice        Int                 @default(0)
+  active           Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  repairParts      RepairPart[]
+  movements        InventoryMovement[]
+  business         Business            @relation(fields: [businessId], references: [id])
 
-  @@index([businessId])
   @@unique([businessId, sku])
+  @@index([businessId])
 }
 
 model RepairPart {
@@ -265,23 +297,23 @@ enum InventoryMovementType {
 }
 
 model InventoryMovement {
-  id                String                @id @default(cuid())
-  businessId        String
-  stockItemId       String
-  repairId          String?
-  type              InventoryMovementType
-  quantity          Int
-  unitCost          Int
-  totalCost         Int
-  previousStock     Int
-  newStock          Int
-  notes             String?
-  createdByUserId   String
-  createdAt         DateTime              @default(now())
-  business          Business              @relation(fields: [businessId], references: [id])
-  stockItem         StockItem             @relation(fields: [stockItemId], references: [id])
-  repair            Repair?               @relation(fields: [repairId], references: [id])
-  createdBy         User                  @relation(fields: [createdByUserId], references: [id])
+  id              String                @id @default(cuid())
+  businessId      String
+  stockItemId     String
+  repairId        String?
+  type            InventoryMovementType
+  quantity        Int
+  unitCost        Int
+  totalCost       Int
+  previousStock   Int
+  newStock        Int
+  notes           String?
+  createdByUserId String
+  createdAt       DateTime              @default(now())
+  business        Business              @relation(fields: [businessId], references: [id])
+  stockItem       StockItem             @relation(fields: [stockItemId], references: [id])
+  repair          Repair?               @relation(fields: [repairId], references: [id])
+  createdBy       User                  @relation(fields: [createdByUserId], references: [id])
 
   @@index([businessId, createdAt])
   @@index([stockItemId, createdAt])

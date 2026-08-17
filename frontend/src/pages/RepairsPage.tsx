@@ -1,87 +1,39 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Box, Button, Card, CardContent, Chip, Grid, IconButton, InputAdornment, LinearProgress, Stack, TextField, Tooltip, Typography } from '@mui/material'
-import { AddRounded, ContentCopyRounded, OpenInNewRounded, SearchRounded, WhatsApp } from '@mui/icons-material'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import type { Repair, RepairStatus } from '../types'
-import { getRepairs } from '../services/repairs'
-import { repairStatusConfig, repairStatuses } from '../config/repairStatus'
-import { formatDate, formatMoney } from '../utils/format'
+import { AddRounded, ChatRounded, ContentCopyRounded, EditRounded, OpenInNewRounded, PaidRounded, PersonRounded, SearchRounded, SwapHorizRounded } from '@mui/icons-material'
+import { Box, Button, Card, CardContent, InputAdornment, MenuItem, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
+import { useAuth } from '../auth/AuthContext'
+import { canAccess } from '../auth/permissions'
+import { RowActionsMenu } from '../components/common/RowActionsMenu'
 import { PageHeader } from '../components/common/PageHeader'
 import { StatusChip } from '../components/common/StatusChip'
-import { StatCard } from '../components/common/StatCard'
+import { TableSkeleton } from '../components/common/TableSkeleton'
 import { UiState } from '../components/common/UiState'
+import { EditRepairDrawer } from '../components/repairs/EditRepairDrawer'
 import { NewRepairDrawer } from '../components/repairs/NewRepairDrawer'
+import { RepairPaymentDialog } from '../components/repairs/RepairPaymentDialog'
+import { RepairStatusDialog } from '../components/repairs/RepairStatusDialog'
+import { repairStatusConfig, repairStatuses } from '../config/repairStatus'
+import { getRepairsPage } from '../services/repairs'
+import type { Repair, RepairStatus } from '../types'
+import { formatDate, formatMoney } from '../utils/format'
 
 export function RepairsPage() {
-  const navigate = useNavigate()
-  const [repairs, setRepairs] = useState<Repair[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [query, setQuery] = useState('')
-  const [searchParams, setSearchParams] = useSearchParams()
-  const statusParam = searchParams.get('status') as RepairStatus | null
-  const drawerOpen = searchParams.get('new') === '1'
-  const initialClientId = searchParams.get('clientId') ?? undefined
-  const openDrawer = (clientId?: string) => { const next = new URLSearchParams(searchParams); next.set('new', '1'); if (clientId) next.set('clientId', clientId); setSearchParams(next) }
-  const closeDrawer = () => { const next = new URLSearchParams(searchParams); next.delete('new'); next.delete('clientId'); setSearchParams(next) }
-  const filter: RepairStatus | 'all' = statusParam && repairStatuses.includes(statusParam) ? statusParam : 'all'
-  const setFilter = (status: RepairStatus | 'all') => setSearchParams(status === 'all' ? {} : { status })
-  const load = useCallback(async () => {
-    setLoading(true); setError(false)
-    try {
-      setRepairs(await getRepairs())
-    } catch { setError(true) } finally { setLoading(false) }
-  }, [])
-  useEffect(() => { void load() }, [load])
-  const filtered = useMemo(() => repairs.filter(repair => {
-    const matchesFilter = filter === 'all' || repair.status === filter
-    const text = `${repair.id} ${repair.clientName} ${repair.device} ${repair.issue}`.toLowerCase()
-    return matchesFilter && text.includes(query.trim().toLowerCase())
-  }), [repairs, filter, query])
-  const count = (statuses: RepairStatus[]) => repairs.filter(repair => statuses.includes(repair.status)).length
-  return (
-    <Box>
-      <PageHeader eyebrow="GESTIÓN DE TALLER" title="Reparaciones" description="Seguimiento claro de cada ingreso, presupuesto y pago." action={<Button variant="contained" startIcon={<AddRounded />} onClick={() => openDrawer()}>Nueva reparación</Button>} />
-      <Grid container spacing={1.5} mb={2.2}>
-        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Total activas" value={String(count(repairStatuses.slice(0, 7)))} icon={<OpenInNewRounded />} /></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="En revisión" value={String(count(['review']))} icon={<SearchRounded />} tone="info" /></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="En reparación" value={String(count(['repairing']))} icon={<OpenInNewRounded />} tone="warning" /></Grid>
-        <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Listas para retirar" value={String(count(['ready']))} icon={<OpenInNewRounded />} tone="success" /></Grid>
-      </Grid>
-      <Card sx={{ mb: 2.2 }}><CardContent>
-        <TextField fullWidth value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por número, cliente, equipo o problema" InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />
-        <Stack direction="row" gap={1} mt={2} sx={{ overflowX: 'auto', pb: 0.5 }}>
-          <Chip clickable label="Todas" onClick={() => setFilter('all')} color={filter === 'all' ? 'primary' : 'default'} />
-          {repairStatuses.map(status => <Chip clickable key={status} label={repairStatusConfig[status].label} onClick={() => setFilter(status)} sx={filter === status ? { color: '#fff', bgcolor: repairStatusConfig[status].color } : { flexShrink: 0 }} />)}
-        </Stack>
-      </CardContent></Card>
-      {loading ? <Card><UiState loading /></Card> : error ? <Card><UiState title="No pudimos cargar las reparaciones" description="Revisá la conexión con el servidor e intentá nuevamente." action={() => void load()} /></Card> : !filtered.length ? <Card><UiState title={repairs.length ? 'No encontramos resultados' : 'Todavía no hay reparaciones'} description={repairs.length ? 'Probá con otra búsqueda o filtro.' : 'Creá la primera reparación para comenzar.'} /></Card> : (
-        <Stack spacing={1.5}>{filtered.map(repair => {
-          const pending = Math.max(0, repair.total - repair.paid)
-          const tracking = `${window.location.origin}/seguimiento/${repair.trackingToken}`
-          return <Card key={repair.id}><CardContent>
-            <Stack direction={{ xs: 'column', md: 'row' }} gap={2.5} alignItems={{ md: 'center' }}>
-              <Box flex={1} minWidth={0}>
-                <Stack direction="row" alignItems="center" gap={1} mb={0.7}><Typography variant="caption" color="primary.main" fontWeight={800}>REPARACIÓN #{repair.number}</Typography><StatusChip status={repair.status} /></Stack>
-                <Typography variant="h2">{repair.device}</Typography><Typography variant="body2" color="text.secondary">{repair.clientName} · {repair.issue}</Typography>
-                <Typography variant="caption" color="text.secondary">Ingreso: {formatDate(repair.createdAt)} · Última actualización: hoy</Typography>
-                <LinearProgress variant="determinate" value={repairStatusConfig[repair.status].progress} sx={{ mt: 1.5, maxWidth: 420, height: 6, borderRadius: 6, bgcolor: '#EEF0F4', '& .MuiLinearProgress-bar': { bgcolor: repairStatusConfig[repair.status].color } }} />
-              </Box>
-              <Grid container spacing={1.5} minWidth={{ md: 360 }} flex={{ md: '0 0 auto' }}>
-                <Grid size={4}><Typography variant="caption" color="text.secondary">Total</Typography><Typography fontWeight={750}>{formatMoney(repair.total)}</Typography></Grid>
-                <Grid size={4}><Typography variant="caption" color="text.secondary">Pagado</Typography><Typography fontWeight={750} color="success.main">{formatMoney(repair.paid)}</Typography></Grid>
-                <Grid size={4}><Typography variant="caption" color="text.secondary">Saldo</Typography><Typography fontWeight={800} color={pending ? 'error.main' : 'success.main'}>{formatMoney(pending)}</Typography></Grid>
-              </Grid>
-              <Stack direction="row" gap={1}>
-                <Tooltip title="Copiar seguimiento"><IconButton aria-label={`Copiar seguimiento de la reparación ${repair.id}`} onClick={() => void navigator.clipboard?.writeText(tracking)}><ContentCopyRounded /></IconButton></Tooltip>
-                {repair.phone && <Tooltip title="WhatsApp"><IconButton aria-label={`Contactar a ${repair.clientName} por WhatsApp`} component="a" target="_blank" href={`https://wa.me/${repair.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${repair.clientName}, podés seguir tu reparación acá: ${tracking}`)}`}><WhatsApp /></IconButton></Tooltip>}
-                <Button variant="outlined" onClick={() => navigate(`/reparaciones/${repair.id}`)}>Ver reparación</Button>
-              </Stack>
-            </Stack>
-          </CardContent></Card>
-        })}</Stack>
-      )}
-      <NewRepairDrawer open={drawerOpen} initialClientId={initialClientId} onClose={closeDrawer} onCreated={repair => { closeDrawer(); void load(); navigate(`/admin/reparaciones/${repair.id}`) }}/>
-    </Box>
-  )
+  const navigate = useNavigate(), [params, setParams] = useSearchParams(), { user } = useAuth()
+  const [items, setItems] = useState<Repair[]>([]), [total, setTotal] = useState(0), [page, setPage] = useState(0)
+  const [query, setQuery] = useState(''), [search, setSearch] = useState(''), [status, setStatus] = useState<RepairStatus | ''>((params.get('status') as RepairStatus) || ''), [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<Repair>(), [changingStatus, setChangingStatus] = useState<Repair>(), [paying, setPaying] = useState<Repair>()
+  const drawerOpen = params.get('new') === '1', initialClientId = params.get('clientId') ?? undefined
+  useEffect(() => { const timer = setTimeout(() => { setPage(0); setSearch(query.trim()) }, 350); return () => clearTimeout(timer) }, [query])
+  useEffect(() => { let active = true; setLoading(true); void getRepairsPage({ page: page + 1, pageSize: 10, search, status: status || undefined }).then(data => { if (active) { setItems(data.items); setTotal(data.total) } }).finally(() => { if (active) setLoading(false) }); return () => { active = false } }, [page, search, status])
+  const reload = async () => { const data = await getRepairsPage({ page: page + 1, pageSize: 10, search, status: status || undefined }); if (page > 0 && !data.items.length && data.total > 0) setPage(page - 1); else { setItems(data.items); setTotal(data.total) } }
+  const openDrawer = () => { const next = new URLSearchParams(params); next.set('new', '1'); setParams(next) }
+  const closeDrawer = () => { const next = new URLSearchParams(params); next.delete('new'); next.delete('clientId'); setParams(next) }
+  return <Box><PageHeader eyebrow="GESTIÓN DE TALLER" title="Reparaciones" description="Seguimiento claro de cada ingreso, presupuesto y pago." action={<Button variant="contained" startIcon={<AddRounded/>} onClick={openDrawer}>Nueva reparación</Button>}/><Card><CardContent>
+    <Stack direction={{xs:'column',md:'row'}} gap={1.5} mb={2}><TextField fullWidth value={query} onChange={event=>setQuery(event.target.value)} placeholder="Cliente, teléfono, marca, modelo, orden o IMEI" InputProps={{startAdornment:<InputAdornment position="start"><SearchRounded/></InputAdornment>}}/><TextField select label="Estado" value={status} onChange={event=>{setPage(0);setStatus(event.target.value as RepairStatus|'')}} sx={{minWidth:{md:220}}}><MenuItem value="">Todos los estados</MenuItem>{repairStatuses.map(value=><MenuItem value={value} key={value}>{repairStatusConfig[value].label}</MenuItem>)}</TextField></Stack>
+    <TableContainer><Table sx={{minWidth:{xs:0,sm:720}}}><TableHead><TableRow><TableCell sx={{display:{xs:'none',sm:'table-cell'}}}>Orden</TableCell><TableCell>Cliente</TableCell><TableCell>Dispositivo</TableCell><TableCell sx={{display:{xs:'none',lg:'table-cell'}}}>Falla</TableCell><TableCell>Estado</TableCell><TableCell sx={{display:{xs:'none',md:'table-cell'}}}>Importe</TableCell><TableCell sx={{display:{xs:'none',lg:'table-cell'}}}>Ingreso</TableCell><TableCell sx={{display:{xs:'none',lg:'table-cell'}}}>Entrega estimada</TableCell><TableCell align="right">Acciones</TableCell></TableRow></TableHead>
+    {loading?<TableSkeleton columns={9}/>:<TableBody>{items.map(repair=>{const tracking=`${window.location.origin}/seguimiento/${repair.trackingToken}`,whatsapp=repair.phone?`https://wa.me/${repair.phone.replace(/\D/g,'')}?text=${encodeURIComponent(`Hola ${repair.clientName}, podés seguir el estado de la reparación de tu ${repair.device} desde este enlace: ${tracking}`)}`:'';return <TableRow hover key={repair.id} onClick={()=>navigate(`/admin/reparaciones/${repair.id}`)} sx={{cursor:'pointer'}}><TableCell sx={{display:{xs:'none',sm:'table-cell'}}}><Typography fontWeight={800}>#{repair.number}</Typography></TableCell><TableCell><Typography fontWeight={700}>{repair.clientName}</Typography></TableCell><TableCell>{repair.device}</TableCell><TableCell sx={{display:{xs:'none',lg:'table-cell'},maxWidth:220}}><Tooltip title={repair.issue}><Typography noWrap>{repair.issue}</Typography></Tooltip></TableCell><TableCell><StatusChip status={repair.status}/></TableCell><TableCell sx={{display:{xs:'none',md:'table-cell'}}}>{formatMoney(repair.total)}</TableCell><TableCell sx={{display:{xs:'none',lg:'table-cell'}}}>{formatDate(repair.createdAt)}</TableCell><TableCell sx={{display:{xs:'none',lg:'table-cell'}}}>{repair.estimatedDeliveryDate?formatDate(repair.estimatedDeliveryDate):'—'}</TableCell><TableCell align="right" onClick={event=>event.stopPropagation()}><RowActionsMenu label={`Acciones de reparación #${repair.number}`} actions={[{label:'Ver detalle',icon:<OpenInNewRounded/>,onClick:()=>navigate(`/admin/reparaciones/${repair.id}`)},{label:'Editar',icon:<EditRounded/>,onClick:()=>setEditing(repair)},{label:'Cambiar estado',icon:<SwapHorizRounded/>,onClick:()=>setChangingStatus(repair)},{label:'Registrar pago',icon:<PaidRounded/>,disabled:!canAccess(user,'payments:create')||repair.paid>=repair.total,onClick:()=>setPaying(repair)},{label:'Ver cliente',icon:<PersonRounded/>,onClick:()=>navigate(`/admin/clientes/${repair.clientId}`)},{label:'Enviar seguimiento por WhatsApp',icon:<ChatRounded/>,dividerBefore:true,disabled:!whatsapp,onClick:()=>window.open(whatsapp,'_blank')},{label:'Copiar link de seguimiento',icon:<ContentCopyRounded/>,disabled:!repair.trackingToken,onClick:()=>void navigator.clipboard.writeText(tracking)}]}/></TableCell></TableRow>})}</TableBody>}</Table></TableContainer>
+    {!loading&&!items.length&&<UiState title={search||status?'No encontramos resultados':'No hay reparaciones todavía'} description={search||status?'Probá cambiando la búsqueda o los filtros.':'Creá tu primera reparación para comenzar.'} action={search||status?()=>{setQuery('');setStatus('')}:openDrawer} actionLabel={search||status?'Limpiar filtros':'Nueva reparación'}/>}
+    {total>10&&<TablePagination component="div" count={total} page={page} onPageChange={(_,next)=>setPage(next)} rowsPerPage={10} rowsPerPageOptions={[10]} labelDisplayedRows={({from,to,count})=>`${from}–${to} de ${count}`}/>}
+  </CardContent></Card><NewRepairDrawer open={drawerOpen} initialClientId={initialClientId} onClose={closeDrawer} onCreated={repair=>{closeDrawer();navigate(`/admin/reparaciones/${repair.id}`)}}/><EditRepairDrawer open={Boolean(editing)} repair={editing} onClose={()=>setEditing(undefined)} onUpdated={()=>{setEditing(undefined);void reload()}}/><RepairStatusDialog repair={changingStatus} onClose={()=>setChangingStatus(undefined)} onUpdated={()=>{setChangingStatus(undefined);void reload()}}/><RepairPaymentDialog repair={paying} onClose={()=>setPaying(undefined)} onRegistered={()=>{setPaying(undefined);void reload()}}/></Box>
 }

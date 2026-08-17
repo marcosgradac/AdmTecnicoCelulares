@@ -27,6 +27,10 @@ interface ApiRepair {
   trackingToken: string | null
   trackingEnabled: boolean
   estimatedDeliveryDate: string | null
+  warrantyEnabled: boolean
+  warrantyDurationDays: number | null
+  warrantyStartedAt: string | null
+  warrantyExpiresAt: string | null
   statusHistory?: Array<{ id?: string; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
   createdAt: string
   updatedAt: string
@@ -45,6 +49,8 @@ export interface CreateRepairInput {
   total: number
   estimatedDeliveryDate?: string
   status?: RepairStatus
+  warrantyEnabled?: boolean
+  warrantyDurationDays?: number
 }
 
 const statusFromApi: Record<ApiRepairStatus, RepairStatus> = {
@@ -97,13 +103,18 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   trackingToken: repair.trackingToken ?? undefined,
   trackingEnabled: repair.trackingEnabled,
   estimatedDeliveryDate: repair.estimatedDeliveryDate ?? undefined,
+  warrantyEnabled: repair.warrantyEnabled,
+  warrantyDurationDays: repair.warrantyDurationDays ?? undefined,
+  warrantyStartedAt: repair.warrantyStartedAt ?? undefined,
+  warrantyExpiresAt: repair.warrantyExpiresAt ?? undefined,
   history: (repair.statusHistory ?? []).map(item => ({ ...item, newStatus: statusFromApi[item.newStatus] })),
 })
 
 export async function getRepairs() {
-  const response = await api.get<{ items: ApiRepair[] }>('/repairs')
+  const response = await api.get<{ items: ApiRepair[] }>('/repairs', { params:{pageSize:100} })
   return response.data.items.map(mapRepair)
 }
+export async function getRepairsPage(params:{page:number;pageSize?:number;search?:string;status?:RepairStatus}) { const response=await api.get<{items:ApiRepair[];total:number;page:number;pageSize:number;pages:number}>('/repairs',{params:{...params,status:params.status?statusToApi[params.status]:undefined}});return {...response.data,items:response.data.items.map(mapRepair),totalPages:response.data.pages} }
 
 export async function getRepair(id: string) {
   const response = await api.get<ApiRepair>(`/repairs/${id}`)

@@ -24,13 +24,18 @@ export interface DashboardSummary {
   activeRepairs: number
   repairsToday: number
   monthlyIncome: number
+  monthlyExpenses: number
+  pending: number
+  readyRepairs: number
+  activeWarranties: number
   clients: number
   byStatus: Array<{ status: string; value: number }>
   recentRepairs: Array<{ id:string; number:number; deviceBrand:string; deviceModel:string; issue:string; status:string; total:number; createdAt:string; client:{name:string} }>
-  inventory: { lowStockItems:number; outOfStockItems:number; inventoryValue:number; recentMovements:Array<{id:string;type:string;quantity:number;previousStock:number;newStock:number;createdAt:string;item:{id:string;name:string;sku:string|null}}> }
+  cashFlow: Array<{ label: string; income: number; expense: number }>
 }
 
 export const getClients = async () => (await api.get<ClientRecord[]>('/clients')).data
+export const getClientsPage = async (params:{page:number;pageSize?:number;search?:string}) => (await api.get<{items:ClientRecord[];total:number;page:number;pageSize:number;totalPages:number}>('/clients',{params:{...params,paginated:true}})).data
 export const getClient = async (id: string) => (await api.get<ClientRecord>(`/clients/${id}`)).data
 export const createClient = async (input: { name: string; phone?: string }) => (await api.post<ClientRecord>('/clients', input)).data
 export const updateClient = async (id: string, input: { name: string; phone?: string | null }) => (await api.patch<ClientRecord>(`/clients/${id}`, input)).data

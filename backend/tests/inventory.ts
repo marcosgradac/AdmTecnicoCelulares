@@ -39,7 +39,9 @@ async function main() {
     let detail = await request('GET', `/inventory/${itemId}`, undefined, tokenA)
     assert.equal(detail.body.currentStock, 5)
     assert.equal(detail.body.movements[0].type, 'initial_stock')
-    const repair = await request('POST', '/repairs', { clientName: 'Cliente QA', phone: '5491100000000', deviceBrand: 'Apple', deviceModel: 'iPhone 11', issue: 'Pantalla rota', total: 50000 }, tokenA)
+    const client = await request('POST', '/clients', { name: 'Cliente QA', phone: '5491100000000' }, tokenA)
+    assert.equal(client.status, 201)
+    const repair = await request('POST', '/repairs', { clientId: client.body.id, deviceBrand: 'Apple', deviceModel: 'iPhone 11', issue: 'Pantalla rota', total: 50000 }, tokenA)
     assert.equal(repair.status, 201)
     const repairId = repair.body.id as string, trackingToken = repair.body.trackingToken as string
     const part = await request('POST', `/repairs/${repairId}/parts`, { inventoryItemId: itemId, quantity: 2 }, tokenA)

@@ -8,6 +8,7 @@ import { addRepairPart, getRepairParts, removeRepairPart, type RepairPart } from
 import { listInventory } from '../../features/inventory/api/inventory.api'
 import type { InventoryItem } from '../../features/inventory/types/inventory.types'
 import { StockStatusChip } from '../../features/inventory/components/StockStatusChip'
+import { IntegerField } from '../common/IntegerField'
 
 const apiMessage = (error: unknown, fallback: string) =>
   axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? fallback : fallback
@@ -81,7 +82,7 @@ export function RepairPartsSection({ repairId, repairTotal }: { repairId: string
           <TextField label="Buscar repuesto" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nombre, marca o modelo"/>
           <TextField select label="Repuesto activo" value={form.inventoryItemId} onChange={event => selectItem(event.target.value)}>{visibleStock.map(item => <MenuItem key={item.id} value={item.id} disabled={item.currentStock === 0}>{item.sku ? `${item.sku} · ` : ''}{item.name} · Stock {item.currentStock}</MenuItem>)}</TextField>
           {selected && <Alert severity={selected.currentStock ? 'info' : 'warning'}><Stack direction="row" justifyContent="space-between" alignItems="center"><span>Stock disponible: {selected.currentStock} · Costo: {formatMoney(selected.purchaseCost)}</span><StockStatusChip item={selected}/></Stack></Alert>}
-          <TextField fullWidth type="number" label="Cantidad" value={form.quantity} inputProps={{ min: 1, max: selected?.currentStock ?? 1, step: 1 }} onChange={event => setForm(current => ({ ...current, quantity: Number(event.target.value) }))} error={Boolean(selected && form.quantity > selected.currentStock)} helperText={selected && form.quantity > selected.currentStock ? 'Supera el stock disponible' : ''}/>
+          <IntegerField label="Cantidad" value={form.quantity} min={1} max={selected?.currentStock ?? 1} onValueChange={quantity => setForm(current => ({ ...current, quantity }))} error={Boolean(selected && form.quantity > selected.currentStock)} helperText={selected && form.quantity > selected.currentStock ? 'Supera el stock disponible' : ''}/>
           <Stack direction="row" justifyContent="space-between"><Typography color="text.secondary">Costo total</Typography><Typography fontWeight={800}>{formatMoney(Math.max(0, form.quantity) * (selected?.purchaseCost ?? 0))}</Typography></Stack>
         </Stack>
       </DialogContent><DialogActions><Button onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button><Button variant="contained" disabled={saving || !selected || form.quantity <= 0 || form.quantity > (selected?.currentStock ?? 0) || !Number.isInteger(form.quantity)} onClick={() => void add()}>{saving ? 'Agregando…' : 'Confirmar'}</Button></DialogActions>

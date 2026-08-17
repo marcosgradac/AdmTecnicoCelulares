@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppBar, Avatar, Badge, Box, Divider, Drawer, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AccountCircleRounded, AddRounded, AssessmentRounded, BuildRounded, DashboardRounded, GroupsRounded, KeyboardDoubleArrowLeftRounded, KeyboardDoubleArrowRightRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded } from '@mui/icons-material'
+import { AccountCircleRounded, AddRounded, BuildRounded, DashboardRounded, GroupsRounded, KeyboardDoubleArrowLeftRounded, KeyboardDoubleArrowRightRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
@@ -14,7 +14,6 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
   { label: 'Clientes', path: '/admin/clientes', icon: PeopleRounded },
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash:manage' },
   { label: 'Empleados', path: '/admin/empleados', icon: GroupsRounded, permission: 'team:manage' },
-  { label: 'Estadísticas y reportes', path: '/admin/estadisticas', icon: AssessmentRounded, permission: 'reports:view' },
   { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded },
   { label: 'Configuración', path: '/admin/configuracion', icon: SettingsRounded },
 ]

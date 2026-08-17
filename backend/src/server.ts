@@ -7,7 +7,7 @@ import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { rateLimit } from 'express-rate-limit'
 import { randomBytes } from 'node:crypto'
-import { CashMovementType, PaymentMethod, RepairStatus } from '@prisma/client'
+import { CashMovementType, PaymentMethod, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
 import { teamRouter } from './modules/team/team.routes'
@@ -195,11 +195,11 @@ app.use('/api', authenticate)
 app.use('/api/team', teamRouter)
 app.use('/api/inventory', inventoryRouter)
 app.use('/api/reports', reportsRouter)
-const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true } as const
+const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true, warrantyClaims: { orderBy: { createdAt: 'desc' as const } } } as const
 
 app.get('/api/repairs', async (req, res) => {
   const parsed = z.object({
-    page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(100).default(10),
     search: z.string().trim().optional(), status: z.nativeEnum(RepairStatus).optional(),
     from: z.coerce.date().optional(), to: z.coerce.date().optional(), order: z.enum(['asc', 'desc']).default('desc'),
   }).safeParse(req.query)
@@ -210,9 +210,12 @@ app.get('/api/repairs', async (req, res) => {
       businessId: authOf(req).businessId, ...(status ? { status } : {}),
       ...(from || to ? { createdAt: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
       ...(search ? { OR: [
+        ...(Number.isInteger(Number(search)) ? [{ number: Number(search) }] : []),
         { client: { name: { contains: search, mode: 'insensitive' as const } } },
+        { client: { phone: { contains: search } } },
         { deviceBrand: { contains: search, mode: 'insensitive' as const } },
         { deviceModel: { contains: search, mode: 'insensitive' as const } },
+        { imei: { contains: search } },
         { issue: { contains: search, mode: 'insensitive' as const } },
       ] } : {}),
     }
@@ -234,6 +237,7 @@ const createRepairSchema = z.object({
   deviceBrand: z.string().trim().min(1), deviceModel: z.string().trim().min(1), imei: z.string().optional(),
   color: z.string().optional(), issue: z.string().trim().min(2), diagnosis: z.string().optional(),
   notes: z.string().optional(), total: z.number().int().nonnegative().default(0), estimatedDeliveryDate: z.coerce.date().optional(), status: z.nativeEnum(RepairStatus).default(RepairStatus.RECEIVED)
+  , warrantyEnabled: z.boolean().default(false), warrantyDurationDays: z.number().int().min(1).max(365).optional()
 })
 app.post('/api/repairs', async (req, res) => {
   const parsed = createRepairSchema.safeParse(req.body)
@@ -246,7 +250,10 @@ app.post('/api/repairs', async (req, res) => {
     const repair = await prisma.$transaction(async tx => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
       const last = await tx.repair.findFirst({ where: { businessId }, orderBy: { number: 'desc' } })
-      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: randomBytes(32).toString('hex'), trackingEnabled: true }, include: includeRepair })
+      const deliveredAt = data.status === RepairStatus.DELIVERED ? new Date() : null
+      const warrantyStartedAt = data.warrantyEnabled && deliveredAt ? deliveredAt : null
+      const warrantyExpiresAt = warrantyStartedAt && data.warrantyDurationDays ? new Date(warrantyStartedAt.getTime() + data.warrantyDurationDays * 86_400_000) : null
+      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: randomBytes(32).toString('hex'), trackingEnabled: true, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.status(201).json(repair)
   } catch { return res.status(500).json({ success: false, message: 'Error creando reparación' }) }
@@ -276,7 +283,10 @@ app.patch('/api/repairs/:id/status', async (req, res) => {
   const auth = authOf(req)
   const repair = await prisma.$transaction(async tx => {
     await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: parsed.data.status, publicMessage: parsed.data.publicMessage || null, internalNote: parsed.data.internalNote || null, changedByUserId: auth.userId } })
-    return tx.repair.update({ where: { id: current.id }, data: { status: parsed.data.status, deliveredAt: parsed.data.status === 'DELIVERED' ? new Date() : null }, include: includeRepair })
+    const deliveredAt = parsed.data.status === 'DELIVERED' ? current.deliveredAt ?? new Date() : current.deliveredAt
+    const warrantyStartedAt = parsed.data.status === 'DELIVERED' && current.warrantyEnabled ? current.warrantyStartedAt ?? deliveredAt : current.warrantyStartedAt
+    const warrantyExpiresAt = warrantyStartedAt && current.warrantyDurationDays ? current.warrantyExpiresAt ?? new Date(warrantyStartedAt.getTime() + current.warrantyDurationDays * 86_400_000) : current.warrantyExpiresAt
+    return tx.repair.update({ where: { id: current.id }, data: { status: parsed.data.status, deliveredAt, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
   })
   return res.json(repair)
 })
@@ -288,7 +298,16 @@ const setRepairStatus = (status: RepairStatus) => async (req: Request, res: Resp
 app.patch('/api/repairs/:id/approve', setRepairStatus('APPROVED'))
 app.patch('/api/repairs/:id/start', setRepairStatus('REPAIRING'))
 
-app.get('/api/clients', async (req, res) => res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } }, orderBy: { createdAt: 'desc' } })))
+app.get('/api/clients', async (req, res) => {
+  const businessId = authOf(req).businessId
+  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } }, orderBy: { createdAt: 'desc' } }))
+  const parsed = z.object({ page:z.coerce.number().int().positive().default(1), pageSize:z.coerce.number().int().min(1).max(100).default(10), search:z.string().trim().optional() }).safeParse(req.query)
+  if (!parsed.success) return res.status(400).json({ success:false, message:'Filtros inválidos' })
+  const {page,pageSize,search}=parsed.data
+  const where={businessId,...(search?{OR:[{name:{contains:search,mode:'insensitive' as const}},{phone:{contains:search}}]}:{})}
+  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,include:{repairs:{orderBy:{createdAt:'desc' as const}}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
+  return res.json({items,total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
+})
 app.get('/api/clients/:id', async (req, res) => {
   const client = await prisma.client.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } } })
   return client ? res.json(client) : res.status(404).json({ success: false, message: 'Cliente no encontrado' })
@@ -412,20 +431,69 @@ app.post('/api/cash/movements', requireRole('OWNER'), async (req, res) => {
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })
   return res.status(201).json(await prisma.cashMovement.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
 })
+
+app.get('/api/warranties', async (req, res) => {
+  const businessId = authOf(req).businessId
+  const repairs = await prisma.repair.findMany({
+    where: { businessId, warrantyEnabled: true, warrantyDeletedAt: null },
+    include: { client: true, warrantyClaims: { orderBy: { createdAt: 'desc' } } },
+    orderBy: [{ warrantyExpiresAt: 'asc' }, { updatedAt: 'desc' }],
+  })
+  return res.json(repairs)
+})
+app.patch('/api/warranties/:repairId', async (req, res) => {
+  const parsed = z.object({ durationDays: z.number().int().min(1).max(365), conditions: z.string().trim().max(2000).optional() }).safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de garantía inválidos' })
+  const businessId = authOf(req).businessId
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId, warrantyEnabled: true, warrantyDeletedAt: null } })
+  if (!repair) return res.status(404).json({ success: false, message: 'Garantía no encontrada' })
+  const warrantyExpiresAt = repair.warrantyStartedAt ? new Date(repair.warrantyStartedAt.getTime() + parsed.data.durationDays * 86_400_000) : null
+  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { warrantyDurationDays: parsed.data.durationDays, warrantyConditions: parsed.data.conditions || null, warrantyExpiresAt }, include: { client: true, warrantyClaims: { orderBy: { createdAt: 'desc' } } } }))
+})
+app.delete('/api/warranties/:repairId', async (req, res) => {
+  const businessId = authOf(req).businessId
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId, warrantyEnabled: true, warrantyDeletedAt: null } })
+  if (!repair) return res.status(404).json({ success: false, message: 'Garantía no encontrada' })
+  await prisma.repair.update({ where: { id: repair.id }, data: { warrantyEnabled: false, warrantyDeletedAt: new Date() } })
+  return res.json({ success: true })
+})
+app.post('/api/warranties/:repairId/claims', async (req, res) => {
+  const parsed = z.object({ description: z.string().trim().min(5).max(1500) }).safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Describí el reclamo de garantía' })
+  const businessId = authOf(req).businessId
+  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId, warrantyEnabled: true, warrantyDeletedAt: null } })
+  if (!repair) return res.status(404).json({ success: false, message: 'Garantía no encontrada' })
+  if (!repair.warrantyStartedAt || !repair.warrantyExpiresAt) return res.status(409).json({ success: false, message: 'La garantía comienza cuando la reparación se entrega' })
+  if (repair.warrantyExpiresAt < new Date()) return res.status(409).json({ success: false, message: 'La garantía está vencida' })
+  return res.status(201).json(await prisma.warrantyClaim.create({ data: { businessId, repairId: repair.id, description: parsed.data.description } }))
+})
+app.patch('/api/warranties/claims/:id', async (req, res) => {
+  const parsed = z.object({ status: z.nativeEnum(WarrantyClaimStatus), resolution: z.string().trim().max(1500).optional() }).safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Actualización inválida' })
+  const businessId = authOf(req).businessId
+  const claim = await prisma.warrantyClaim.findFirst({ where: { id: req.params.id, businessId } })
+  if (!claim) return res.status(404).json({ success: false, message: 'Reclamo no encontrado' })
+  const closed = ['RESOLVED', 'REJECTED'].includes(parsed.data.status)
+  return res.json(await prisma.warrantyClaim.update({ where: { id: claim.id }, data: { ...parsed.data, resolution: parsed.data.resolution || null, resolvedAt: closed ? new Date() : null } }))
+})
 app.get('/api/dashboard/summary', async (req, res) => {
   const businessId = authOf(req).businessId
   const canViewFinancials = authOf(req).role === 'OWNER'
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
-  const [repairs, clients, payments, inventoryItems, inventoryMovements] = await Promise.all([
+  const [repairs, clients, movements] = await Promise.all([
     prisma.repair.findMany({ where: { businessId }, include: { client: true }, orderBy: { createdAt: 'desc' } }),
     prisma.client.count({ where: { businessId } }),
-    canViewFinancials
-      ? prisma.payment.aggregate({ where: { businessId, createdAt: { gte: month } }, _sum: { amount: true } })
-      : Promise.resolve({ _sum: { amount: null } }),
-    prisma.stockItem.findMany({ where: { businessId, active: true } }),
-    prisma.inventoryMovement.findMany({ where: { businessId }, include: { stockItem: { select: { id: true, name: true, sku: true } } }, orderBy: { createdAt: 'desc' }, take: 5 }),
+    canViewFinancials ? prisma.cashMovement.findMany({ where: { businessId, createdAt: { gte: month } }, orderBy: { createdAt: 'asc' } }) : Promise.resolve([]),
   ])
-  return res.json({ activeRepairs: repairs.filter(r => r.status !== 'DELIVERED').length, repairsToday: repairs.filter(r => r.createdAt >= today).length, monthlyIncome: payments._sum.amount ?? 0, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: repairs.filter(r => r.status === status).length })), recentRepairs: repairs.slice(0, 5), inventory: { lowStockItems: inventoryItems.filter(item => item.quantity > 0 && item.quantity <= item.minimumStock).length, outOfStockItems: inventoryItems.filter(item => item.quantity === 0).length, inventoryValue: inventoryItems.reduce((sum, item) => sum + item.quantity * item.cost, 0), recentMovements: inventoryMovements.map(movement => ({ id: movement.id, type: movement.type.toLowerCase(), quantity: movement.quantity, previousStock: movement.previousStock, newStock: movement.newStock, createdAt: movement.createdAt, item: movement.stockItem })) } })
+  const income = movements.filter(m => m.type === 'INCOME').reduce((sum, m) => sum + m.amount, 0)
+  const expenses = movements.filter(m => m.type === 'EXPENSE').reduce((sum, m) => sum + m.amount, 0)
+  const flow = Array.from({ length: Math.min(31, now.getDate()) }, (_, index) => { const day = index + 1; const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; return { label: String(day), key, income: 0, expense: 0 } })
+  if (canViewFinancials) {
+    for (const movement of movements.filter(m => m.type === 'INCOME')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.income += movement.amount }
+    for (const movement of movements.filter(m => m.type === 'EXPENSE')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.expense += movement.amount }
+  }
+  const pending = canViewFinancials ? repairs.reduce((sum, repair) => sum + Math.max(0, repair.total - repair.paid), 0) : 0
+  return res.json({ activeRepairs: repairs.filter(r => !['DELIVERED', 'CANCELLED'].includes(r.status)).length, readyRepairs: repairs.filter(r => r.status === 'READY').length, activeWarranties: repairs.filter(r => r.warrantyEnabled && !r.warrantyDeletedAt && r.warrantyExpiresAt && r.warrantyExpiresAt >= now).length, repairsToday: repairs.filter(r => r.createdAt >= today).length, monthlyIncome: income, monthlyExpenses: expenses, pending, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: repairs.filter(r => r.status === status).length })), cashFlow: flow.map(({ key: _key, ...point }) => point), recentRepairs: repairs.slice(0, 5) })
 })
 
 const port = Number(process.env.PORT ?? 3000)

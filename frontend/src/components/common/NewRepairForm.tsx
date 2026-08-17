@@ -2,6 +2,7 @@ import React from 'react'
 import { Stack, TextField, MenuItem } from '@mui/material'
 import { AppButton } from './AppButton'
 import { SaveRounded } from '@mui/icons-material'
+import { CurrencyField } from './CurrencyField'
 
 type Values = {
   clientName: string
@@ -27,7 +28,7 @@ export default function NewRepairForm({ values, onChange, onSave }: { values: Va
       </TextField>
       <TextField size="small" fullWidth label="Modelo" placeholder="Ej. iPhone 13 Pro" value={values.model} onChange={onChange('model')} />
       <TextField size="small" fullWidth label="IMEI" value={values.imei} onChange={onChange('imei')} />
-      <TextField size="small" fullWidth type="number" label="Monto" value={values.total} onChange={(e) => onChange('total')(e)} InputProps={{ startAdornment: <span style={{ marginRight: 8 }}>$</span> }} />
+      <CurrencyField size="small" label="Monto" value={values.total} onValueChange={(value) => onChange('total')({ target: { value } })} />
       <TextField size="small" fullWidth multiline minRows={3} label="Falla" value={values.issue} onChange={onChange('issue')} />
       <TextField size="small" fullWidth multiline minRows={3} label="Observaciones" value={values.observations} onChange={onChange('observations')} />
       <AppButton fullWidth variant="contained" startIcon={<SaveRounded />} onClick={onSave} sx={{ background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', boxShadow: '0 8px 24px rgba(124, 58, 237, 0.3)' }}>Guardar reparación</AppButton>

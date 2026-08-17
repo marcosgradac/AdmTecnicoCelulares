@@ -41,5 +41,9 @@ export interface Repair {
   trackingToken?: string
   trackingEnabled?: boolean
   estimatedDeliveryDate?: string
+  warrantyEnabled?: boolean
+  warrantyDurationDays?: number
+  warrantyStartedAt?: string
+  warrantyExpiresAt?: string
   history?: RepairHistory[]
 }
