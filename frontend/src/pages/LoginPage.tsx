@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
-import { Alert, Box, Button, IconButton, InputAdornment, Link as MuiLink, TextField, Typography } from '@mui/material'
-import { VisibilityOffRounded, VisibilityRounded } from '@mui/icons-material'
+import { Alert, Box, Button, Link as MuiLink, TextField, Typography } from '@mui/material'
 import { useAuth } from '../auth/AuthContext'
 import { AuthLayout } from '../components/auth/AuthLayout'
+import PasswordField from '../components/auth/PasswordField'
 import { checkApiHealth } from '../services/api'
 
 export function LoginPage() {
@@ -39,14 +39,12 @@ export function LoginPage() {
 
   return <AuthLayout title="Bienvenido de nuevo" description="Ingresá a tu espacio de trabajo de TecnoDesk.">
     {error && <Alert severity="error">{error}</Alert>}
-    <Box component="form" onSubmit={submit} display="grid" gap={2}>
-      <TextField required label="Email" type="email" autoComplete="email" inputMode="email" value={form.email}
-        onChange={event => setForm(value => ({ ...value, email: event.target.value }))} />
-      <TextField required label="Contraseña" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={form.password}
-        onChange={event => setForm(value => ({ ...value, password: event.target.value }))}
-        InputProps={{ endAdornment: <InputAdornment position="end"><IconButton aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}</IconButton></InputAdornment> }} />
+      <Box component="form" onSubmit={submit} display="grid" gap={2}>
+        <TextField required label="Email" type="email" autoComplete="email" inputMode="email" value={form.email}
+          onChange={event => setForm(value => ({ ...value, email: event.target.value }))} />
+        <PasswordField required value={form.password} onChange={event => setForm(value => ({ ...value, password: event.target.value }))} />
       <MuiLink component={Link} to="/olvide-mi-contrasena" underline="hover" textAlign="right">Olvidé mi contraseña</MuiLink>
-      <Button type="submit" size="large" variant="contained" disabled={saving || !form.email.trim() || !form.password} sx={{ minHeight: 48 }}>
+      <Button type="submit" size="large" variant="contained" disabled={saving || !form.email.trim() || !form.password} sx={{ minHeight: 52, width: '100%', bgcolor: 'linear-gradient(90deg,#3b82f6,#7c3aed)', '&:hover': { transform: 'translateY(-1px)' } }}>
         {saving ? 'Iniciando sesión…' : 'Iniciar sesión'}
       </Button>
     </Box>

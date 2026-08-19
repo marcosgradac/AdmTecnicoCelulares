@@ -1,8 +1,8 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import axios from 'axios'
-import { Alert, Box, Button, Checkbox, FormControlLabel, IconButton, InputAdornment, LinearProgress, Stack, TextField, Typography } from '@mui/material'
-import { VisibilityOffRounded, VisibilityRounded } from '@mui/icons-material'
+import { Alert, Box, Button, Checkbox, FormControlLabel, LinearProgress, Stack, TextField, Typography } from '@mui/material'
+import PasswordField from '../components/auth/PasswordField'
 import { useAuth } from '../auth/AuthContext'
 import { AuthLayout } from '../components/auth/AuthLayout'
 
@@ -68,14 +68,12 @@ export function RegisterPage() {
       <TextField label="Teléfono del negocio (opcional)" type="tel" inputMode="tel" value={form.businessPhone} onChange={e => change('businessPhone', e.target.value)} />
       <Typography fontWeight={800} mt={1}>Acceso</Typography>
       <TextField required label="Email" type="email" inputMode="email" autoComplete="email" value={form.email} onChange={e => change('email', e.target.value)} error={submitted && invalid.email} helperText={submitted && invalid.email ? 'Ingresá un email válido' : ' '} />
-      <TextField required label="Contraseña" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.password} onChange={e => change('password', e.target.value)}
-        error={submitted && invalid.password} helperText={submitted && invalid.password ? 'Usá 8 caracteres, mayúscula, minúscula y número' : 'Mínimo 8 caracteres, mayúscula, minúscula y número'}
-        InputProps={{ endAdornment: <InputAdornment position="end"><IconButton aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}</IconButton></InputAdornment> }} />
+      <PasswordField required label="Contraseña" autoComplete="new-password" value={form.password} onChange={e => change('password', e.target.value)} error={submitted && invalid.password} helperText={submitted && invalid.password ? 'Usá 8 caracteres, mayúscula, minúscula y número' : 'Mínimo 8 caracteres, mayúscula, minúscula y número'} />
       <Box><LinearProgress variant="determinate" value={strength * 25} color={strength >= 3 ? 'success' : strength >= 2 ? 'warning' : 'error'} sx={{ height: 6, borderRadius: 3 }} /><Typography variant="caption" color="text.secondary">Fortaleza: {['muy baja', 'baja', 'media', 'buena', 'fuerte'][strength]}</Typography></Box>
-      <TextField required label="Repetir contraseña" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.repeatPassword} onChange={e => change('repeatPassword', e.target.value)} error={submitted && invalid.repeatPassword} helperText={submitted && invalid.repeatPassword ? 'Las contraseñas no coinciden' : ' '} />
+      <PasswordField required label="Repetir contraseña" autoComplete="new-password" value={form.repeatPassword} onChange={e => change('repeatPassword', e.target.value)} error={submitted && invalid.repeatPassword} helperText={submitted && invalid.repeatPassword ? 'Las contraseñas no coinciden' : ' '} />
       <FormControlLabel control={<Checkbox checked={form.terms} onChange={e => change('terms', e.target.checked)} />} label="Acepto los términos y condiciones" />
       {submitted && invalid.terms && <Typography color="error" variant="caption">Debés aceptar los términos para continuar.</Typography>}
-      <Button type="submit" size="large" variant="contained" disabled={saving} sx={{ minHeight: 48 }}>{saving ? 'Creando cuenta…' : 'Crear cuenta'}</Button>
+      <Button type="submit" size="large" variant="contained" disabled={saving} sx={{ minHeight: 52 }}>{saving ? 'Creando cuenta…' : 'Crear cuenta'}</Button>
     </Box>
     <Typography variant="body2" textAlign="center">¿Ya tenés cuenta? <Link to="/login"><b>Iniciar sesión</b></Link></Typography>
   </AuthLayout>
