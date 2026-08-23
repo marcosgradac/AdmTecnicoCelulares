@@ -26,6 +26,6 @@ export function LoginForm({ email, password, saving, error, onEmailChange, onPas
       </Button>
     </Box>
     <Typography className="login-register" variant="body2" textAlign="center">¿Todavía no tenés cuenta? <Link to="/register">Crear cuenta</Link></Typography>
-    <Typography className="login-legal-note" variant="caption" textAlign="center">Al utilizar TecnoDesk aceptás nuestros <Link to="/terminos-y-condiciones">Términos y Condiciones</Link>.</Typography>
+    <Typography className="login-legal-note" variant="caption" textAlign="center">Al utilizar TecnoDesk, consultá nuestros <Link to="/terminos-y-condiciones">Términos y Condiciones</Link> y <Link to="/politica-de-privacidad">Política de Privacidad</Link>.</Typography>
   </>
 }

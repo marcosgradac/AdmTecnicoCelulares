@@ -4,7 +4,6 @@ import { RoleGuard } from './auth/RoleGuard'
 import { AppShell } from './components/layout/AppShell'
 import { ScrollToTop } from './components/routing/ScrollToTop'
 import { LandingPage } from './features/landing/pages/LandingPage'
-import { LegalPage } from './features/landing/pages/LegalPage'
 import { CashPage } from './pages/CashPage'
 import { ClientDetailPage } from './pages/ClientDetailPage'
 import { ClientsPage } from './pages/ClientsPage'
@@ -24,6 +23,7 @@ import { SubscriptionPage } from './features/billing/SubscriptionPage'
 import { PlatformAdminPage } from './features/platformAdmin/PlatformAdminPage'
 import { PlatformAdminGuard } from './features/platformAdmin/PlatformAdminGuard'
 import { TermsPage } from './features/legal/TermsPage'
+import { PrivacyPage } from './features/legal/PrivacyPage'
 
 const PublicLandingLayout=()=> <Outlet/>
 const ParamRedirect=({base}:{base:string})=>{const {id}=useParams();return <Navigate to={`${base}/${id}`} replace/>}
@@ -32,7 +32,7 @@ export default function App(){return <><ScrollToTop/><Routes>
   <Route path="/" element={<PublicLandingLayout/>}><Route index element={<LandingPage/>}/></Route>
   <Route path="/login" element={<LoginPage/>}/><Route path="/register" element={<RegisterPage/>}/><Route path="/registro" element={<Navigate to="/register" replace/>}/>
   <Route path="/olvide-mi-contrasena" element={<ForgotPasswordPage/>}/><Route path="/restablecer-contrasena" element={<ResetPasswordPage/>}/>
-  <Route path="/seguimiento/:token" element={<TrackingPage/>}/><Route path="/terminos-y-condiciones" element={<TermsPage/>}/><Route path="/terminos" element={<Navigate to="/terminos-y-condiciones" replace/>}/><Route path="/privacidad" element={<LegalPage title="Política de privacidad"/>}/>
+  <Route path="/seguimiento/:token" element={<TrackingPage/>}/><Route path="/terminos-y-condiciones" element={<TermsPage/>}/><Route path="/terminos" element={<Navigate to="/terminos-y-condiciones" replace/>}/><Route path="/politica-de-privacidad" element={<PrivacyPage/>}/><Route path="/privacidad" element={<Navigate to="/politica-de-privacidad" replace/>}/>
   <Route element={<ProtectedRoute/>}>
     <Route path="/admin" element={<AppShell/>}>
       <Route index element={<DashboardPage/>}/><Route path="reparaciones" element={<RepairsPage/>}/><Route path="reparaciones/nueva" element={<Navigate to="/admin/reparaciones?new=1" replace/>}/><Route path="reparaciones/:id" element={<RepairDetailPage/>}/>

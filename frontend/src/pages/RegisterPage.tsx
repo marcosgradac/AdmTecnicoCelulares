@@ -5,7 +5,7 @@ import { Typography } from '@mui/material'
 import { useAuth } from '../auth/AuthContext'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { RegisterForm, type RegisterFormState } from '../components/auth/RegisterForm'
-import { CURRENT_TERMS_VERSION } from '../config/legal'
+import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from '../config/legal'
 
 const initialForm = {
   firstName: '', lastName: '', phone: '', businessName: '', businessPhone: '',
@@ -49,6 +49,7 @@ export function RegisterPage() {
         businessName: form.businessName.trim(), businessPhone: form.businessPhone,
         email: form.email.trim(), password: form.password,
         termsAccepted: true, termsVersion: CURRENT_TERMS_VERSION,
+        privacyAccepted: true, privacyVersion: CURRENT_PRIVACY_VERSION,
       })
     } catch (registerError) {
       setError(axios.isAxiosError<{ message?: string }>(registerError)

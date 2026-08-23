@@ -98,6 +98,9 @@ model User {
   termsAccepted       Boolean               @default(false)
   termsVersion        String?
   termsAcceptedAt     DateTime?
+  privacyAccepted     Boolean               @default(false)
+  privacyVersion      String?
+  privacyAcceptedAt   DateTime?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   business            Business              @relation(fields: [businessId], references: [id])

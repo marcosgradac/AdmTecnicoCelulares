@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Box, Card, CardContent, Container, Divider, LinearProgress, Stack, Typography } from '@mui/material'
 import { BuildRounded, CheckRounded } from '@mui/icons-material'
 import type { Repair } from '../types'
@@ -32,7 +32,7 @@ export function TrackingPage() {
         <Stack spacing={1.3}>{repairStatuses.map(status => { const config = repairStatusConfig[status]; const complete = config.order <= current; return <Stack direction="row" alignItems="center" gap={1.4} key={status}><Box width={25} height={25} borderRadius="50%" display="grid" sx={{ placeItems: 'center', bgcolor: complete ? config.color : '#EEF0F4', color: complete ? '#fff' : '#9AA0AE' }}>{complete ? <CheckRounded sx={{ fontSize: 16 }}/> : config.order + 1}</Box><Typography fontWeight={status === repair.status ? 800 : 550} color={complete ? 'text.primary' : 'text.secondary'}>{config.label}</Typography>{status === repair.status && <Typography variant="caption" color="primary.main">Estado actual</Typography>}</Stack>})}</Stack>
         <Divider sx={{ my: 3 }}/><GridSummary label="Trabajo informado" value={repair.issue}/><Stack direction="row" gap={3} mt={2}><GridSummary label="Presupuesto" value={formatMoney(repair.total)}/><GridSummary label="Pagado" value={formatMoney(repair.paid)}/><GridSummary label="Saldo" value={formatMoney(Math.max(0, repair.total - repair.paid))}/></Stack>
       </CardContent></Card>
-      <Typography variant="caption" display="block" textAlign="center" color="text.secondary" mt={3}>No necesitás una cuenta. Esta página se actualiza cuando el servicio técnico cambia el estado del equipo.</Typography>
+      <Typography variant="caption" display="block" textAlign="center" color="text.secondary" mt={3}>No necesitás una cuenta. Esta página se actualiza cuando el servicio técnico cambia el estado del equipo. · <Link to="/politica-de-privacidad">Privacidad</Link></Typography>
     </Container>
   </Box>
 }

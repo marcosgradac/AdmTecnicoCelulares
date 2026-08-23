@@ -12,6 +12,9 @@ export interface AuthUser {
   termsAccepted: boolean
   termsVersion: string | null
   termsAcceptedAt: string | null
+  privacyAccepted: boolean
+  privacyVersion: string | null
+  privacyAcceptedAt: string | null
   profileComplete: boolean
   business: { id: string; name: string }
 }
@@ -26,6 +29,8 @@ export interface RegisterInput {
   businessPhone: string
   termsAccepted: true
   termsVersion: string
+  privacyAccepted: true
+  privacyVersion: string
 }
 export interface ProfileInput { firstName: string; lastName: string; phone?: string | null }
 export interface AuthResponse { token: string; user: AuthUser }

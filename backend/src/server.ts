@@ -18,7 +18,7 @@ import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { inventoryRouter } from './modules/inventory/inventory.routes'
 import { reportsRouter } from './modules/reports/reports.routes'
-import { CURRENT_TERMS_VERSION } from './config/legal'
+import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 
 export const app = express()
 app.use(helmet())
@@ -59,6 +59,9 @@ const userResponse = <T extends {
   termsAccepted: boolean
   termsVersion: string | null
   termsAcceptedAt: Date | null
+  privacyAccepted: boolean
+  privacyVersion: string | null
+  privacyAcceptedAt: Date | null
   business: { id: string; name: string }
 }>(user: T) => ({
   id: user.id,
@@ -72,6 +75,9 @@ const userResponse = <T extends {
   termsAccepted: user.termsAccepted,
   termsVersion: user.termsVersion,
   termsAcceptedAt: user.termsAcceptedAt,
+  privacyAccepted: user.privacyAccepted,
+  privacyVersion: user.privacyVersion,
+  privacyAcceptedAt: user.privacyAcceptedAt,
   profileComplete: Boolean(user.firstName && user.lastName),
   business: { id: user.business.id, name: user.business.name },
 })
@@ -114,6 +120,8 @@ const registerSchema = z.object({
   password: z.string().min(8).max(128).regex(/[a-z]/).regex(/[A-Z]/).regex(/\d/),
   termsAccepted: z.literal(true),
   termsVersion: z.literal(CURRENT_TERMS_VERSION),
+  privacyAccepted: z.literal(true),
+  privacyVersion: z.literal(CURRENT_PRIVACY_VERSION),
 })
 const authRateLimiter = rateLimit({
   windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
@@ -148,6 +156,9 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
           termsAccepted: true,
           termsVersion: CURRENT_TERMS_VERSION,
           termsAcceptedAt: new Date(),
+          privacyAccepted: true,
+          privacyVersion: CURRENT_PRIVACY_VERSION,
+          privacyAcceptedAt: new Date(),
         },
         include: { business: true },
       })

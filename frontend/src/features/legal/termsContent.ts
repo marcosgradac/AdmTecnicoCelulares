@@ -36,7 +36,6 @@ Entre otras funciones, TecnoDesk puede permitir administrar:
 * caja;
 * stock;
 * repuestos;
-* fotografías;
 * comprobantes;
 * garantías;
 * historial de trabajos;
@@ -63,7 +62,7 @@ TecnoDesk no:
 
 La reparación, diagnóstico, presupuesto, calidad del trabajo, repuestos utilizados, tiempos de reparación, custodia del equipo, cobros, garantías y cualquier obligación frente al cliente final corresponden al Usuario que presta el servicio técnico.
 
-TecnoDesk no verifica ni certifica la exactitud de diagnósticos, presupuestos, estados, fotografías, importes ni demás información cargada por sus Usuarios.
+TecnoDesk no verifica ni certifica la exactitud de diagnósticos, presupuestos, estados, importes ni demás información cargada por sus Usuarios.
 
 ## 4. Uso profesional de TecnoDesk
 
@@ -119,7 +118,6 @@ Esto puede incluir:
 * clientes;
 * dispositivos;
 * IMEI;
-* fotografías;
 * reparaciones;
 * presupuestos;
 * pagos;
@@ -147,7 +145,6 @@ No deberá utilizar TecnoDesk para almacenar innecesariamente:
 * datos completos de tarjetas;
 * credenciales financieras;
 * credenciales pertenecientes a servicios de terceros;
-* fotografías privadas obtenidas del dispositivo sin autorización;
 * conversaciones privadas;
 * contenido personal ajeno a la reparación;
 * información ilícitamente obtenida;
