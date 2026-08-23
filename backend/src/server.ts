@@ -18,6 +18,7 @@ import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { inventoryRouter } from './modules/inventory/inventory.routes'
 import { reportsRouter } from './modules/reports/reports.routes'
+import { CURRENT_TERMS_VERSION } from './config/legal'
 
 export const app = express()
 app.use(helmet())
@@ -55,6 +56,9 @@ const userResponse = <T extends {
   email: string
   role: 'OWNER' | 'TECHNICIAN'
   platformRole: 'USER' | 'SUPER_ADMIN'
+  termsAccepted: boolean
+  termsVersion: string | null
+  termsAcceptedAt: Date | null
   business: { id: string; name: string }
 }>(user: T) => ({
   id: user.id,
@@ -65,6 +69,9 @@ const userResponse = <T extends {
   email: user.email,
   role: user.role,
   platformRole: user.platformRole,
+  termsAccepted: user.termsAccepted,
+  termsVersion: user.termsVersion,
+  termsAcceptedAt: user.termsAcceptedAt,
   profileComplete: Boolean(user.firstName && user.lastName),
   business: { id: user.business.id, name: user.business.name },
 })
@@ -99,12 +106,14 @@ app.get('/api/tracking/:token', async (req, res) => {
 
 const registerSchema = z.object({
   businessName: z.string().trim().min(2),
-  businessPhone: z.string().trim().optional(),
+  businessPhone: z.string().trim().regex(/^(?=(?:\D*\d){6,15}\D*$)[+\d][\d\s().-]*$/),
   firstName: z.string().trim().min(1),
   lastName: z.string().trim().min(1),
-  phone: z.string().trim().optional(),
+  phone: z.string().trim().regex(/^(?=(?:\D*\d){6,15}\D*$)[+\d][\d\s().-]*$/),
   email: z.string().trim().email(),
   password: z.string().min(8).max(128).regex(/[a-z]/).regex(/[A-Z]/).regex(/\d/),
+  termsAccepted: z.literal(true),
+  termsVersion: z.literal(CURRENT_TERMS_VERSION),
 })
 const authRateLimiter = rateLimit({
   windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
@@ -136,6 +145,9 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
           email,
           passwordHash,
           role: 'OWNER',
+          termsAccepted: true,
+          termsVersion: CURRENT_TERMS_VERSION,
+          termsAcceptedAt: new Date(),
         },
         include: { business: true },
       })

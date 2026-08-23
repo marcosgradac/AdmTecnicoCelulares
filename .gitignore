@@ -9,6 +9,7 @@ backend/postgres-dev*.log
 backend/api-test*.log
 cellufix-dev*.log
 *.log
+artifacts/
 **/node_modules/
 **/dist/
 .pnp.*

@@ -12,7 +12,7 @@ export default function AuthVisualHero({ variant }: { variant: AuthVisualVariant
   const activeScreen = screens[activeIndex]
 
   return <section className="auth-hero"><div className="hero-grid" aria-hidden="true" /><div className="hero-orb" aria-hidden="true" />
-    <header className="hero-brand"><BrandLogo className="hero-brand-logo" /><span><b>TecnoDesk</b><small>Gestión técnica inteligente</small></span></header>
+    {!['login', 'register'].includes(variant) && <header className="hero-brand"><BrandLogo className="hero-brand-logo" /></header>}
     <div className="hero-composition"><CelluFixPhone3D screens={screens} activeIndex={activeIndex} reducedMotion={reducedMotion} onSelect={select} /><FloatingActivityCards variant={variant} activeKind={activeScreen.kind} /></div>
     <footer><b>Tu servicio técnico, siempre conectado.</b><span>Clientes, reparaciones y pagos en un solo lugar.</span></footer>
   </section>

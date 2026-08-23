@@ -1,14 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-const ROTATION_MS = 5000
-const INTERACTION_PAUSE_MS = 10000
+const ROTATION_MS = 3000
 
 export function usePhoneShowcase(itemCount: number) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const [autoPaused, setAutoPaused] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [pageVisible, setPageVisible] = useState(() => document.visibilityState === 'visible')
-  const lastInteractionAt = useRef(0)
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -25,24 +22,15 @@ export function usePhoneShowcase(itemCount: number) {
   }, [])
 
   useEffect(() => {
-    if (!autoPaused) return
-    const timer = window.setTimeout(() => setAutoPaused(false), INTERACTION_PAUSE_MS)
-    return () => window.clearTimeout(timer)
-  }, [autoPaused])
-
-  useEffect(() => {
-    if (itemCount < 2 || reducedMotion || !pageVisible || autoPaused) return
-    const timer = window.setTimeout(() => {
-      if (Date.now() - lastInteractionAt.current < INTERACTION_PAUSE_MS) return
+    if (itemCount < 2 || !pageVisible) return
+    const timer = window.setInterval(() => {
       setActiveIndex(current => (current + 1) % itemCount)
     }, ROTATION_MS)
-    return () => window.clearTimeout(timer)
-  }, [activeIndex, autoPaused, itemCount, pageVisible, reducedMotion])
+    return () => window.clearInterval(timer)
+  }, [itemCount, pageVisible])
 
   const select = useCallback((index: number) => {
-    lastInteractionAt.current = Date.now()
     setActiveIndex(index)
-    setAutoPaused(true)
   }, [])
 
   return { activeIndex, reducedMotion, select }

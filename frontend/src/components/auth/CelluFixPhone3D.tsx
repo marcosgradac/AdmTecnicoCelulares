@@ -10,7 +10,9 @@ export function CelluFixPhone3D({ screens, activeIndex, reducedMotion, onSelect 
 }) {
   return <div className="phone-stage">
     <div className="phone-shadow" />
-    <div className="phone-shell"><div className="phone-notch" /><PhoneScreen screen={screens[activeIndex]} reducedMotion={reducedMotion} /><div className="phone-shine" /></div>
-    <PhoneIndicators screens={screens} activeIndex={activeIndex} onSelect={onSelect} />
+    <div className="phone-floating-wrapper">
+      <div className="phone-shell"><div className="phone-notch" /><PhoneScreen screen={screens[activeIndex]} reducedMotion={reducedMotion} /><div className="phone-shine" /></div>
+      <PhoneIndicators screens={screens} activeIndex={activeIndex} onSelect={onSelect} />
+    </div>
   </div>
 }

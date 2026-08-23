@@ -5,11 +5,16 @@ export const phoneShowcaseConfig: PhoneShowcaseConfig = {
     { id: 'dashboard', kind: 'dashboard', indicatorLabel: 'Panel' },
     { id: 'repair', kind: 'repair', indicatorLabel: 'Reparación' },
     { id: 'tracking', kind: 'tracking', indicatorLabel: 'Seguimiento' },
+    { id: 'ready', kind: 'ready', indicatorLabel: 'Listo' },
+    { id: 'clients', kind: 'clients', indicatorLabel: 'Clientes' },
+    { id: 'payments', kind: 'payments', indicatorLabel: 'Caja' },
+    { id: 'budget', kind: 'budget', indicatorLabel: 'Presupuesto' },
   ],
   register: [
     { id: 'dashboard', kind: 'dashboard', indicatorLabel: 'Panel' },
-    { id: 'tracking', kind: 'tracking', indicatorLabel: 'Seguimiento' },
     { id: 'repair', kind: 'repair', indicatorLabel: 'Órdenes' },
+    { id: 'clients', kind: 'clients', indicatorLabel: 'Clientes' },
+    { id: 'payments', kind: 'payments', indicatorLabel: 'Caja' },
   ],
   'forgot-password': [
     { id: 'protected-access', kind: 'security', indicatorLabel: 'Acceso', title: 'Acceso protegido', description: 'Tu cuenta y tus datos permanecen seguros.' },

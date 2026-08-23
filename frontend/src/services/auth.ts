@@ -9,6 +9,9 @@ export interface AuthUser {
   email: string
   role: 'OWNER' | 'TECHNICIAN'
   platformRole: 'USER' | 'SUPER_ADMIN'
+  termsAccepted: boolean
+  termsVersion: string | null
+  termsAcceptedAt: string | null
   profileComplete: boolean
   business: { id: string; name: string }
 }
@@ -16,11 +19,13 @@ export interface AuthUser {
 export interface RegisterInput {
   firstName: string
   lastName: string
-  phone?: string
+  phone: string
   email: string
   password: string
   businessName: string
-  businessPhone?: string
+  businessPhone: string
+  termsAccepted: true
+  termsVersion: string
 }
 export interface ProfileInput { firstName: string; lastName: string; phone?: string | null }
 export interface AuthResponse { token: string; user: AuthUser }

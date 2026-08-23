@@ -16,6 +16,17 @@
   .landing-hero .hero-grid{min-height:auto}
 }
 
+/* Final landing scale refinement */
+.landing-container{width:min(1280px,calc(100% - 48px))}
+.landing-nav nav{gap:26px}.landing-nav nav>a{font-size:15px}
+.premium-hero .hero-grid{grid-template-columns:minmax(0,.82fr) minmax(600px,1.18fr);gap:34px}
+.premium-hero .hero-copy h1{font-size:clamp(3.55rem,6vw,6rem)}
+.premium-hero .hero-copy>p{max-width:610px;font-size:clamp(1.08rem,1.35vw,1.25rem);line-height:1.7}
+.premium-hero .hero-actions .MuiButton-root{min-height:50px;padding-inline:24px;font-size:1rem}
+.hero-trust{font-size:13px}.saas-visual{height:640px}
+@media(max-width:1050px){.premium-hero .hero-grid{grid-template-columns:1fr}.saas-visual{width:min(100%,760px);height:620px;margin:auto}}
+@media(max-width:600px){.landing-container{width:min(100% - 28px,1280px)}.landing-nav nav>a{font-size:15px}.premium-hero .hero-copy h1{font-size:clamp(2.8rem,14vw,4rem)}.premium-hero .hero-copy>p{font-size:1.02rem;line-height:1.65}.premium-hero .hero-actions .MuiButton-root{min-height:50px}.hero-trust{font-size:12px}.saas-visual{height:480px}}
+
 /* Contención estructural: ninguna capa del hero puede pintar fuera de su sección. */
 .landing-hero{
   position:relative;
