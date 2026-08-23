@@ -21,7 +21,9 @@
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
     "test:warranties": "tsx tests/warranties.ts",
     "test:pagination": "tsx tests/pagination.ts",
+    "test:billing": "tsx tests/billing.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
+    "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "start": "node dist/server.js"

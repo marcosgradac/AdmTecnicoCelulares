@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AppBar, Avatar, Badge, Box, Divider, Drawer, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AccountCircleRounded, AddRounded, BuildRounded, DashboardRounded, GroupsRounded, KeyboardDoubleArrowLeftRounded, KeyboardDoubleArrowRightRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded } from '@mui/icons-material'
+import { AccountCircleRounded, AddRounded, AdminPanelSettingsRounded, BuildRounded, DashboardRounded, GroupsRounded, KeyboardDoubleArrowLeftRounded, KeyboardDoubleArrowRightRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
 import styles from './AppShell.module.scss'
 import { BrandLogo } from '../brand/BrandLogo'
+import { SubscriptionProvider } from '../../features/billing/SubscriptionContext'
+import { SubscriptionBanner } from '../../features/billing/SubscriptionBanner'
+import { TrialStartedDialog } from '../../features/billing/TrialStartedDialog'
 
 const navItems: Array<{ label: string; path: string; icon: typeof DashboardRounded; permission?: Permission }> = [
   { label: 'Inicio', path: '/admin', icon: DashboardRounded },
@@ -15,10 +18,11 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash:manage' },
   { label: 'Empleados', path: '/admin/empleados', icon: GroupsRounded, permission: 'team:manage' },
   { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded },
+  { label: 'Suscripción', path: '/admin/suscripcion', icon: WorkspacePremiumRounded },
   { label: 'Configuración', path: '/admin/configuracion', icon: SettingsRounded },
 ]
 
-export function AppShell() {
+function AppShellContent() {
   const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -58,10 +62,11 @@ export function AppShell() {
       <Box px={2} py={1}><Typography fontWeight={800}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{roleLabel} · {user?.business.name}</Typography></Box>
       <Divider />
       <MenuItem onClick={() => { closeAccount(); navigate('/admin/perfil') }}><ListItemIcon><AccountCircleRounded fontSize="small" /></ListItemIcon>Mi perfil</MenuItem>
+      {user?.platformRole === 'SUPER_ADMIN' && <MenuItem onClick={() => { closeAccount(); navigate('/platform-admin') }}><ListItemIcon><AdminPanelSettingsRounded fontSize="small" /></ListItemIcon>Administración de TecnoDesk</MenuItem>}
       <MenuItem onClick={() => { closeAccount(); logout() }}><ListItemIcon><LogoutRounded fontSize="small" /></ListItemIcon>Cerrar sesión</MenuItem>
     </Menu>
-    <ProfileCompletionDialog />
-    <Box component="main" className={styles.content}><Box className={styles.inner}><Outlet /></Box></Box>
+    <ProfileCompletionDialog /><TrialStartedDialog />
+    <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><Outlet /></Box></Box>
     {mobile && <Box component="nav" aria-label="Navegación principal" className={styles.mobileNav}>
       <button onClick={() => go('/admin')} className={selected('/admin') ? styles.active : ''}><DashboardRounded /><span>Inicio</span></button>
       <button onClick={() => go('/admin/reparaciones')} className={selected('/admin/reparaciones') ? styles.active : ''}><BuildRounded /><span>Reparaciones</span></button>
@@ -71,3 +76,5 @@ export function AppShell() {
     </Box>}
   </Box>
 }
+
+export function AppShell(){return <SubscriptionProvider><AppShellContent/></SubscriptionProvider>}

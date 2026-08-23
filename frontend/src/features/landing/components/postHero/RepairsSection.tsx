@@ -1,0 +1,3 @@
+import { SectionCopy } from './SectionCopy'
+import { RepairsListMockup } from './mockups/RepairsListMockup'
+export function RepairsSection(){return <section id="funciones" className="story-section repairs-story"><div className="landing-container story-grid"><SectionCopy eyebrow="GESTIÓN DE REPARACIONES" title="Todas tus reparaciones, en un solo lugar" description="Registrá cada equipo, encontrá rápidamente a tu cliente y conocé el estado de cada trabajo sin depender de anotaciones o conversaciones perdidas." points={['Estado de cada reparación','Datos del cliente y equipo','Acceso rápido al detalle']}/><RepairsListMockup/></div></section>}

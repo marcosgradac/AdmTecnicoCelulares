@@ -10,6 +10,10 @@ import { randomBytes } from 'node:crypto'
 import { CashMovementType, PaymentMethod, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
+import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
+import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
+import { requireSubscriptionWriteAccess } from './modules/billing/billing.middleware'
+import { addDays } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { inventoryRouter } from './modules/inventory/inventory.routes'
@@ -50,6 +54,7 @@ const userResponse = <T extends {
   phone: string | null
   email: string
   role: 'OWNER' | 'TECHNICIAN'
+  platformRole: 'USER' | 'SUPER_ADMIN'
   business: { id: string; name: string }
 }>(user: T) => ({
   id: user.id,
@@ -59,6 +64,7 @@ const userResponse = <T extends {
   phone: user.phone,
   email: user.email,
   role: user.role,
+  platformRole: user.platformRole,
   profileComplete: Boolean(user.firstName && user.lastName),
   business: { id: user.business.id, name: user.business.name },
 })
@@ -118,6 +124,8 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
       const business = await tx.business.create({
         data: { name: parsed.data.businessName, phone: normalizePhone(parsed.data.businessPhone) },
       })
+      const now = new Date()
+      await tx.subscription.create({ data: { businessId: business.id, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt: addDays(now, 30), trialConsumedAt: now } })
       return tx.user.create({
         data: {
           businessId: business.id,
@@ -132,7 +140,7 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
         include: { business: true },
       })
     })
-    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion })
+    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.status(201).json({ token, user: userResponse(user) })
   } catch (error) {
     if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
@@ -149,7 +157,7 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email: parsed.data.email.toLowerCase() }, include: { business: true } })
     if (!user || !await bcrypt.compare(parsed.data.password, user.passwordHash)) return unauthorized(res, 'Email o contraseña incorrectos')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion })
+    const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.json({ token, user: userResponse(user) })
   } catch { return res.status(500).json({ success: false, message: 'Error iniciando sesión' }) }
 })
@@ -191,7 +199,12 @@ app.patch('/api/profile', authenticate, async (req, res) => {
   return res.json(userResponse(user))
 })
 
+app.get('/api/billing/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))
+
 app.use('/api', authenticate)
+app.use('/api/billing', billingRouter)
+app.use('/api/platform-admin', platformAdminRouter)
+app.use('/api', requireSubscriptionWriteAccess)
 app.use('/api/team', teamRouter)
 app.use('/api/inventory', inventoryRouter)
 app.use('/api/reports', reportsRouter)
@@ -244,6 +257,9 @@ app.post('/api/repairs', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
   const businessId = authOf(req).businessId
   try {
+    await assertWithinLimit(authOf(req).businessId, 'repairs')
+    let trackingAllowed = true
+    try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch { trackingAllowed = false }
     const data = parsed.data
     const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } })
     if (!client) return res.status(404).json({ success: false, message: 'El cliente seleccionado no existe' })
@@ -253,10 +269,13 @@ app.post('/api/repairs', async (req, res) => {
       const deliveredAt = data.status === RepairStatus.DELIVERED ? new Date() : null
       const warrantyStartedAt = data.warrantyEnabled && deliveredAt ? deliveredAt : null
       const warrantyExpiresAt = warrantyStartedAt && data.warrantyDurationDays ? new Date(warrantyStartedAt.getTime() + data.warrantyDurationDays * 86_400_000) : null
-      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: randomBytes(32).toString('hex'), trackingEnabled: true, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
+      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? randomBytes(32).toString('hex') : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.status(201).json(repair)
-  } catch { return res.status(500).json({ success: false, message: 'Error creando reparación' }) }
+  } catch (error) {
+    const status = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
+    return res.status(status).json({ success: false, message: error instanceof Error && status !== 500 ? error.message : 'Error creando reparación' })
+  }
 })
 
 const updateRepairSchema = z.object({
@@ -364,10 +383,11 @@ app.get('/api/repairs/:id/history', async (req, res) => {
 })
 
 app.post('/api/repairs/:id/tracking-link', async (req, res) => {
+  try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 409).json({ success: false, message: error instanceof Error ? error.message : 'Límite alcanzado' }) }
   const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   const trackingToken = randomBytes(32).toString('hex')
-  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true }, select: { trackingToken: true, trackingEnabled: true } }))
+  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true, trackingCreatedAt: new Date() }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
 app.patch('/api/repairs/:id/tracking-link', async (req, res) => {

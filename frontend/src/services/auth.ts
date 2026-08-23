@@ -8,6 +8,7 @@ export interface AuthUser {
   phone: string | null
   email: string
   role: 'OWNER' | 'TECHNICIAN'
+  platformRole: 'USER' | 'SUPER_ADMIN'
   profileComplete: boolean
   business: { id: string; name: string }
 }

@@ -1,0 +1,3 @@
+import { SectionCopy } from './SectionCopy'
+import { RepairDetailMockup } from './mockups/RepairDetailMockup'
+export function RepairDetailSection(){return <section className="story-section story-section--tinted"><div className="landing-container story-grid story-grid--reverse"><RepairDetailMockup/><SectionCopy eyebrow="DETALLE DE REPARACIÓN" title="Todo lo que necesitás saber de un trabajo" description="Consultá los datos del equipo, el problema informado, los importes y el avance de la reparación desde una única ficha." points={['Información del cliente','Datos del equipo','Estado actual','Pagos y saldo','Historial del trabajo']}/></div></section>}

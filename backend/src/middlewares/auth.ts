@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import type { UserRole } from '@prisma/client'
+import type { PlatformRole, UserRole } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 
-export interface AuthData { userId: string; businessId: string; role: UserRole; tokenVersion: number }
+export interface AuthData { userId: string; businessId: string; role: UserRole; platformRole: PlatformRole; tokenVersion: number }
 
 declare global {
   namespace Express {
@@ -26,12 +26,12 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const payload = jwt.verify(token, jwtSecret) as AuthData
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, businessId: true, role: true, isActive: true, tokenVersion: true },
+      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true },
     })
     if (!user || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
     if ((payload.tokenVersion ?? 0) !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    req.auth = { userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion }
+    req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }
     next()
   } catch {
     return unauthorized(res, 'Token inválido o expirado')
@@ -45,3 +45,8 @@ export const requireRoles = (roles: UserRole[]) =>
       : res.status(403).json({ success: false, message: 'No tenés permisos para realizar esta acción' })
 
 export const requireRole = (...roles: UserRole[]) => requireRoles(roles)
+
+export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) =>
+  authOf(req).platformRole === 'SUPER_ADMIN'
+    ? next()
+    : res.status(403).json({ success: false, message: 'No tenés permisos para realizar esta acción' })

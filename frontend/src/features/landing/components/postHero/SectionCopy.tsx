@@ -1,0 +1,2 @@
+import { CheckRounded } from '@mui/icons-material'
+export function SectionCopy({eyebrow,title,description,points=[]}:{eyebrow:string;title:string;description:string;points?:string[]}){return <div className="story-copy" data-reveal><span>{eyebrow}</span><h2>{title}</h2><p>{description}</p>{points.length>0&&<div className="story-points">{points.map(point=><small key={point}><i><CheckRounded/></i>{point}</small>)}</div>}</div>}

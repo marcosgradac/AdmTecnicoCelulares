@@ -1,0 +1,7 @@
+export type PlanCode = 'INITIAL' | 'PROFESSIONAL' | 'COMPLETE'
+export type SubscriptionStatus = 'TRIALING' | 'ACTIVE' | 'GRACE' | 'PAST_DUE' | 'SUSPENDED' | 'CANCELED'
+export interface Plan { code: PlanCode; name: string; priceARS: number; repairLimitPerPeriod: number | null; trackingLimitPerPeriod: number | null; dashboardComplete: boolean; advancedReports: boolean }
+export interface Usage { repairs: number; trackingLinks: number; entitlements: { repairLimitPerPeriod: number | null; trackingLimitPerPeriod: number | null; dashboardComplete: boolean; advancedReports: boolean }; periodStart: string; periodEnd: string }
+export interface Subscription { id: string; planCode: PlanCode; effectivePlanCode: PlanCode; status: SubscriptionStatus; trialStartedAt: string; trialEndsAt: string; currentPeriodStart: string | null; currentPeriodEnd: string | null; graceEndsAt: string | null; daysRemaining: number; plan: Plan; usage: Usage; pendingPayment: { id: string; planCode: PlanCode; createdAt: string } | null }
+export interface BillingPayment { id: string; planCode: PlanCode; expectedAmount: number; reportedAmount: number; payerName: string; transferDate: string; reference?: string | null; status: 'PENDING' | 'APPROVED' | 'REJECTED'; rejectionReason?: string | null; createdAt: string; plan: Plan }
+export interface TransferDetails { configured: boolean; holderName: string; bankName: string; alias: string; cbuCvu: string; taxId: string; additionalText?: string | null }

@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   const register = async (input: RegisterInput) => {
     const result = await registerRequest(input)
+    sessionStorage.setItem('tecnodesk_trial_started', 'true')
     localStorage.setItem(TOKEN_KEY, result.token); setUser(result.user)
   }
   const updateProfile = async (input: ProfileInput) => setUser(await updateProfileRequest(input))

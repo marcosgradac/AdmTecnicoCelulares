@@ -26,6 +26,32 @@ enum UserRole {
   TECHNICIAN
 }
 
+enum PlatformRole {
+  USER
+  SUPER_ADMIN
+}
+
+enum PlanCode {
+  INITIAL
+  PROFESSIONAL
+  COMPLETE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  GRACE
+  PAST_DUE
+  SUSPENDED
+  CANCELED
+}
+
+enum BillingPaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum WarrantyClaimStatus {
   OPEN
   IN_REVIEW
@@ -51,6 +77,9 @@ model Business {
   devices            Device[]
   inventoryMovements InventoryMovement[]
   warrantyClaims     WarrantyClaim[]
+  subscription       Subscription?
+  billingPayments    PaymentSubmission[]
+  subscriptionAudits SubscriptionAuditLog[]
 }
 
 model User {
@@ -63,6 +92,7 @@ model User {
   email               String                @unique
   passwordHash        String
   role                UserRole              @default(TECHNICIAN)
+  platformRole        PlatformRole          @default(USER)
   isActive            Boolean               @default(true)
   tokenVersion        Int                   @default(0)
   createdAt           DateTime              @default(now())
@@ -71,6 +101,8 @@ model User {
   passwordResetTokens PasswordResetToken[]
   repairStatusHistory RepairStatusHistory[]
   inventoryMovements  InventoryMovement[]
+  reviewedPayments    PaymentSubmission[]   @relation("PaymentReviewer")
+  subscriptionAudits  SubscriptionAuditLog[] @relation("AuditActor")
 
   @@index([businessId])
 }
@@ -150,6 +182,7 @@ model Repair {
   paid                  Int                   @default(0)
   trackingToken         String?               @unique
   trackingEnabled       Boolean               @default(false)
+  trackingCreatedAt     DateTime?
   deliveredAt           DateTime?
   warrantyEnabled       Boolean               @default(false)
   warrantyDurationDays  Int?
@@ -171,6 +204,7 @@ model Repair {
 
   @@unique([businessId, number])
   @@index([businessId])
+  @@index([businessId, trackingCreatedAt])
 }
 
 model WarrantyClaim {
@@ -338,4 +372,93 @@ model CashMovement {
   business    Business         @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+}
+
+model Plan {
+  code                    PlanCode              @id
+  name                    String
+  priceARS                Int
+  repairLimitPerPeriod    Int?
+  trackingLimitPerPeriod  Int?
+  dashboardComplete       Boolean               @default(false)
+  advancedReports         Boolean               @default(false)
+  isActive                Boolean               @default(true)
+  displayOrder            Int
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  subscriptions           Subscription[]
+  paymentSubmissions      PaymentSubmission[]
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  businessId         String             @unique
+  planCode           PlanCode           @default(COMPLETE)
+  status             SubscriptionStatus @default(TRIALING)
+  trialStartedAt     DateTime
+  trialEndsAt        DateTime
+  trialConsumedAt    DateTime
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  graceEndsAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  business           Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  plan               Plan               @relation(fields: [planCode], references: [code])
+  payments           PaymentSubmission[]
+
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+model PaymentSubmission {
+  id               String               @id @default(cuid())
+  subscriptionId   String
+  businessId       String
+  planCode         PlanCode
+  expectedAmount   Int
+  reportedAmount   Int
+  payerName         String
+  transferDate     DateTime
+  reference        String?
+  notes            String?
+  status           BillingPaymentStatus @default(PENDING)
+  reviewedByUserId String?
+  reviewedAt       DateTime?
+  rejectionReason  String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  subscription     Subscription         @relation(fields: [subscriptionId], references: [id], onDelete: Restrict)
+  business         Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  plan             Plan                 @relation(fields: [planCode], references: [code])
+  reviewedBy       User?                @relation("PaymentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([status, createdAt])
+}
+
+model BillingSettings {
+  id             String   @id @default("default")
+  holderName     String?
+  bankName       String?
+  alias          String?
+  cbuCvu         String?
+  taxId          String?
+  additionalText String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SubscriptionAuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  businessId  String
+  action      String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  actor       User     @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, createdAt])
+  @@index([actorUserId, createdAt])
 }
