@@ -32,4 +32,70 @@
 
 /* Register reuses the approved auth shell with an internally scrollable form panel. */
 .auth-page--register{height:100dvh!important;min-height:100dvh!important;overflow:hidden}.auth-page--register .auth-visual-slot{height:100dvh;overflow:hidden}.auth-page--register .auth-form-region{display:block!important;height:100dvh;min-height:0;overflow-x:hidden;overflow-y:auto;padding:clamp(40px,6vh,72px) 32px 48px!important;scrollbar-width:thin;scrollbar-color:#c9c7e4 transparent;background:radial-gradient(circle at 88% 12%,#c9dfff55,transparent 28%),linear-gradient(145deg,#fbfcff,#f3f6fc)}.auth-page--register .auth-form-region::-webkit-scrollbar{width:6px}.auth-page--register .auth-form-region::-webkit-scrollbar-track{background:transparent}.auth-page--register .auth-form-region::-webkit-scrollbar-thumb{border-radius:8px;background:#c9c7e4}.auth-page--register .auth-form-surface{width:100%;max-width:520px!important;margin:0 auto;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}.auth-page--register .auth-form-logo{display:block;width:210px;height:auto;margin:0 0 20px;object-fit:contain;object-position:left center}.auth-page--register .auth-form-surface h1{font-weight:900;letter-spacing:-.03em;color:#17172a}.auth-page--register .auth-form-surface>p{margin-bottom:14px!important}.auth-page--register .auth-content-stack{gap:0}.register-time{display:flex;align-items:center;gap:7px;margin-bottom:24px;color:#6d6f83;font-size:12px}.register-time svg{font-size:17px;color:#6967dc}.register-form{display:grid;gap:15px}.register-section-title{margin-top:7px!important;font-weight:850!important;color:#25243a}.register-form .MuiOutlinedInput-root{min-height:56px;border-radius:16px;background:#fff!important}.register-form .MuiOutlinedInput-input{background:transparent!important}.register-form input:-webkit-autofill,.register-form input:-webkit-autofill:hover,.register-form input:-webkit-autofill:focus,.register-form input:-webkit-autofill:active{-webkit-box-shadow:0 0 0 1000px #fff inset!important;-webkit-text-fill-color:#1d1b36!important;caret-color:#1d1b36;transition:background-color 9999s ease-out 0s}.register-form .MuiOutlinedInput-root.Mui-focused{background:#fff!important;box-shadow:0 0 0 4px #5a55db12}.register-form .login-submit{width:100%;margin-top:3px}.auth-page--register .auth-content-stack>p:last-child{margin-top:14px!important;color:#73758a}.auth-page--register .auth-content-stack>p:last-child a{margin-left:3px;color:#5543d7;font-weight:850}
-@media(max-width:767px){.auth-page--register{height:auto!important;overflow:visible}.auth-page--register .auth-form-region{height:auto;min-height:100dvh;overflow:visible;padding:24px 18px 36px!important;background:radial-gradient(circle at 85% 0,#7d73ff3d,transparent 27%),linear-gradient(180deg,#eef2ff 0,#fff 20%)!important}.auth-page--register .auth-form-logo{width:188px;margin-bottom:16px}.auth-page--register .auth-form-surface h1{font-size:27px}.auth-page--register .register-name-row{gap:15px}.register-form{gap:14px}.register-time{margin-bottom:20px}}
+@media(max-width:767px){
+  .auth-page--register{
+    display:block!important;
+    width:100%;
+    min-height:100dvh!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:visible!important;
+    color:#17172a;
+    background:linear-gradient(180deg,#f3f5ff 0,#fff 240px)!important;
+  }
+  .auth-page--register:before{display:none}
+  .auth-page--register .auth-visual-slot{display:none!important;height:0!important;overflow:hidden!important}
+  .auth-page--register .auth-form-region{
+    position:static!important;
+    display:block!important;
+    width:100%;
+    min-height:100dvh!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+    padding:max(22px,env(safe-area-inset-top)) 22px calc(48px + env(safe-area-inset-bottom))!important;
+    background:transparent!important;
+  }
+  .auth-page--register .auth-form-surface{
+    width:100%!important;
+    max-width:none!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    color:#17172a!important;
+    border:0!important;
+    border-radius:0!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  .auth-page--register .auth-form-logo{width:184px;max-width:58vw;height:auto;margin:0 0 16px}
+  .auth-page--register .auth-form-surface h1{font-size:28px;line-height:1.14}
+  .auth-page--register .auth-form-surface>p{margin-bottom:18px!important;color:#6f7284!important;font-size:15px;line-height:1.5}
+  .auth-page--register .auth-content-stack,.auth-page--register .register-form{width:100%}
+  .auth-page--register .register-name-row{width:100%;gap:14px}
+  .auth-page--register .register-form{gap:15px}
+  .auth-page--register .register-form>.MuiFormControl-root,.auth-page--register .register-name-row>.MuiFormControl-root{width:100%;min-width:0}
+  .auth-page--register .register-form .MuiOutlinedInput-root{width:100%;min-height:56px}
+  .auth-page--register .register-form .MuiOutlinedInput-root{color:#1d1b36;background:#fff!important;box-shadow:0 8px 22px #49508a0a}
+  .auth-page--register .register-form .MuiOutlinedInput-notchedOutline{border-color:#dfe2ec!important}
+  .auth-page--register .register-form .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline{border-color:#bfc4d5!important}
+  .auth-page--register .register-form .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline{border-color:#6453d9!important}
+  .auth-page--register .register-form .MuiInputLabel-root{color:#6e7184!important}
+  .auth-page--register .register-form .MuiInputLabel-root.Mui-focused{color:#5b48d3!important}
+  .auth-page--register .register-form .MuiIconButton-root{color:#6b6b80!important}
+  .auth-page--register .register-form .MuiCheckbox-root{color:#7770db!important}
+  .auth-page--register .register-form .MuiFormHelperText-root{margin:5px 12px 0;color:#777a8e!important;font-size:12px;line-height:1.35}
+  .auth-page--register .register-form .MuiFormHelperText-root.Mui-error{color:#c62828!important}
+  .auth-page--register .register-section-title{font-size:15px}
+  .auth-page--register .register-time{margin-bottom:20px;color:#686b7e;font-size:13px;line-height:1.4}
+  .auth-page--register .register-form .MuiFormControlLabel-label{font-size:14px;line-height:1.45}
+  .auth-page--register .turnstile-field{width:100%;min-width:0;overflow:hidden}
+  .auth-page--register .login-submit{width:100%!important;min-height:56px}
+  .auth-page--register .auth-content-stack>p:last-child{padding-bottom:4px;font-size:14px}
+}
+@media(max-width:380px){
+  .auth-page--register .auth-form-region{padding-inline:20px!important}
+  .auth-page--register .auth-form-logo{width:172px}
+  .auth-page--register .auth-form-surface h1{font-size:26px}
+}
