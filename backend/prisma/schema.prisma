@@ -61,6 +61,7 @@ enum WarrantyClaimStatus {
 
 model Business {
   id                 String              @id @default(cuid())
+  isActive           Boolean             @default(true)
   name               String
   slug               String?             @unique
   phone              String?
@@ -85,6 +86,7 @@ model Business {
   subscription       Subscription?
   billingPayments    PaymentSubmission[]
   subscriptionAudits SubscriptionAuditLog[]
+  internalNotes      PlatformInternalNote[]
 }
 
 model User {
@@ -417,6 +419,11 @@ model Subscription {
   currentPeriodStart DateTime?
   currentPeriodEnd   DateTime?
   graceEndsAt        DateTime?
+  accessExpiresAt    DateTime?
+  graceDaysOverride  Int?
+  manuallyBlockedAt  DateTime?
+  manualBlockReason  String?
+  manualBlockNote    String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   business           Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
@@ -461,8 +468,23 @@ model BillingSettings {
   cbuCvu         String?
   taxId          String?
   additionalText String?
+  expirationWarningDays Int @default(7)
+  defaultGraceDays      Int @default(5)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model PlatformInternalNote {
+  id          String   @id @default(cuid())
+  businessId  String
+  authorUserId String
+  content     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId, createdAt])
+  @@index([authorUserId])
 }
 
 model SubscriptionAuditLog {

@@ -1,10 +1,10 @@
 import { Router } from 'express'
-import { authOf, requireRole } from '../../middlewares/auth'
+import { authOf, requirePermission } from '../../middlewares/auth'
 import { getReportsOverview, reportPeriodSchema } from './reports.service'
 import { assertFeatureAccess } from '../billing/billing.service'
 
 export const reportsRouter = Router()
-reportsRouter.use(requireRole('OWNER'))
+reportsRouter.use(requirePermission('reports.view'))
 
 reportsRouter.get('/overview', async (req, res) => {
   const parsed = reportPeriodSchema.safeParse(req.query)

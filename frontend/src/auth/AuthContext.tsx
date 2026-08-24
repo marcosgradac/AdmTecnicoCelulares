@@ -5,7 +5,7 @@ const TOKEN_KEY = 'cellufix_access_token'
 interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<AuthUser>
   register: (input: RegisterInput) => Promise<void>
   updateProfile: (input: ProfileInput) => Promise<void>
   logout: () => void
@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const result = await loginRequest({ email, password })
     localStorage.setItem(TOKEN_KEY, result.token); setUser(result.user)
+    return result.user
   }
   const register = async (input: RegisterInput) => {
     const result = await registerRequest(input)

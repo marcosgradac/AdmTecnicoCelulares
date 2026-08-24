@@ -11,14 +11,14 @@ import { SubscriptionProvider } from '../../features/billing/SubscriptionContext
 import { SubscriptionBanner } from '../../features/billing/SubscriptionBanner'
 import { TrialStartedDialog } from '../../features/billing/TrialStartedDialog'
 
-const navItems: Array<{ label: string; path: string; icon: typeof DashboardRounded; permission?: Permission }> = [
-  { label: 'Inicio', path: '/admin', icon: DashboardRounded },
-  { label: 'Reparaciones', path: '/admin/reparaciones', icon: BuildRounded },
-  { label: 'Clientes', path: '/admin/clientes', icon: PeopleRounded },
+const navItems: Array<{ label: string; path: string; icon: typeof DashboardRounded; permission?: Permission; ownerOnly?: boolean }> = [
+  { label: 'Inicio', path: '/admin', icon: DashboardRounded, ownerOnly: true },
+  { label: 'Reparaciones', path: '/admin/reparaciones', icon: BuildRounded, permission: 'repairs.view' },
+  { label: 'Clientes', path: '/admin/clientes', icon: PeopleRounded, permission: 'clients.view' },
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash.view' },
   { label: 'Empleados', path: '/admin/empleados', icon: GroupsRounded, permission: 'team.view' },
-  { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded },
-  { label: 'Suscripción', path: '/admin/suscripcion', icon: WorkspacePremiumRounded },
+  { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded, ownerOnly: true },
+  { label: 'Suscripción', path: '/admin/suscripcion', icon: WorkspacePremiumRounded, ownerOnly: true },
   { label: 'Configuración', path: '/admin/configuracion', icon: SettingsRounded, permission: 'settings.access' },
 ]
 
@@ -35,7 +35,8 @@ function AppShellContent() {
   const initials = user?.fullName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U'
   const roleLabel = user?.role === 'OWNER' ? 'Propietario' : 'Técnico'
   const closeAccount = () => setAccountAnchor(null)
-  const visibleNavItems = navItems.filter(item => !item.permission || canAccess(user, item.permission))
+  const visibleNavItems = navItems.filter(item => (!item.ownerOnly || user?.role === 'OWNER') && (!item.permission || canAccess(user, item.permission)))
+  const mobileItems = visibleNavItems.filter(item => !['/admin/configuracion', '/admin/empleados', '/admin/suscripcion'].includes(item.path)).slice(0, canAccess(user, 'repairs.create') ? 3 : 4)
 
   const drawer = <Box className={styles.drawer}>
     <Box className={styles.brand}><BrandLogo compact className={styles.logo} /><Box><Typography fontWeight={800}>TecnoDesk</Typography><Typography variant="caption" color="text.secondary">Gestión técnica</Typography></Box></Box>
@@ -66,10 +67,8 @@ function AppShellContent() {
     <ProfileCompletionDialog /><TrialStartedDialog />
     <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><Outlet /></Box></Box>
     {mobile && <Box component="nav" aria-label="Navegación principal" className={styles.mobileNav}>
-      <button onClick={() => go('/admin')} className={selected('/admin') ? styles.active : ''}><DashboardRounded /><span>Inicio</span></button>
-      <button onClick={() => go('/admin/reparaciones')} className={selected('/admin/reparaciones') ? styles.active : ''}><BuildRounded /><span>Reparaciones</span></button>
-      <button onClick={() => go('/admin/reparaciones/nueva')} className={styles.create}><AddRounded /><span>Nueva</span></button>
-      <button onClick={() => go('/admin/clientes')} className={selected('/admin/clientes') ? styles.active : ''}><PeopleRounded /><span>Clientes</span></button>
+      {mobileItems.map(({path,label,icon:Icon})=><button key={path} onClick={() => go(path)} className={selected(path) ? styles.active : ''}><Icon/><span>{label}</span></button>)}
+      {canAccess(user,'repairs.create')&&<button onClick={() => go('/admin/reparaciones/nueva')} className={styles.create}><AddRounded /><span>Nueva</span></button>}
       <button onClick={() => setOpen(true)}><MoreHorizRounded /><span>Más</span></button>
     </Box>}
   </Box>

@@ -13,7 +13,7 @@ import { authenticate, authOf, requirePermission, requireRole, type AuthData } f
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
 import { requireSubscriptionWriteAccess } from './modules/billing/billing.middleware'
-import { addDays } from './modules/billing/billing.service'
+import { addDays, getBusinessAccessStatus } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { passwordChangeRouter } from './modules/auth/password-change.routes'
@@ -152,7 +152,8 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
         data: { name: parsed.data.businessName, phone: normalizePhone(parsed.data.businessPhone) },
       })
       const now = new Date()
-      await tx.subscription.create({ data: { businessId: business.id, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt: addDays(now, 30), trialConsumedAt: now } })
+      const trialEndsAt = addDays(now, 30)
+      await tx.subscription.create({ data: { businessId: business.id, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt, trialConsumedAt: now, accessExpiresAt: trialEndsAt } })
       return tx.user.create({
         data: {
           businessId: business.id,
@@ -190,6 +191,11 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
     const user = await prisma.user.findUnique({ where: { email: parsed.data.email.toLowerCase() }, include: { business: true } })
     if (!user || !await bcrypt.compare(parsed.data.password, user.passwordHash)) return unauthorized(res, 'Email o contraseña incorrectos')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
+    if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'BUSINESS_BLOCKED', audience: user.role })
+    if (user.platformRole !== 'SUPER_ADMIN') {
+      const access = await getBusinessAccessStatus(user.businessId)
+      if (access?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
+    }
     const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.json({ token, user: userResponse(user) })
   } catch { return res.status(500).json({ success: false, message: 'Error iniciando sesión' }) }
@@ -383,7 +389,7 @@ app.patch('/api/clients/:id', requirePermission('clients.update'), async (req, r
   return res.json(await prisma.client.update({ where: { id: current.id }, data: { name: parsed.data.name, phone } }))
 })
 
-app.post('/api/repairs/:id/payments', requireRole('OWNER'), async (req, res) => {
+app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'), async (req, res) => {
   const parsed = z.object({ amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod), note: z.string().optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de pago inválidos' })
   const businessId = authOf(req).businessId
@@ -429,8 +435,8 @@ app.patch('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTrac
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
-app.get('/api/cash/movements', requireRole('OWNER'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
-app.post('/api/cash/movements', requireRole('OWNER'), async (req, res) => {
+app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
+app.post('/api/cash/movements', requirePermission('cash.create'), async (req, res) => {
   const parsed = z.object({ type: z.nativeEnum(CashMovementType), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })
   return res.status(201).json(await prisma.cashMovement.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
@@ -480,7 +486,7 @@ app.patch('/api/warranties/claims/:id', async (req, res) => {
   const closed = ['RESOLVED', 'REJECTED'].includes(parsed.data.status)
   return res.json(await prisma.warrantyClaim.update({ where: { id: claim.id }, data: { ...parsed.data, resolution: parsed.data.resolution || null, resolvedAt: closed ? new Date() : null } }))
 })
-app.get('/api/dashboard/summary', async (req, res) => {
+app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
   const businessId = authOf(req).businessId
   const canViewFinancials = authOf(req).role === 'OWNER'
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)

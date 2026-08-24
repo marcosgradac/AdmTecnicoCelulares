@@ -2,7 +2,28 @@ import { type PlanCode, type Prisma, type Subscription } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 
 export const TRIAL_DAYS = 30
-export const GRACE_DAYS = 3
+export const GRACE_DAYS = 5
+export type AccountAccessStatusCode = 'NO_EXPIRY' | 'ACTIVE' | 'EXPIRING' | 'GRACE' | 'BLOCKED'
+const DAY_MS = 86_400_000
+const daysBetween = (future: Date, now: Date) => Math.max(0, Math.ceil((future.getTime() - now.getTime()) / DAY_MS))
+
+export async function getAccountAccessStatus(subscription: Subscription, now = new Date()) {
+  const settings = await prisma.billingSettings.findUnique({ where: { id: 'default' }, select: { expirationWarningDays: true, defaultGraceDays: true } })
+  const warningDays = settings?.expirationWarningDays ?? 7
+  const graceDays = subscription.graceDaysOverride ?? settings?.defaultGraceDays ?? GRACE_DAYS
+  const expiresAt = subscription.accessExpiresAt
+  const graceEndsAt = expiresAt ? addDays(expiresAt, graceDays) : null
+  if (subscription.manuallyBlockedAt) return { status: 'BLOCKED' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: 0, shouldBlock: true, blockType: 'MANUAL' as const, blockedAt: subscription.manuallyBlockedAt, blockReason: subscription.manualBlockReason, blockNote: subscription.manualBlockNote }
+  if (!expiresAt) return { status: 'NO_EXPIRY' as const, expiresAt: null, graceEndsAt: null, warningDays, graceDays, daysRemaining: null, graceDaysRemaining: null, shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null }
+  if (now <= expiresAt) { const daysRemaining = daysBetween(expiresAt, now); return { status: daysRemaining <= warningDays ? 'EXPIRING' as const : 'ACTIVE' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining, graceDaysRemaining: 0, shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null } }
+  if (graceEndsAt && now <= graceEndsAt) return { status: 'GRACE' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: Math.max(1, daysBetween(graceEndsAt, now)), shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null }
+  return { status: 'BLOCKED' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: 0, shouldBlock: true, blockType: 'AUTOMATIC' as const, blockedAt: graceEndsAt, blockReason: 'SUBSCRIPTION_EXPIRED', blockNote: null }
+}
+
+export async function getBusinessAccessStatus(businessId: string, now = new Date()) {
+  const subscription = await prisma.subscription.findUnique({ where: { businessId } })
+  return subscription ? getAccountAccessStatus(subscription, now) : null
+}
 
 export const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 86_400_000)
 export const addBillingMonth = (date: Date) => {
@@ -88,7 +109,7 @@ export async function approvePayment(paymentId: string, actorUserId: string, now
     const currentPeriodEnd = addBillingMonth(billingBase)
     const updated = await tx.paymentSubmission.updateMany({ where: { id: payment.id, status: 'PENDING' }, data: { status: 'APPROVED', reviewedByUserId: actorUserId, reviewedAt: now, rejectionReason: null } })
     if (updated.count !== 1) throw Object.assign(new Error('Este pago ya fue procesado.'), { statusCode: 409 })
-    const subscription = await tx.subscription.update({ where: { id: payment.subscriptionId }, data: { status: 'ACTIVE', planCode: payment.planCode, currentPeriodStart: billingBase, currentPeriodEnd, graceEndsAt: null } })
+    const subscription = await tx.subscription.update({ where: { id: payment.subscriptionId }, data: { status: 'ACTIVE', planCode: payment.planCode, currentPeriodStart: billingBase, currentPeriodEnd, accessExpiresAt: currentPeriodEnd, graceEndsAt: null, manuallyBlockedAt: null, manualBlockReason: null, manualBlockNote: null } })
     await tx.subscriptionAuditLog.create({ data: { actorUserId, businessId: payment.businessId, action: 'PAYMENT_APPROVED', metadata: { paymentId, planCode: payment.planCode, currentPeriodEnd } as Prisma.InputJsonValue } })
     return { payment: await tx.paymentSubmission.findUnique({ where: { id: payment.id } }), subscription }
   })
@@ -102,5 +123,5 @@ export const serializeSubscription = async (businessId: string) => {
   const daysRemaining = end ? Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86_400_000)) : 0
   const pendingPayment = await prisma.paymentSubmission.findFirst({ where: { businessId, status: 'PENDING' }, orderBy: { createdAt: 'desc' }, select: { id: true, planCode: true, createdAt: true } })
   const effectivePlanCode = subscription.status === 'TRIALING' || (subscription.trialEndsAt > now && (!subscription.currentPeriodStart || subscription.currentPeriodStart >= subscription.trialEndsAt)) ? 'COMPLETE' : subscription.planCode
-  return { ...subscription, effectivePlanCode, daysRemaining, usage, pendingPayment }
+  return { ...subscription, effectivePlanCode, daysRemaining, access: await getAccountAccessStatus(subscription), usage, pendingPayment }
 }

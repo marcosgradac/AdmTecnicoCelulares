@@ -1,10 +1,11 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
-import { authOf } from '../../middlewares/auth'
+import { authOf, requireRole } from '../../middlewares/auth'
 import { assertWithinLimit, ensureSubscription, serializeSubscription, subscriptionUsage } from './billing.service'
 
 export const billingRouter = Router()
+billingRouter.use(requireRole('OWNER'))
 
 billingRouter.get('/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))
 billingRouter.get('/subscription', async (req, res) => res.json(await serializeSubscription(authOf(req).businessId)))
