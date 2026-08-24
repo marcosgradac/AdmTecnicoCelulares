@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Box, Typography } from '@mui/material'
 import { env } from '../../config/env'
 
@@ -32,9 +32,12 @@ const loadScript = () => {
 
 export function TurnstileWidget({ onToken, resetKey = 0 }: { onToken: (token: string) => void; resetKey?: number }) {
   const container = useRef<HTMLDivElement>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(env.turnstileSiteKey ? 'loading' : 'error')
 
   useEffect(() => {
-    if (!env.turnstileSiteKey || !container.current) return
+    onToken('')
+    if (!env.turnstileSiteKey || !container.current) { setStatus('error'); return }
+    setStatus('loading')
     let widgetId: string | undefined
     let cancelled = false
     void loadScript().then(() => {
@@ -43,14 +46,14 @@ export function TurnstileWidget({ onToken, resetKey = 0 }: { onToken: (token: st
         sitekey: env.turnstileSiteKey,
         theme: 'light',
         size: 'flexible',
-        callback: (token: string) => onToken(token),
+        callback: (token: string) => { setStatus('ready'); onToken(token) },
         'expired-callback': () => onToken(''),
-        'error-callback': () => onToken(''),
+        'error-callback': () => { setStatus('error'); onToken('') },
       })
-    })
+    }).catch(() => { if (!cancelled) { scriptPromise = null; setStatus('error'); onToken('') } })
     return () => { cancelled = true; if (widgetId && window.turnstile) window.turnstile.remove(widgetId) }
   }, [onToken, resetKey])
 
-  if (!env.turnstileSiteKey) return <Alert severity="warning">La verificación de seguridad no está configurada en este entorno.</Alert>
-  return <Box className="turnstile-field"><Typography variant="caption" color="text.secondary">Verificación de seguridad</Typography><div ref={container} /></Box>
+  if (status === 'error') return <Alert severity="warning">No pudimos completar la verificación de seguridad. Intentá nuevamente en unos instantes.</Alert>
+  return <Box className="turnstile-field" aria-live="polite"><Typography variant="caption" color="text.secondary">{status === 'loading' ? 'Cargando verificación de seguridad…' : 'Verificación de seguridad'}</Typography><div ref={container} /></Box>
 }
