@@ -18,6 +18,8 @@ export function RegisterPage() {
   const [saving, setSaving] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0)
   const strength = useMemo(() => [
     form.password.length >= 8,
     /[a-z]/.test(form.password) && /[A-Z]/.test(form.password),
@@ -41,7 +43,7 @@ export function RegisterPage() {
   const change = (field: keyof RegisterFormState, value: string | boolean) => setForm(current => ({ ...current, [field]: value }))
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setSubmitted(true)
-    if (saving || hasErrors) return
+    if (saving || hasErrors || !turnstileToken) return
     setSaving(true); setError('')
     try {
       await register({
@@ -50,16 +52,17 @@ export function RegisterPage() {
         email: form.email.trim(), password: form.password,
         termsAccepted: true, termsVersion: CURRENT_TERMS_VERSION,
         privacyAccepted: true, privacyVersion: CURRENT_PRIVACY_VERSION,
+        turnstileToken,
       })
     } catch (registerError) {
       setError(axios.isAxiosError<{ message?: string }>(registerError)
         ? registerError.response?.data?.message ?? 'No pudimos crear la cuenta'
         : 'No pudimos crear la cuenta')
-    } finally { setSaving(false) }
+    } finally { setTurnstileToken(''); setTurnstileResetKey(value => value + 1); setSaving(false) }
   }
 
   return <AuthLayout variant="register" title="Creá tu cuenta" description="Empezá a gestionar tu servicio técnico de forma simple y profesional.">
-    <RegisterForm form={form} invalid={invalid} submitted={submitted} saving={saving} error={error} strength={strength} onChange={change} onSubmit={submit} />
+    <RegisterForm form={form} invalid={invalid} submitted={submitted} saving={saving} error={error} strength={strength} turnstileToken={turnstileToken} turnstileResetKey={turnstileResetKey} onTurnstileToken={setTurnstileToken} onChange={change} onSubmit={submit} />
     <Typography variant="body2" textAlign="center">¿Ya tenés cuenta? <Link to="/login"><b>Iniciar sesión</b></Link></Typography>
   </AuthLayout>
 }

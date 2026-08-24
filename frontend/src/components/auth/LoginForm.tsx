@@ -3,12 +3,17 @@ import { EmailRounded, EastRounded } from '@mui/icons-material'
 import { Alert, Box, Button, InputAdornment, Link as MuiLink, TextField, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import PasswordField from './PasswordField'
+import { TurnstileWidget } from '../security/TurnstileWidget'
 
-export function LoginForm({ email, password, saving, error, onEmailChange, onPasswordChange, onSubmit }: {
+export function LoginForm({ email, password, saving, error, captchaRequired, captchaToken, captchaResetKey, onCaptchaToken, onEmailChange, onPasswordChange, onSubmit }: {
   email: string
   password: string
   saving: boolean
   error: string
+  captchaRequired: boolean
+  captchaToken: string
+  captchaResetKey: number
+  onCaptchaToken: (token: string) => void
   onEmailChange: (value: string) => void
   onPasswordChange: (value: string) => void
   onSubmit: (event: FormEvent) => void
@@ -21,7 +26,8 @@ export function LoginForm({ email, password, saving, error, onEmailChange, onPas
         InputProps={{ startAdornment: <InputAdornment position="start"><EmailRounded /></InputAdornment> }} />
       <PasswordField required showLeadingIcon value={password} onChange={event => onPasswordChange(event.target.value)} />
       <MuiLink className="login-forgot" component={Link} to="/olvide-mi-contrasena" underline="hover">Olvidé mi contraseña</MuiLink>
-      <Button className="login-submit" type="submit" size="large" variant="contained" disabled={saving || !email.trim() || !password} endIcon={!saving && <EastRounded />}>
+      {captchaRequired && <TurnstileWidget onToken={onCaptchaToken} resetKey={captchaResetKey} />}
+      <Button className="login-submit" type="submit" size="large" variant="contained" disabled={saving || !email.trim() || !password || (captchaRequired && !captchaToken)} endIcon={!saving && <EastRounded />}>
         {saving ? 'Iniciando sesión…' : 'Iniciar sesión'}
       </Button>
     </Box>

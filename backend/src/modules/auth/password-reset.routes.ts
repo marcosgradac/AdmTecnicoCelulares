@@ -49,7 +49,7 @@ passwordResetRouter.post('/forgot-password', forgotLimiter, async (req, res) => 
     return res.json({ success: true, message: genericMessage })
   } catch (error) {
     console.error('[mail] No se pudo enviar la recuperación de contraseña:', error instanceof Error ? error.message : 'error desconocido')
-    return res.status(502).json({ success: false, message: 'No pudimos enviar el correo de recuperación. Intentá nuevamente más tarde.' })
+    return res.json({ success: true, message: genericMessage })
   }
 })
 

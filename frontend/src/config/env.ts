@@ -16,4 +16,6 @@ const backendOrigin = backendUrl.toString().replace(/\/$/, '')
 export const env = {
   backendUrl: backendOrigin,
   apiUrl: `${backendOrigin}/api`,
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY
+    || (import.meta.env.DEV ? '1x00000000000000000000AA' : ''),
 }

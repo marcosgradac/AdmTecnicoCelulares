@@ -5,7 +5,6 @@ import helmet from 'helmet'
 import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
-import { rateLimit } from 'express-rate-limit'
 import { randomBytes } from 'node:crypto'
 import { CashMovementType, PaymentMethod, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
@@ -21,8 +20,12 @@ import { reportsRouter } from './modules/reports/reports.routes'
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 import { permissionsFor } from './config/permissions'
 import { settingsRouter } from './modules/settings/settings.routes'
+import { securityConfig } from './config/security'
+import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
+import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 
 export const app = express()
+app.set('trust proxy', 1)
 app.use(helmet())
 const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173')
   .split(',')
@@ -41,7 +44,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: false,
 }))
-app.use(express.json({ limit: '1mb' }))
+app.use(express.json({ limit: securityConfig.payloadLimit }))
+app.use('/api', globalApiLimiter)
 
 const jwtSecret = process.env.JWT_SECRET
 if (!jwtSecret) throw new Error('JWT_SECRET es obligatorio')
@@ -112,10 +116,27 @@ const publicRepairSelect = {
   business: { select: { name: true, logoUrl: true } },
   statusHistory: { where: { publicMessage: { not: null } }, select: { newStatus: true, publicMessage: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
 } as const
-app.get('/api/tracking/:token', async (req, res) => {
+app.get('/api/tracking/:token', publicTrackingLimiter, async (req, res) => {
   try {
-    const repair = await prisma.repair.findUnique({ where: { trackingToken: req.params.token }, select: publicRepairSelect })
-    if (!repair?.trackingEnabled) return res.status(404).json({ success: false, message: 'Seguimiento no encontrado' })
+    const ip = req.ip ?? 'unknown'
+    const risk = trackingRisk.get(ip)
+    if (trackingRisk.requiresCaptcha(risk)) {
+      try {
+        if (!await verifyTurnstileToken(req.header('x-turnstile-token'), req.ip)) {
+          logTurnstileFailure(req)
+          return res.status(403).json({ success: false, code: 'TURNSTILE_REQUIRED', message: 'No pudimos verificar que la solicitud sea legítima. Intentá nuevamente.' })
+        }
+      } catch (error) {
+        if (error instanceof TurnstileUnavailableError) return res.status(503).json({ success: false, code: 'TURNSTILE_UNAVAILABLE', message: 'La verificación de seguridad no está disponible. Intentá nuevamente en unos minutos.' })
+        throw error
+      }
+    }
+    const repair = await prisma.repair.findUnique({ where: { trackingToken: String(req.params.token) }, select: publicRepairSelect })
+    if (!repair?.trackingEnabled) {
+      trackingRisk.miss(ip)
+      return res.status(404).json({ success: false, message: 'Seguimiento no encontrado' })
+    }
+    trackingRisk.clear(ip)
     return res.json({ ...repair, clientId: '', imei: null, color: null, diagnosis: null, notes: null, client: { id: '', name: '', phone: null, createdAt: repair.createdAt } })
   } catch { return res.status(500).json({ success: false, message: 'Error obteniendo seguimiento' }) }
 })
@@ -132,20 +153,18 @@ const registerSchema = z.object({
   termsVersion: z.literal(CURRENT_TERMS_VERSION),
   privacyAccepted: z.literal(true),
   privacyVersion: z.literal(CURRENT_PRIVACY_VERSION),
+  turnstileToken: z.string().min(1),
 })
-const authRateLimiter = rateLimit({
-  windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
-  limit: Number(process.env.AUTH_RATE_LIMIT_MAX ?? 10),
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-  handler: (_req, res) => res.status(429).json({ success: false, message: 'Demasiados intentos. Probá nuevamente más tarde.' }),
-})
-app.post('/api/auth/register', authRateLimiter, async (req, res) => {
+app.post('/api/auth/register', signupLimiter, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de registro inválidos' })
   const email = parsed.data.email.toLowerCase()
   try {
-    if (await prisma.user.findUnique({ where: { email } })) return res.status(409).json({ success: false, message: 'Ya existe una cuenta con ese correo' })
+    if (!await verifyTurnstileToken(parsed.data.turnstileToken, req.ip)) {
+      logTurnstileFailure(req)
+      return res.status(403).json({ success: false, code: 'TURNSTILE_INVALID', message: 'No pudimos verificar que la solicitud sea legítima. Intentá nuevamente.' })
+    }
+    if (await prisma.user.findUnique({ where: { email } })) return res.status(409).json({ success: false, message: 'No pudimos crear la cuenta con esos datos.' })
     const passwordHash = await bcrypt.hash(parsed.data.password, 12)
     const user = await prisma.$transaction(async tx => {
       const business = await tx.business.create({
@@ -177,19 +196,40 @@ app.post('/api/auth/register', authRateLimiter, async (req, res) => {
     const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.status(201).json({ token, user: userResponse(user) })
   } catch (error) {
+    if (error instanceof TurnstileUnavailableError) return res.status(503).json({ success: false, code: 'TURNSTILE_UNAVAILABLE', message: 'La verificación de seguridad no está disponible. Intentá nuevamente en unos minutos.' })
     if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
-      return res.status(409).json({ success: false, message: 'Ya existe una cuenta con ese correo' })
+      return res.status(409).json({ success: false, message: 'No pudimos crear la cuenta con esos datos.' })
     }
     return res.status(500).json({ success: false, message: 'Error registrando la cuenta' })
   }
 })
 
-app.post('/api/auth/login', authRateLimiter, async (req, res) => {
-  const parsed = z.object({ email: z.string().trim().email(), password: z.string().min(1) }).safeParse(req.body)
+app.post('/api/auth/login', loginIpLimiter, async (req, res) => {
+  const parsed = z.object({ email: z.string().trim().email(), password: z.string().min(1), turnstileToken: z.string().optional() }).safeParse(req.body)
   if (!parsed.success) return unauthorized(res, 'Email o contraseña incorrectos')
+  const email = parsed.data.email.toLowerCase()
+  const risk = loginRisk.get(email)
+  if (risk.blockedUntil && risk.blockedUntil > Date.now()) {
+    const retryAfter = Math.ceil((risk.blockedUntil - Date.now()) / 1000)
+    res.setHeader('Retry-After', String(retryAfter))
+    return res.status(429).json({ success: false, code: 'LOGIN_BACKOFF', captchaRequired: true, retryAfter, message: 'Hiciste demasiados intentos. Esperá unos minutos y volvé a intentar.' })
+  }
   try {
-    const user = await prisma.user.findUnique({ where: { email: parsed.data.email.toLowerCase() }, include: { business: true } })
-    if (!user || !await bcrypt.compare(parsed.data.password, user.passwordHash)) return unauthorized(res, 'Email o contraseña incorrectos')
+    if (loginRisk.requiresCaptcha(risk) && !await verifyTurnstileToken(parsed.data.turnstileToken, req.ip)) {
+      logTurnstileFailure(req)
+      return res.status(403).json({ success: false, code: 'TURNSTILE_REQUIRED', captchaRequired: true, message: 'Completá la verificación de seguridad para continuar.' })
+    }
+    const user = await prisma.user.findUnique({ where: { email }, include: { business: true } })
+    if (!user || !await bcrypt.compare(parsed.data.password, user.passwordHash)) {
+      const nextRisk = loginRisk.fail(email)
+      if (nextRisk.blockedUntil) {
+        const retryAfter = Math.ceil((nextRisk.blockedUntil - Date.now()) / 1000)
+        res.setHeader('Retry-After', String(retryAfter))
+        return res.status(429).json({ success: false, code: 'LOGIN_BACKOFF', captchaRequired: true, retryAfter, message: 'Hiciste demasiados intentos. Esperá unos minutos y volvé a intentar.' })
+      }
+      return res.status(401).json({ success: false, message: 'Email o contraseña incorrectos', captchaRequired: loginRisk.requiresCaptcha(nextRisk) })
+    }
+    loginRisk.clear(email)
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
     if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'BUSINESS_BLOCKED', audience: user.role })
     if (user.platformRole !== 'SUPER_ADMIN') {
@@ -198,7 +238,10 @@ app.post('/api/auth/login', authRateLimiter, async (req, res) => {
     }
     const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.json({ token, user: userResponse(user) })
-  } catch { return res.status(500).json({ success: false, message: 'Error iniciando sesión' }) }
+  } catch (error) {
+    if (error instanceof TurnstileUnavailableError) return res.status(503).json({ success: false, code: 'TURNSTILE_UNAVAILABLE', message: 'La verificación de seguridad no está disponible. Intentá nuevamente en unos minutos.' })
+    return res.status(500).json({ success: false, message: 'Error iniciando sesión' })
+  }
 })
 
 app.get('/api/auth/me', authenticate, async (req, res) => {
@@ -219,7 +262,7 @@ const profileSchema = z.object({
   lastName: z.string().trim().min(1),
   phone: z.string().trim().optional().nullable(),
 })
-app.patch('/api/profile', authenticate, async (req, res) => {
+app.patch('/api/profile', authenticate, authenticatedWriteLimiter, async (req, res) => {
   const parsed = profileSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de perfil inválidos' })
   const auth = authOf(req)
@@ -241,6 +284,7 @@ app.patch('/api/profile', authenticate, async (req, res) => {
 app.get('/api/billing/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))
 
 app.use('/api', authenticate)
+app.use('/api', limitAuthenticatedWrites)
 app.use('/api/billing', billingRouter)
 app.use('/api/platform-admin', platformAdminRouter)
 app.use('/api', requireSubscriptionWriteAccess)

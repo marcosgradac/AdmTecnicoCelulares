@@ -121,8 +121,8 @@ export async function getRepair(id: string) {
   return mapRepair(response.data)
 }
 
-export async function getTrackingRepair(token: string) {
-  const response = await api.get<ApiRepair>(`/tracking/${token}`)
+export async function getTrackingRepair(token: string, turnstileToken?: string) {
+  const response = await api.get<ApiRepair>(`/tracking/${token}`, { headers: turnstileToken ? { 'X-Turnstile-Token': turnstileToken } : undefined })
   return mapRepair(response.data)
 }
 

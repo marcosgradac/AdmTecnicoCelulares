@@ -3,6 +3,7 @@ import { EastRounded, ScheduleRounded } from '@mui/icons-material'
 import { Alert, Box, Button, Checkbox, FormControlLabel, LinearProgress, Link as MuiLink, Stack, TextField, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import PasswordField from './PasswordField'
+import { TurnstileWidget } from '../security/TurnstileWidget'
 
 export type RegisterFormState = {
   firstName: string; lastName: string; phone: string; businessName: string; businessPhone: string
@@ -11,9 +12,10 @@ export type RegisterFormState = {
 
 export type RegisterInvalidState = Record<'firstName' | 'lastName' | 'phone' | 'businessName' | 'businessPhone' | 'email' | 'password' | 'repeatPassword' | 'terms', boolean>
 
-export function RegisterForm({ form, invalid, submitted, saving, error, strength, onChange, onSubmit }: {
+export function RegisterForm({ form, invalid, submitted, saving, error, strength, turnstileToken, turnstileResetKey, onTurnstileToken, onChange, onSubmit }: {
   form: RegisterFormState; invalid: RegisterInvalidState; submitted: boolean; saving: boolean; error: string; strength: number
   onChange: (field: keyof RegisterFormState, value: string | boolean) => void; onSubmit: (event: FormEvent) => void
+  turnstileToken: string; turnstileResetKey: number; onTurnstileToken: (token: string) => void
 }) {
   return <>
     <div className="register-time"><ScheduleRounded />Configurá tu espacio de trabajo en menos de 2 minutos.</div>
@@ -35,7 +37,9 @@ export function RegisterForm({ form, invalid, submitted, saving, error, strength
       <PasswordField required label="Confirmar contraseña" autoComplete="new-password" value={form.repeatPassword} onChange={e => onChange('repeatPassword', e.target.value)} error={submitted && invalid.repeatPassword} helperText={submitted && invalid.repeatPassword ? 'Las contraseñas no coinciden.' : undefined} />
       <FormControlLabel control={<Checkbox checked={form.terms} onChange={e => onChange('terms', e.target.checked)} />} label={<span>Leí y acepto los <MuiLink component={Link} target="_blank" rel="noopener noreferrer" to="/terminos-y-condiciones">Términos y Condiciones</MuiLink> y la <MuiLink component={Link} target="_blank" rel="noopener noreferrer" to="/politica-de-privacidad">Política de Privacidad</MuiLink>.</span>} />
       {submitted && invalid.terms && <Typography color="error" variant="caption">Debés aceptar los Términos y Condiciones y la Política de Privacidad para crear tu cuenta.</Typography>}
-      <Button className="login-submit" type="submit" size="large" variant="contained" disabled={saving} endIcon={!saving && <EastRounded />}>{saving ? 'Creando cuenta…' : 'Crear cuenta'}</Button>
+      <TurnstileWidget onToken={onTurnstileToken} resetKey={turnstileResetKey} />
+      {submitted && !turnstileToken && <Typography color="error" variant="caption">Completá la verificación de seguridad.</Typography>}
+      <Button className="login-submit" type="submit" size="large" variant="contained" disabled={saving || !turnstileToken} endIcon={!saving && <EastRounded />}>{saving ? 'Creando cuenta…' : 'Crear cuenta'}</Button>
     </Box>
   </>
 }

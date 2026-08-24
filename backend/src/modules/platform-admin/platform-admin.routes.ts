@@ -3,9 +3,11 @@ import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireSuperAdmin } from '../../middlewares/auth'
 import { addDays, approvePayment, getAccountAccessStatus, refreshSubscriptionStatus, subscriptionUsage } from '../billing/billing.service'
+import { limitSuperAdminWrites } from '../../middlewares/security'
 
 export const platformAdminRouter = Router()
 platformAdminRouter.use(requireSuperAdmin)
+platformAdminRouter.use(limitSuperAdminWrites)
 
 platformAdminRouter.get('/dashboard', async (_req, res) => {
   const [clients, activeBusinesses, inactiveBusinesses, owners, technicians, active, trials, pendingPayments, grace, suspended, activeSubscriptions, recentBusinesses, subscriptions] = await Promise.all([

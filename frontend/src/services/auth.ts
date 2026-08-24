@@ -32,10 +32,11 @@ export interface RegisterInput {
   termsVersion: string
   privacyAccepted: true
   privacyVersion: string
+  turnstileToken: string
 }
 export interface ProfileInput { firstName: string; lastName: string; phone?: string | null }
 export interface AuthResponse { token: string; user: AuthUser }
-export const login = async (input: { email: string; password: string }) => (await api.post<AuthResponse>('/auth/login', input)).data
+export const login = async (input: { email: string; password: string; turnstileToken?: string }) => (await api.post<AuthResponse>('/auth/login', input)).data
 export const register = async (input: RegisterInput) => (await api.post<AuthResponse>('/auth/register', input)).data
 export const getMe = async () => (await api.get<AuthUser>('/auth/me')).data
 export const getProfile = async () => (await api.get<AuthUser>('/profile')).data

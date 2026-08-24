@@ -3,9 +3,16 @@ import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
 
 process.env.MAIL_MODE = 'fake'
+process.env.NODE_ENV = 'test'
 process.env.FRONTEND_URL = 'http://localhost:5173'
 process.env.PASSWORD_RESET_RATE_LIMIT_MAX = '8'
 process.env.PASSWORD_RESET_RATE_LIMIT_WINDOW_MS = '60000'
+process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
+const nativeFetch = globalThis.fetch
+globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+  String(input).includes('challenges.cloudflare.com/turnstile')
+    ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+    : nativeFetch(input, init)) as typeof fetch
 
 async function main() {
 const [{ app }, { prisma }, mail] = await Promise.all([
@@ -60,6 +67,7 @@ try {
     termsVersion: '1.0',
     privacyAccepted: true,
     privacyVersion: '1.0',
+    turnstileToken: 'test-token',
   })
   check(registered.status === 201, 'cuenta de prueba registrada')
   const oldSession = registered.body.token as string

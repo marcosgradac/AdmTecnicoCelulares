@@ -5,7 +5,7 @@ const TOKEN_KEY = 'cellufix_access_token'
 interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
-  login: (email: string, password: string) => Promise<AuthUser>
+  login: (email: string, password: string, turnstileToken?: string) => Promise<AuthUser>
   register: (input: RegisterInput) => Promise<void>
   updateProfile: (input: ProfileInput) => Promise<void>
   logout: () => void
@@ -25,8 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('cellufix:unauthorized', expire)
     return () => window.removeEventListener('cellufix:unauthorized', expire)
   }, [logout])
-  const login = async (email: string, password: string) => {
-    const result = await loginRequest({ email, password })
+  const login = async (email: string, password: string, turnstileToken?: string) => {
+    const result = await loginRequest({ email, password, turnstileToken })
     localStorage.setItem(TOKEN_KEY, result.token); setUser(result.user)
     return result.user
   }

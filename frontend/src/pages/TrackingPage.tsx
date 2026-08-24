@@ -8,18 +8,33 @@ import { UiState } from '../components/common/UiState'
 import { repairStatusConfig, repairStatuses } from '../config/repairStatus'
 import { StatusChip } from '../components/common/StatusChip'
 import { formatMoney } from '../utils/format'
+import axios from 'axios'
+import { Alert, Button } from '@mui/material'
+import { TurnstileWidget } from '../components/security/TurnstileWidget'
 
 export function TrackingPage() {
   const { token } = useParams()
   const [repair, setRepair] = useState<Repair | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  useEffect(() => {
+  const [challenge, setChallenge] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [challengeResetKey, setChallengeResetKey] = useState(0)
+  const load = (captchaToken?: string) => {
     if (!token) return
     setLoading(true); setError(false)
-    void getTrackingRepair(token).then(setRepair).catch(() => setError(true)).finally(() => setLoading(false))
+    void getTrackingRepair(token, captchaToken).then(value => { setRepair(value); setChallenge(false) }).catch(requestError => {
+      if (axios.isAxiosError<{ code?: string }>(requestError) && requestError.response?.data?.code === 'TURNSTILE_REQUIRED') setChallenge(true)
+      else setError(true)
+    }).finally(() => setLoading(false))
+  }
+  useEffect(() => {
+    load()
+    // El token de la URL es la única dependencia que debe disparar la carga inicial.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
   if (loading) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><UiState loading /></Box>
+  if (challenge) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><Container maxWidth="xs"><Stack spacing={2} textAlign="center"><Alert severity="info">Necesitamos verificar esta consulta antes de mostrar el seguimiento.</Alert><TurnstileWidget onToken={setTurnstileToken} resetKey={challengeResetKey} /><Button variant="contained" disabled={!turnstileToken} onClick={() => { load(turnstileToken); setTurnstileToken(''); setChallengeResetKey(value => value + 1) }}>Continuar</Button></Stack></Container></Box>
   if (error || !repair) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><UiState title="Seguimiento no encontrado" description="Revisá que el enlace sea correcto o consultá al servicio técnico." /></Box>
   const current = repairStatusConfig[repair.status].order
   return <Box minHeight="100vh" bgcolor="background.default" py={{ xs: 3, md: 7 }}>

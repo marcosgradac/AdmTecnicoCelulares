@@ -30,6 +30,15 @@ api.interceptors.response.use(
     if (error.response?.status === 403 && !error.response.data?.message) {
       error.response.data = { success: false, message: 'No tenés permisos para realizar esta acción' }
     }
+    if (error.response?.status === 429) {
+      const header = Number(error.response.headers?.['retry-after'])
+      const seconds = Number(error.response.data?.retryAfter) || (Number.isFinite(header) ? header : undefined)
+      error.response.data = {
+        ...error.response.data,
+        retryAfter: seconds,
+        message: error.response.data?.message ?? 'Hiciste demasiadas solicitudes. Esperá unos minutos y volvé a intentar.',
+      }
+    }
     return Promise.reject(error)
   }
 )
