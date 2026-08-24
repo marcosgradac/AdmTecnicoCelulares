@@ -110,6 +110,7 @@ model User {
   privacyAccepted     Boolean               @default(false)
   privacyVersion      String?
   privacyAcceptedAt   DateTime?
+  deletedAt           DateTime?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   business            Business              @relation(fields: [businessId], references: [id])
@@ -120,6 +121,7 @@ model User {
   subscriptionAudits  SubscriptionAuditLog[] @relation("AuditActor")
 
   @@index([businessId])
+  @@index([businessId, deletedAt])
 }
 
 model PasswordResetToken {

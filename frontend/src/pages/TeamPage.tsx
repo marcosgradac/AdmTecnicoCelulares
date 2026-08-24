@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import {
-  Alert, Avatar, Box, Button, Card, CardContent, Checkbox, Chip, Dialog, DialogActions, DialogContent,
+  Alert, Avatar, Box, Button, Card, CardContent, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, Divider,
   DialogTitle, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, Menu, MenuItem, Select,
   Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField,
   Typography, useMediaQuery, useTheme,
 } from '@mui/material'
 import {
-  AddRounded, EditRounded, KeyRounded, MoreVertRounded, SearchRounded,
+  AddRounded, DeleteOutlineRounded, EditRounded, KeyRounded, MoreVertRounded, SearchRounded,
   VisibilityOffRounded, VisibilityRounded,
 } from '@mui/icons-material'
 import { PageHeader } from '../components/common/PageHeader'
 import { UiState } from '../components/common/UiState'
 import {
-  createTeamMember, getTeam, resetTeamMemberPassword, updateTeamMember,
+  createTeamMember, deleteTeamMember, getTeam, resetTeamMemberPassword, updateTeamMember,
   type CreateTeamMemberInput, type TeamMember, type TeamRole,
 } from '../services/team'
 import { formatDate } from '../utils/format'
@@ -42,6 +42,7 @@ export function TeamPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editing, setEditing] = useState<TeamMember | null>(null)
   const [resetting, setResetting] = useState<TeamMember | null>(null)
+  const [deleting, setDeleting] = useState<TeamMember | null>(null)
   const [menu, setMenu] = useState<{ anchor: HTMLElement; member: TeamMember } | null>(null)
 
   const load = async () => {
@@ -78,10 +79,12 @@ export function TeamPage() {
     <Menu anchorEl={menu?.anchor} open={Boolean(menu)} onClose={() => setMenu(null)}>
       <MenuItem onClick={() => { setEditing(menu?.member ?? null); setMenu(null) }}><EditRounded fontSize="small" sx={{ mr: 1 }} />Editar</MenuItem>
       <MenuItem onClick={() => { setResetting(menu?.member ?? null); setMenu(null) }}><KeyRounded fontSize="small" sx={{ mr: 1 }} />Restablecer contraseña</MenuItem>
+      {menu?.member.role === 'TECHNICIAN' && <MenuItem sx={{ color: 'error.main' }} onClick={() => { setDeleting(menu?.member ?? null); setMenu(null) }}><DeleteOutlineRounded fontSize="small" sx={{ mr: 1 }} />Eliminar empleado</MenuItem>}
     </Menu>
     <CreateMemberDialog open={createOpen} onClose={() => setCreateOpen(false)} onCompleted={() => completed('Empleado creado correctamente.')} />
-    <EditMemberDialog member={editing} onClose={() => setEditing(null)} onCompleted={() => completed('Empleado actualizado correctamente.')} />
+    <EditMemberDialog member={editing} onClose={() => setEditing(null)} onCompleted={() => completed('Empleado actualizado correctamente.')} onDelete={member => { setEditing(null); setDeleting(member) }} />
     <ResetPasswordDialog member={resetting} onClose={() => setResetting(null)} onCompleted={() => completed('Contraseña restablecida correctamente.')} />
+    <DeleteMemberDialog member={deleting} onClose={() => setDeleting(null)} onCompleted={() => completed('Empleado eliminado correctamente.')} />
   </Box>
 }
 
@@ -114,7 +117,7 @@ function CreateMemberDialog({ open, onClose, onCompleted }: { open: boolean; onC
   </Stack></DialogContent><DialogActions><Button onClick={close}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !strong || form.password !== form.repeatPassword}>{saving ? 'Creando…' : 'Crear empleado'}</Button></DialogActions></Box></Dialog>
 }
 
-function EditMemberDialog({ member, onClose, onCompleted }: { member: TeamMember | null; onClose: () => void; onCompleted: () => Promise<void> }) {
+function EditMemberDialog({ member, onClose, onCompleted, onDelete }: { member: TeamMember | null; onClose: () => void; onCompleted: () => Promise<void>; onDelete: (member: TeamMember) => void }) {
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', role: 'TECHNICIAN' as TeamRole, isActive: true, permissions: [] as string[] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -130,8 +133,25 @@ function EditMemberDialog({ member, onClose, onCompleted }: { member: TeamMember
     finally { setSaving(false) }
   }
   return <Dialog open={Boolean(member)} onClose={() => !saving && onClose()} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Editar empleado</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
-    {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack><TextField label="Teléfono" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl><FormControl><InputLabel>Estado</InputLabel><Select label="Estado" value={form.isActive ? 'active' : 'inactive'} onChange={e => setForm(value => ({ ...value, isActive: e.target.value === 'active' }))}><MenuItem value="active">Activo</MenuItem><MenuItem value="inactive">Inactivo</MenuItem></Select></FormControl>{form.role === 'TECHNICIAN' && <PermissionFields value={form.permissions} onChange={permissions => setForm(value => ({ ...value, permissions }))} />}
+    {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack><TextField label="Teléfono" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl><FormControl><InputLabel>Estado</InputLabel><Select label="Estado" value={form.isActive ? 'active' : 'inactive'} onChange={e => setForm(value => ({ ...value, isActive: e.target.value === 'active' }))}><MenuItem value="active">Activo</MenuItem><MenuItem value="inactive">Inactivo</MenuItem></Select></FormControl>{form.role === 'TECHNICIAN' && <PermissionFields value={form.permissions} onChange={permissions => setForm(value => ({ ...value, permissions }))} />}{member?.role === 'TECHNICIAN' && <><Divider /><Box><Typography fontWeight={800} color="error.main">Zona de peligro</Typography><Typography variant="body2" color="text.secondary" mb={1.5}>El empleado perderá el acceso, pero su nombre seguirá visible en el historial.</Typography><Button color="error" variant="outlined" startIcon={<DeleteOutlineRounded />} onClick={() => onDelete(member)}>Eliminar empleado</Button></Box></>}
   </Stack></DialogContent><DialogActions><Button onClick={onClose}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim()}>{saving ? 'Guardando…' : 'Guardar cambios'}</Button></DialogActions></Box></Dialog>
+}
+
+function DeleteMemberDialog({ member, onClose, onCompleted }: { member: TeamMember | null; onClose: () => void; onCompleted: () => Promise<void> }) {
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
+  const close = () => { if (!deleting) { setError(''); onClose() } }
+  const confirm = async () => {
+    if (!member || deleting) return
+    setDeleting(true); setError('')
+    try {
+      await deleteTeamMember(member.id)
+      onClose()
+      await onCompleted()
+    } catch (deleteError) { setError(apiMessage(deleteError, 'No pudimos eliminar el empleado')) }
+    finally { setDeleting(false) }
+  }
+  return <Dialog open={Boolean(member)} onClose={close} fullWidth maxWidth="xs"><DialogTitle>Eliminar empleado</DialogTitle><DialogContent><Stack spacing={2} mt={1}>{error && <Alert severity="error">{error}</Alert>}<Typography>¿Querés eliminar a <strong>{member?.fullName}</strong>?</Typography><Alert severity="warning">Perderá el acceso inmediatamente y dejará de aparecer en la lista. Su nombre se conservará en reparaciones y registros históricos.</Alert></Stack></DialogContent><DialogActions><Button onClick={close} disabled={deleting}>Cancelar</Button><Button color="error" variant="contained" onClick={() => void confirm()} disabled={deleting} startIcon={deleting ? <CircularProgress color="inherit" size={16} /> : <DeleteOutlineRounded />}>{deleting ? 'Eliminando…' : 'Sí, eliminar'}</Button></DialogActions></Dialog>
 }
 
 function ResetPasswordDialog({ member, onClose, onCompleted }: { member: TeamMember | null; onClose: () => void; onCompleted: () => Promise<void> }) {

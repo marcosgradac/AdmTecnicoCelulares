@@ -38,4 +38,5 @@ export const getTeam = async (filters: TeamFilters = {}) =>
 export const getTeamMember = async (id: string) => (await api.get<TeamMember>(`/team/${id}`)).data
 export const createTeamMember = async (input: CreateTeamMemberInput) => (await api.post<TeamMember>('/team', input)).data
 export const updateTeamMember = async (id: string, input: UpdateTeamMemberInput) => (await api.patch<TeamMember>(`/team/${id}`, input)).data
+export const deleteTeamMember = async (id: string) => (await api.delete<{ success: true }>(`/team/${id}`)).data
 export const resetTeamMemberPassword = async (id: string, password: string) => (await api.post<{ success: true }>(`/team/${id}/reset-password`, { password })).data

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express'
 import { authOf } from '../../middlewares/auth'
 import { createTeamMemberSchema, resetPasswordSchema, teamFiltersSchema, updateTeamMemberSchema } from './team.schema'
-import { createTeamMember, getTeamMember, listTeam, resetTeamMemberPassword, TeamError, updateTeamMember } from './team.service'
+import { createTeamMember, deleteTeamMember, getTeamMember, listTeam, resetTeamMemberPassword, TeamError, updateTeamMember } from './team.service'
 
 const handleError = (error: unknown, res: Response) => {
   if (error instanceof TeamError) return res.status(error.status).json({ success: false, message: error.message })
@@ -35,5 +35,9 @@ export const resetPassword = async (req: Request, res: Response) => {
   const parsed = resetPasswordSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Contraseña inválida' })
   try { return res.json(await resetTeamMemberPassword(authOf(req).businessId, String(req.params.id), parsed.data.password)) }
+  catch (error) { return handleError(error, res) }
+}
+export const remove = async (req: Request, res: Response) => {
+  try { return res.json(await deleteTeamMember(authOf(req).businessId, authOf(req).userId, String(req.params.id))) }
   catch (error) { return handleError(error, res) }
 }

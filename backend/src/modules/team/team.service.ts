@@ -25,6 +25,7 @@ export const serializeTeamMember = (user: User) => ({
 export async function listTeam(businessId: string, filters: { search?: string; role?: 'OWNER' | 'TECHNICIAN'; isActive?: boolean }) {
   const where: Prisma.UserWhereInput = {
     businessId,
+    deletedAt: null,
     ...(filters.role ? { role: filters.role } : {}),
     ...(filters.isActive === undefined ? {} : { isActive: filters.isActive }),
     ...(filters.search ? {
@@ -39,7 +40,7 @@ export async function listTeam(businessId: string, filters: { search?: string; r
 }
 
 export async function getTeamMember(businessId: string, id: string) {
-  const user = await prisma.user.findFirst({ where: { id, businessId } })
+  const user = await prisma.user.findFirst({ where: { id, businessId, deletedAt: null } })
   if (!user) throw new TeamError(404, 'Usuario no encontrado')
   return serializeTeamMember(user)
 }
@@ -79,7 +80,7 @@ export async function updateTeamMember(businessId: string, actorId: string, id: 
 }) {
   return prisma.$transaction(async tx => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
-    const user = await tx.user.findFirst({ where: { id, businessId } })
+    const user = await tx.user.findFirst({ where: { id, businessId, deletedAt: null } })
     if (!user) throw new TeamError(404, 'Usuario no encontrado')
     if (id === actorId && input.isActive === false) throw new TeamError(400, 'No podés desactivar tu propio usuario')
     if (user.role === 'OWNER' && input.permissions) throw new TeamError(400, 'Los permisos del propietario no pueden limitarse')
@@ -111,9 +112,34 @@ export async function updateTeamMember(businessId: string, actorId: string, id: 
 }
 
 export async function resetTeamMemberPassword(businessId: string, id: string, password: string) {
-  const user = await prisma.user.findFirst({ where: { id, businessId } })
+  const user = await prisma.user.findFirst({ where: { id, businessId, deletedAt: null } })
   if (!user) throw new TeamError(404, 'Usuario no encontrado')
   const passwordHash = await bcrypt.hash(password, 12)
   await prisma.user.update({ where: { id: user.id }, data: { passwordHash } })
   return { success: true }
+}
+
+export async function deleteTeamMember(businessId: string, actorId: string, id: string) {
+  return prisma.$transaction(async tx => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
+    const user = await tx.user.findFirst({ where: { id, businessId } })
+    if (!user || user.deletedAt) throw new TeamError(404, 'El empleado ya no existe o ya fue eliminado')
+    if (id === actorId) throw new TeamError(400, 'No podés eliminar tu propia cuenta')
+    if (user.role === 'OWNER') throw new TeamError(403, 'Las cuentas propietarias no se pueden eliminar desde Empleados')
+    if (user.platformRole === 'SUPER_ADMIN') throw new TeamError(403, 'La cuenta de Super Admin no se puede eliminar')
+
+    await tx.user.update({
+      where: { id: user.id },
+      data: { isActive: false, deletedAt: new Date(), tokenVersion: { increment: 1 } },
+    })
+    await tx.subscriptionAuditLog.create({
+      data: {
+        actorUserId: actorId,
+        businessId,
+        action: 'TEAM_MEMBER_DELETED',
+        metadata: { employeeId: user.id, employeeName: user.name },
+      },
+    })
+    return { success: true }
+  }, { timeout: 15_000 })
 }
