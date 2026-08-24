@@ -1,7 +1,7 @@
 import type { SvgIconComponent } from '@mui/icons-material'
 import {
   AssignmentTurnedInRounded, BiotechRounded, CancelRounded, CheckCircleRounded,
-  FactCheckRounded, HandymanRounded, InventoryRounded, LocalOfferRounded,
+  FactCheckRounded, HandymanRounded, LocalOfferRounded,
   PendingActionsRounded, ReplayRounded, TaskAltRounded,
 } from '@mui/icons-material'
 import type { WorkflowRepairStatus } from '../types/repair.types'
@@ -14,7 +14,7 @@ export interface WorkflowStatusConfig {
 }
 
 export const workflowRepairStatus: Record<WorkflowRepairStatus, WorkflowStatusConfig> = {
-  recibido: { label: 'Recibido', color: '#2879c2', background: '#eaf5ff', icon: InventoryRounded },
+  recibido: { label: 'Recibido', color: '#2879c2', background: '#eaf5ff', icon: AssignmentTurnedInRounded },
   en_revision: { label: 'En revisión', color: '#a66b00', background: '#fff5df', icon: BiotechRounded },
   presupuesto_informado: { label: 'Presupuesto informado', color: '#6849db', background: '#eee9ff', icon: LocalOfferRounded },
   presupuesto_aceptado: { label: 'Presupuesto aceptado', color: '#2879c2', background: '#eaf5ff', icon: AssignmentTurnedInRounded },

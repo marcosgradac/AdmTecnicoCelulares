@@ -1,4 +1,4 @@
-import { InventoryMovementType, PaymentMethod, RepairStatus } from '@prisma/client'
+import { PaymentMethod, RepairStatus } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 
@@ -16,8 +16,6 @@ export type ReportPeriodInput = z.infer<typeof reportPeriodSchema>
 
 const DAY_MS = 86_400_000
 const activeStatuses: RepairStatus[] = Object.values(RepairStatus).filter(status => !['DELIVERED', 'CANCELLED'].includes(status))
-const inboundMovementTypes: InventoryMovementType[] = ['INITIAL_STOCK', 'PURCHASE', 'MANUAL_ENTRY', 'ADJUSTMENT_IN', 'RETURN', 'CANCELLED_REPAIR_RETURN']
-const outboundMovementTypes: InventoryMovementType[] = ['REPAIR_USAGE', 'ADJUSTMENT_OUT', 'DAMAGED']
 
 const startOfUtcDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
 const addUtcDays = (date: Date, days: number) => new Date(date.getTime() + days * DAY_MS)
@@ -80,7 +78,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
   const period = resolveReportPeriod(input)
   const range = { gte: period.from, lt: period.toExclusive }
   const now = new Date()
-  const [repairs, deliveredRepairs, payments, expenses, stockItems, movements, newClients] = await Promise.all([
+  const [repairs, deliveredRepairs, payments, expenses, newClients] = await Promise.all([
     prisma.repair.findMany({
       where: { businessId, createdAt: range },
       select: { id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, issue: true, status: true, total: true, paid: true, partsCost: true, laborCost: true, estimatedDeliveryDate: true, deliveredAt: true, createdAt: true, client: { select: { name: true } } },
@@ -89,8 +87,6 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     prisma.repair.findMany({ where: { businessId, deliveredAt: range }, select: { createdAt: true, deliveredAt: true } }),
     prisma.payment.findMany({ where: { businessId, createdAt: range }, select: { amount: true, method: true, createdAt: true } }),
     prisma.cashMovement.findMany({ where: { businessId, type: 'EXPENSE', createdAt: range }, select: { amount: true, createdAt: true } }),
-    prisma.stockItem.findMany({ where: { businessId, active: true }, select: { id: true, name: true, sku: true, quantity: true, minimumStock: true, cost: true } }),
-    prisma.inventoryMovement.findMany({ where: { businessId, createdAt: range }, select: { id: true, type: true, quantity: true, totalCost: true, previousStock: true, newStock: true, createdAt: true, stockItem: { select: { id: true, name: true, sku: true } } }, orderBy: { createdAt: 'desc' } }),
     prisma.client.count({ where: { businessId, createdAt: range } }),
   ])
 
@@ -114,12 +110,6 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     clientStats.set(repair.clientId, current)
   }
   const clientRows = [...clientStats.values()]
-  const usageByItem = new Map<string, { label: string; value: number }>()
-  for (const movement of movements.filter(item => item.type === 'REPAIR_USAGE')) {
-    const current = usageByItem.get(movement.stockItem.id) ?? { label: movement.stockItem.name, value: 0 }
-    current.value += Math.abs(movement.quantity); usageByItem.set(movement.stockItem.id, current)
-  }
-  const usage = stockItems.map(item => usageByItem.get(item.id) ?? { label: item.name, value: 0 }).sort((a, b) => b.value - a.value)
   const granularity = groupByDay(period.from, period.toExclusive)
   const timelineMap = new Map<string, { label: string; billed: number; collected: number; expenses: number; partsCost: number; repairs: number }>()
   const timelineRow = (date: Date) => {
@@ -130,7 +120,6 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
   for (const repair of validRepairs) { const row = timelineRow(repair.createdAt); row.billed += repair.total; row.repairs += 1 }
   for (const payment of payments) timelineRow(payment.createdAt).collected += payment.amount
   for (const expense of expenses) timelineRow(expense.createdAt).expenses += expense.amount
-  for (const movement of movements.filter(item => item.type === 'REPAIR_USAGE')) timelineRow(movement.createdAt).partsCost += movement.totalCost
   const profitability = validRepairs.map(repair => ({ id: repair.id, number: repair.number, label: `#${repair.number} · ${repair.deviceBrand} ${repair.deviceModel}`, billed: repair.total, profit: repair.total - repair.partsCost - repair.laborCost, margin: repair.total ? (repair.total - repair.partsCost - repair.laborCost) / repair.total : 0 }))
 
   return {
@@ -159,15 +148,6 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
       paymentMethods: Object.values(PaymentMethod).map(method => ({ label: method, value: payments.filter(payment => payment.method === method).reduce((sum, payment) => sum + payment.amount, 0) })),
       fullyPaid: validRepairs.filter(repair => repair.total > 0 && repair.paid >= repair.total).length,
       partiallyPaid: validRepairs.filter(repair => repair.paid > 0 && repair.paid < repair.total).length,
-    },
-    inventory: {
-      value: stockItems.reduce((sum, item) => sum + item.quantity * item.cost, 0), lowStock: stockItems.filter(item => item.quantity > 0 && item.quantity <= item.minimumStock).length,
-      outOfStock: stockItems.filter(item => item.quantity <= 0).length, mostUsed: usage.filter(item => item.value > 0).slice(0, 7), leastUsed: usage.slice().reverse().slice(0, 7),
-      entries: movements.filter(item => inboundMovementTypes.includes(item.type)).reduce((sum, item) => sum + Math.abs(item.quantity), 0),
-      exits: movements.filter(item => outboundMovementTypes.includes(item.type)).reduce((sum, item) => sum + Math.abs(item.quantity), 0),
-      adjustments: movements.filter(item => ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'].includes(item.type)).length,
-      consumedCost: movements.filter(item => item.type === 'REPAIR_USAGE').reduce((sum, item) => sum + item.totalCost, 0),
-      recentMovements: movements.slice(0, 10),
     },
     clients: {
       new: newClients, recurrent: clientRows.filter(client => client.repairs > 1).length,

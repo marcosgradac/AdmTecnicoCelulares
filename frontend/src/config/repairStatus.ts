@@ -1,5 +1,5 @@
 import type { SvgIconComponent } from '@mui/icons-material'
-import { AssignmentTurnedInRounded, BiotechRounded, CancelRounded, CheckCircleRounded, FactCheckRounded, HandymanRounded, InventoryRounded, LocalOfferRounded, PendingActionsRounded, ReplayRounded, TaskAltRounded } from '@mui/icons-material'
+import { AssignmentTurnedInRounded, BiotechRounded, CancelRounded, CheckCircleRounded, FactCheckRounded, HandymanRounded, LocalOfferRounded, PendingActionsRounded, ReplayRounded, TaskAltRounded } from '@mui/icons-material'
 import type { RepairStatus } from '../types'
 
 export interface RepairStatusConfig {
@@ -7,7 +7,7 @@ export interface RepairStatusConfig {
 }
 
 export const repairStatusConfig: Record<RepairStatus, RepairStatusConfig> = {
-  received: { label: 'Recibido', color: '#2879C2', background: '#EAF5FF', order: 0, progress: 10, icon: InventoryRounded },
+  received: { label: 'Recibido', color: '#2879C2', background: '#EAF5FF', order: 0, progress: 10, icon: AssignmentTurnedInRounded },
   review: { label: 'En revisión', color: '#A66B00', background: '#FFF5DF', order: 1, progress: 22, icon: BiotechRounded },
   budget: { label: 'Presupuesto informado', color: '#6849DB', background: '#EEE9FF', order: 2, progress: 34, icon: LocalOfferRounded },
   approved: { label: 'Presupuesto aceptado', color: '#2879C2', background: '#EAF5FF', order: 3, progress: 46, icon: AssignmentTurnedInRounded },

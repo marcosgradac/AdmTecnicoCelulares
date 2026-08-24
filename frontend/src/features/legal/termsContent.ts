@@ -34,7 +34,6 @@ Entre otras funciones, TecnoDesk puede permitir administrar:
 * presupuestos;
 * pagos;
 * caja;
-* stock;
 * repuestos;
 * comprobantes;
 * garantías;
@@ -234,7 +233,6 @@ Por ejemplo:
 * ingresos;
 * gastos;
 * reparaciones;
-* stock;
 * clientes;
 * servicios realizados;
 * tendencias.

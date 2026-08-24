@@ -57,7 +57,7 @@ TecnoDesk no está diseñado para almacenar contraseñas personales del cliente,
 
 ## 7. Finalidades
 
-TecnoDesk trata información para crear y administrar cuentas, autenticar Usuarios, prestar funcionalidades, gestionar clientes, reparaciones, dispositivos, diagnósticos, presupuestos, pagos, caja, stock, repuestos, garantías e historial; generar seguimiento, prestar soporte, prevenir fraude, proteger cuentas, mantener la seguridad, corregir errores, mejorar técnicamente la Plataforma y cumplir obligaciones legales.
+TecnoDesk trata información para crear y administrar cuentas, autenticar Usuarios, prestar funcionalidades, gestionar clientes, reparaciones, dispositivos, diagnósticos, presupuestos, pagos, caja, garantías e historial; generar seguimiento, prestar soporte, prevenir fraude, proteger cuentas, mantener la seguridad, corregir errores, mejorar técnicamente la Plataforma y cumplir obligaciones legales.
 
 No se utilizan datos de clientes finales para campañas comerciales propias sin una base jurídica válida.
 

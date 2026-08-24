@@ -16,7 +16,6 @@ import { requireSubscriptionWriteAccess } from './modules/billing/billing.middle
 import { addDays } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
-import { inventoryRouter } from './modules/inventory/inventory.routes'
 import { reportsRouter } from './modules/reports/reports.routes'
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 
@@ -229,7 +228,6 @@ app.use('/api/billing', billingRouter)
 app.use('/api/platform-admin', platformAdminRouter)
 app.use('/api', requireSubscriptionWriteAccess)
 app.use('/api/team', teamRouter)
-app.use('/api/inventory', inventoryRouter)
 app.use('/api/reports', reportsRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true, warrantyClaims: { orderBy: { createdAt: 'desc' as const } } } as const
 
@@ -417,55 +415,6 @@ app.patch('/api/repairs/:id/tracking-link', async (req, res) => {
   const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
-})
-
-const serializePart = (part: { id: string; stockItemId: string; itemNameSnapshot: string; quantity: number; unitCost: number; unitPrice: number; createdAt: Date }) => ({ id: part.id, inventoryItemId: part.stockItemId, stockItemId: part.stockItemId, name: part.itemNameSnapshot, quantity: part.quantity, unitCost: part.unitCost, unitPrice: part.unitPrice, totalCost: part.quantity * part.unitCost, subtotal: part.quantity * part.unitCost, saleSubtotal: part.quantity * part.unitPrice, createdAt: part.createdAt })
-app.get('/api/repairs/:repairId/parts', async (req, res) => {
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId: authOf(req).businessId }, select: { id: true } })
-  if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  return res.json((await prisma.repairPart.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } })).map(serializePart))
-})
-app.post('/api/repairs/:repairId/parts', async (req, res) => {
-  const parsed = z.object({ inventoryItemId: z.string().min(1).optional(), stockItemId: z.string().min(1).optional(), quantity: z.number().int().positive(), unitPrice: z.number().int().nonnegative().optional() }).refine(data => Boolean(data.inventoryItemId || data.stockItemId)).safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de repuesto inválidos' })
-  const auth = authOf(req)
-  const businessId = auth.businessId
-  const inventoryItemId = parsed.data.inventoryItemId ?? parsed.data.stockItemId as string
-  const result = await prisma.$transaction(async tx => {
-    const repair = await tx.repair.findFirst({ where: { id: req.params.repairId, businessId }, select: { id: true } })
-    if (!repair) return { status: 404 as const, message: 'Reparación no encontrada' }
-    const item = await tx.stockItem.findFirst({ where: { id: inventoryItemId, businessId } })
-    if (!item) return { status: 404 as const, message: 'Repuesto no encontrado' }
-    if (!item.active) return { status: 400 as const, message: 'El repuesto está inactivo' }
-    const changed = await tx.stockItem.updateMany({ where: { id: item.id, businessId, active: true, quantity: { gte: parsed.data.quantity } }, data: { quantity: { decrement: parsed.data.quantity } } })
-    if (changed.count !== 1) return { status: 409 as const, message: 'Stock insuficiente' }
-    const newStock = item.quantity - parsed.data.quantity
-    const part = await tx.repairPart.create({ data: { repairId: repair.id, stockItemId: item.id, quantity: parsed.data.quantity, unitCost: item.cost, unitPrice: parsed.data.unitPrice ?? item.salePrice, itemNameSnapshot: item.name } })
-    await tx.inventoryMovement.create({ data: { businessId, stockItemId: item.id, repairId: repair.id, type: 'REPAIR_USAGE', quantity: parsed.data.quantity, unitCost: item.cost, totalCost: parsed.data.quantity * item.cost, previousStock: item.quantity, newStock, notes: `Uso en reparación`, createdByUserId: auth.userId } })
-    const parts = await tx.repairPart.findMany({ where: { repairId: repair.id }, select: { quantity: true, unitCost: true } })
-    await tx.repair.update({ where: { id: repair.id }, data: { partsCost: parts.reduce((sum, current) => sum + current.quantity * current.unitCost, 0) } })
-    return { status: 201 as const, part }
-  })
-  if ('message' in result) return res.status(result.status).json({ success: false, message: result.message })
-  return res.status(201).json(serializePart(result.part))
-})
-app.delete('/api/repairs/:repairId/parts/:partId', async (req, res) => {
-  const auth = authOf(req)
-  const businessId = auth.businessId
-  const result = await prisma.$transaction(async tx => {
-    const repair = await tx.repair.findFirst({ where: { id: req.params.repairId, businessId }, select: { id: true } })
-    if (!repair) return false
-    const part = await tx.repairPart.findFirst({ where: { id: req.params.partId, repairId: repair.id }, include: { stockItem: true } })
-    if (!part || part.stockItem.businessId !== businessId) return false
-    const previousStock = part.stockItem.quantity
-    await tx.stockItem.update({ where: { id: part.stockItemId }, data: { quantity: { increment: part.quantity } } })
-    await tx.inventoryMovement.create({ data: { businessId, stockItemId: part.stockItemId, repairId: repair.id, type: 'CANCELLED_REPAIR_RETURN', quantity: part.quantity, unitCost: part.unitCost, totalCost: part.quantity * part.unitCost, previousStock, newStock: previousStock + part.quantity, notes: 'Repuesto retirado de la reparación', createdByUserId: auth.userId } })
-    await tx.repairPart.delete({ where: { id: part.id } })
-    const remaining = await tx.repairPart.findMany({ where: { repairId: repair.id }, select: { quantity: true, unitCost: true } })
-    await tx.repair.update({ where: { id: repair.id }, data: { partsCost: remaining.reduce((sum, current) => sum + current.quantity * current.unitCost, 0) } })
-    return true
-  })
-  return result ? res.json({ success: true }) : res.status(404).json({ success: false, message: 'Repuesto utilizado no encontrado' })
 })
 
 app.get('/api/cash/movements', requireRole('OWNER'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
