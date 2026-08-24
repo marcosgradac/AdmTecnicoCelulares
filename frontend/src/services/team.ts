@@ -10,6 +10,7 @@ export interface TeamMember {
   phone: string | null
   role: TeamRole
   isActive: boolean
+  permissions: string[]
   createdAt: string
   updatedAt: string
 }
@@ -21,6 +22,7 @@ export interface CreateTeamMemberInput {
   phone?: string
   password: string
   role: TeamRole
+  permissions?: string[]
 }
 export interface UpdateTeamMemberInput {
   firstName?: string
@@ -28,6 +30,7 @@ export interface UpdateTeamMemberInput {
   phone?: string | null
   role?: TeamRole
   isActive?: boolean
+  permissions?: string[]
 }
 
 export const getTeam = async (filters: TeamFilters = {}) =>

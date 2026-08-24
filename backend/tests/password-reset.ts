@@ -11,7 +11,7 @@ async function main() {
 const [{ app }, { prisma }, mail] = await Promise.all([
   import('../src/server'),
   import('../src/lib/prisma'),
-  import('../src/services/mail.service'),
+  import('../src/services/email/email.service'),
 ])
 
 const server = app.listen(0)
@@ -54,6 +54,12 @@ try {
     email,
     password: oldPassword,
     businessName: `Negocio reset ${suffix}`,
+    businessPhone: '+54 11 4444-2222',
+    phone: '+54 11 5555-1111',
+    termsAccepted: true,
+    termsVersion: '1.0',
+    privacyAccepted: true,
+    privacyVersion: '1.0',
   })
   check(registered.status === 201, 'cuenta de prueba registrada')
   const oldSession = registered.body.token as string

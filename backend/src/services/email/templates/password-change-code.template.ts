@@ -1,0 +1,7 @@
+import type { PasswordChangeEmailInput } from '../email.types'
+const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char] ?? char)
+export const passwordChangeCodeTemplate = ({ name, code, expiresInMinutes }: PasswordChangeEmailInput) => ({
+  subject: 'Tu código de seguridad de TecnoDesk',
+  text: `Hola ${name},\n\nRecibimos una solicitud para cambiar la contraseña de tu cuenta de TecnoDesk.\n\nTu código de seguridad es: ${code}\n\nEste código vence en ${expiresInMinutes} minutos.\n\nSi no solicitaste este cambio, podés ignorar este correo.\n\nTecnoDesk`,
+  html: `<div style="margin:0;background:#f6f7fb;padding:24px 12px;font-family:Arial,sans-serif;color:#171a23"><div style="max-width:560px;margin:auto;background:#fff;border:1px solid #e8eaf0;border-radius:16px;overflow:hidden"><div style="height:6px;background:linear-gradient(90deg,#5b3fd6,#2f9bff)"></div><div style="padding:32px"><h1 style="margin:0 0 20px;font-size:22px;color:#5b3fd6">TecnoDesk</h1><p>Hola ${escapeHtml(name)},</p><p>Recibimos una solicitud para cambiar la contraseña de tu cuenta.</p><div style="margin:24px 0;padding:18px;text-align:center;background:#f1edff;border-radius:12px;font-size:30px;font-weight:700;letter-spacing:7px;color:#4327b7">${code}</div><p>Este código vence en <strong>${expiresInMinutes} minutos</strong>.</p><p style="color:#687083">Si no solicitaste este cambio, podés ignorar este correo.</p></div></div></div>`,
+})

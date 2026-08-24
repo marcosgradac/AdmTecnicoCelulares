@@ -9,15 +9,18 @@ import { rateLimit } from 'express-rate-limit'
 import { randomBytes } from 'node:crypto'
 import { CashMovementType, PaymentMethod, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
-import { authenticate, authOf, requireRole, type AuthData } from './middlewares/auth'
+import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
 import { requireSubscriptionWriteAccess } from './modules/billing/billing.middleware'
 import { addDays } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
+import { passwordChangeRouter } from './modules/auth/password-change.routes'
 import { reportsRouter } from './modules/reports/reports.routes'
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
+import { permissionsFor } from './config/permissions'
+import { settingsRouter } from './modules/settings/settings.routes'
 
 export const app = express()
 app.use(helmet())
@@ -27,7 +30,12 @@ const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? '
   .filter(Boolean)
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin.replace(/\/$/, ''))) return callback(null, true)
+    const normalizedOrigin = origin?.replace(/\/$/, '')
+    const isLocalDevelopmentOrigin = process.env.NODE_ENV !== 'production' && Boolean(normalizedOrigin && (() => {
+      try { return ['localhost', '127.0.0.1'].includes(new URL(normalizedOrigin).hostname) }
+      catch { return false }
+    })())
+    if (!origin || allowedOrigins.includes(normalizedOrigin ?? '') || isLocalDevelopmentOrigin) return callback(null, true)
     return callback(new Error('Origen no permitido por CORS'))
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -61,6 +69,7 @@ const userResponse = <T extends {
   privacyAccepted: boolean
   privacyVersion: string | null
   privacyAcceptedAt: Date | null
+  permissions: unknown
   business: { id: string; name: string }
 }>(user: T) => ({
   id: user.id,
@@ -78,6 +87,7 @@ const userResponse = <T extends {
   privacyVersion: user.privacyVersion,
   privacyAcceptedAt: user.privacyAcceptedAt,
   profileComplete: Boolean(user.firstName && user.lastName),
+  permissions: permissionsFor(user.role, user.permissions),
   business: { id: user.business.id, name: user.business.name },
 })
 
@@ -93,6 +103,7 @@ const health = async (_req: Request, res: Response) => {
 app.get('/api/health', health)
 app.get('/health', health)
 app.use('/api/auth', passwordResetRouter)
+app.use('/api/auth/password-change', passwordChangeRouter)
 
 const publicRepairSelect = {
   id: true, number: true, deviceBrand: true, deviceModel: true, issue: true,
@@ -229,9 +240,10 @@ app.use('/api/platform-admin', platformAdminRouter)
 app.use('/api', requireSubscriptionWriteAccess)
 app.use('/api/team', teamRouter)
 app.use('/api/reports', reportsRouter)
+app.use('/api/settings', settingsRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true, warrantyClaims: { orderBy: { createdAt: 'desc' as const } } } as const
 
-app.get('/api/repairs', async (req, res) => {
+app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
   const parsed = z.object({
     page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().min(1).max(100).default(10),
     search: z.string().trim().optional(), status: z.nativeEnum(RepairStatus).optional(),
@@ -261,8 +273,8 @@ app.get('/api/repairs', async (req, res) => {
   }
   catch { return res.status(500).json({ success: false, message: 'Error obteniendo reparaciones' }) }
 })
-app.get('/api/repairs/:id', async (req, res) => {
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, include: includeRepair })
+app.get('/api/repairs/:id', requirePermission('repairs.view'), async (req, res) => {
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: includeRepair })
   return repair ? res.json(repair) : res.status(404).json({ success: false, message: 'Reparación no encontrada' })
 })
 
@@ -273,7 +285,7 @@ const createRepairSchema = z.object({
   notes: z.string().optional(), total: z.number().int().nonnegative().default(0), estimatedDeliveryDate: z.coerce.date().optional(), status: z.nativeEnum(RepairStatus).default(RepairStatus.RECEIVED)
   , warrantyEnabled: z.boolean().default(false), warrantyDurationDays: z.number().int().min(1).max(365).optional()
 })
-app.post('/api/repairs', async (req, res) => {
+app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) => {
   const parsed = createRepairSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
   const businessId = authOf(req).businessId
@@ -304,18 +316,18 @@ const updateRepairSchema = z.object({
   imei: z.string().trim().optional().nullable(), color: z.string().trim().optional().nullable(), issue: z.string().trim().min(2),
   diagnosis: z.string().trim().optional().nullable(), notes: z.string().trim().optional().nullable(), total: z.number().int().nonnegative()
 })
-app.patch('/api/repairs/:id', async (req, res) => {
+app.patch('/api/repairs/:id', requirePermission('repairs.update'), async (req, res) => {
   const parsed = updateRepairSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de reparación inválidos' })
   const businessId = authOf(req).businessId
-  const current = await prisma.repair.findFirst({ where: { id: req.params.id, businessId } })
+  const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId } })
   if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   if (parsed.data.total < current.paid) return res.status(400).json({ success: false, message: 'El total no puede ser menor que el importe pagado' })
   if (parsed.data.clientId && !await prisma.client.findFirst({ where: { id: parsed.data.clientId, businessId } })) return res.status(400).json({ success: false, message: 'El cliente seleccionado no existe' })
   const repair = await prisma.repair.update({ where: { id: current.id }, data: { ...parsed.data, imei: parsed.data.imei || null, color: parsed.data.color || null, diagnosis: parsed.data.diagnosis || null, notes: parsed.data.notes || null }, include: includeRepair })
   return res.json(repair)
 })
-app.patch('/api/repairs/:id/status', async (req, res) => {
+app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), async (req, res) => {
   const parsed = z.object({ status: z.nativeEnum(RepairStatus), publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Estado inválido' })
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
@@ -335,10 +347,10 @@ const setRepairStatus = (status: RepairStatus) => async (req: Request, res: Resp
   if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.repair.update({ where: { id: current.id }, data: { status }, include: includeRepair }))
 }
-app.patch('/api/repairs/:id/approve', setRepairStatus('APPROVED'))
-app.patch('/api/repairs/:id/start', setRepairStatus('REPAIRING'))
+app.patch('/api/repairs/:id/approve', requirePermission('repairs.changeStatus'), setRepairStatus('APPROVED'))
+app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), setRepairStatus('REPAIRING'))
 
-app.get('/api/clients', async (req, res) => {
+app.get('/api/clients', requirePermission('clients.view'), async (req, res) => {
   const businessId = authOf(req).businessId
   if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } }, orderBy: { createdAt: 'desc' } }))
   const parsed = z.object({ page:z.coerce.number().int().positive().default(1), pageSize:z.coerce.number().int().min(1).max(100).default(10), search:z.string().trim().optional() }).safeParse(req.query)
@@ -348,11 +360,11 @@ app.get('/api/clients', async (req, res) => {
   const [items,total]=await prisma.$transaction([prisma.client.findMany({where,include:{repairs:{orderBy:{createdAt:'desc' as const}}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
   return res.json({items,total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
 })
-app.get('/api/clients/:id', async (req, res) => {
-  const client = await prisma.client.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } } })
+app.get('/api/clients/:id', requirePermission('clients.view'), async (req, res) => {
+  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } } })
   return client ? res.json(client) : res.status(404).json({ success: false, message: 'Cliente no encontrado' })
 })
-app.post('/api/clients', async (req, res) => {
+app.post('/api/clients', requirePermission('clients.create'), async (req, res) => {
   const parsed = z.object({ name: z.string().trim().min(2), phone: z.string().min(6).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
   const businessId = authOf(req).businessId
@@ -360,11 +372,11 @@ app.post('/api/clients', async (req, res) => {
   if (phone && await prisma.client.findFirst({ where: { businessId, phone } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
   return res.status(201).json(await prisma.client.create({ data: { businessId, name: parsed.data.name, phone } }))
 })
-app.patch('/api/clients/:id', async (req, res) => {
+app.patch('/api/clients/:id', requirePermission('clients.update'), async (req, res) => {
   const parsed = z.object({ name: z.string().trim().min(2).max(120), phone: z.string().min(6).optional().nullable() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
   const businessId = authOf(req).businessId
-  const current = await prisma.client.findFirst({ where: { id: req.params.id, businessId } })
+  const current = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId } })
   if (!current) return res.status(404).json({ success: false, message: 'Cliente no encontrado' })
   const phone = parsed.data.phone?.replace(/\D/g, '') || null
   if (phone && await prisma.client.findFirst({ where: { businessId, phone, NOT: { id: current.id } } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
@@ -392,27 +404,27 @@ app.post('/api/repairs/:id/payments', requireRole('OWNER'), async (req, res) => 
     : res.status(409).json({ success: false, message: 'El pago supera el saldo pendiente' })
 })
 app.get('/api/repairs/:id/payments', async (req, res) => {
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.payment.findMany({ where: { repairId: repair.id, businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } }))
 })
 
 app.get('/api/repairs/:id/history', async (req, res) => {
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.repairStatusHistory.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } }))
 })
 
-app.post('/api/repairs/:id/tracking-link', async (req, res) => {
+app.post('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {
   try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 409).json({ success: false, message: error instanceof Error ? error.message : 'Límite alcanzado' }) }
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   const trackingToken = randomBytes(32).toString('hex')
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true, trackingCreatedAt: new Date() }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
-app.patch('/api/repairs/:id/tracking-link', async (req, res) => {
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.id, businessId: authOf(req).businessId }, select: { id: true } })
+app.patch('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
 })

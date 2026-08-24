@@ -24,7 +24,7 @@ export function TrackingPage() {
   const current = repairStatusConfig[repair.status].order
   return <Box minHeight="100vh" bgcolor="background.default" py={{ xs: 3, md: 7 }}>
     <Container maxWidth="sm">
-      <Stack alignItems="center" textAlign="center" mb={3}><Box component="img" src="/tecnodesk-mark.png" alt="TD" width={62} height={62} sx={{ objectFit: 'contain' }}/><Typography variant="h5" mt={1.2}>TecnoDesk</Typography><Typography color="text.secondary">Seguimiento de tu reparación</Typography></Stack>
+      <Stack alignItems="center" textAlign="center" mb={3}><Box component="img" src={repair.business?.logoUrl || '/tecnodesk-mark.png'} alt="TD" width={62} height={62} sx={{ objectFit: 'contain' }}/><Typography variant="h5" mt={1.2}>{repair.business?.name || 'TecnoDesk'}</Typography><Typography color="text.secondary">Seguimiento de tu reparación</Typography></Stack>
       <Card><CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={2}><Box><Typography variant="overline" color="primary.main">REPARACIÓN #{repair.number}</Typography><Typography variant="h1">{repair.device}</Typography></Box><StatusChip status={repair.status}/></Stack>
         <Box bgcolor="secondary.light" borderRadius={3} p={2} my={3}><Stack direction="row" gap={1.5}><BuildRounded color="info"/><Box><Typography fontWeight={750}>Estado actual</Typography><Typography variant="body2" color="text.secondary">{repairStatusConfig[repair.status].label}. Te avisaremos cuando haya novedades.</Typography></Box></Stack></Box>

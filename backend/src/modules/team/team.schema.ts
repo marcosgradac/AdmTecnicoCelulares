@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { PERMISSIONS } from '../../config/permissions'
 
 export const passwordSchema = z.string().min(8).max(128).regex(/[a-z]/).regex(/[A-Z]/).regex(/\d/)
 export const teamFiltersSchema = z.object({
@@ -13,6 +14,7 @@ export const createTeamMemberSchema = z.object({
   phone: z.string().trim().optional().nullable(),
   password: passwordSchema,
   role: z.enum(['OWNER', 'TECHNICIAN']).default('TECHNICIAN'),
+  permissions: z.array(z.enum(PERMISSIONS)).optional(),
 }).strict()
 export const updateTeamMemberSchema = z.object({
   firstName: z.string().trim().min(1).optional(),
@@ -20,5 +22,6 @@ export const updateTeamMemberSchema = z.object({
   phone: z.string().trim().optional().nullable(),
   role: z.enum(['OWNER', 'TECHNICIAN']).optional(),
   isActive: z.boolean().optional(),
+  permissions: z.array(z.enum(PERMISSIONS)).optional(),
 }).strict().refine(data => Object.keys(data).length > 0)
 export const resetPasswordSchema = z.object({ password: passwordSchema }).strict()

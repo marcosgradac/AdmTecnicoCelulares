@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import {
-  Alert, Avatar, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent,
-  DialogTitle, FormControl, IconButton, InputAdornment, InputLabel, Menu, MenuItem, Select,
+  Alert, Avatar, Box, Button, Card, CardContent, Checkbox, Chip, Dialog, DialogActions, DialogContent,
+  DialogTitle, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, Menu, MenuItem, Select,
   Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField,
   Typography, useMediaQuery, useTheme,
 } from '@mui/material'
@@ -23,8 +23,13 @@ const initials = (name: string) => name.split(/\s+/).slice(0, 2).map(part => par
 const apiMessage = (error: unknown, fallback: string) =>
   axios.isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? fallback : fallback
 const emptyCreate: CreateTeamMemberInput & { repeatPassword: string } = {
-  firstName: '', lastName: '', email: '', phone: '', password: '', repeatPassword: '', role: 'TECHNICIAN',
+  firstName: '', lastName: '', email: '', phone: '', password: '', repeatPassword: '', role: 'TECHNICIAN', permissions: ['repairs.view','repairs.create','repairs.update','repairs.changeStatus','repairs.shareTracking','clients.view','clients.create','clients.update','settings.access'],
 }
+const permissionOptions = [
+  ['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes'],
+  ['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['cash.view','Ver caja'],['cash.create','Registrar caja'],['reports.view','Ver reportes'],['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio'],
+] as const
+function PermissionFields({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) { return <Box><Typography fontWeight={800} mb={1}>Permisos del técnico</Typography><Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={.5}>{permissionOptions.map(([permission,label]) => <FormControlLabel key={permission} control={<Checkbox checked={value.includes(permission)} disabled={disabled} onChange={e => onChange(e.target.checked ? [...value, permission] : value.filter(item => item !== permission))} />} label={label} />)}</Box></Box> }
 
 export function TeamPage() {
   const theme = useTheme()
@@ -105,15 +110,15 @@ function CreateMemberDialog({ open, onClose, onCompleted }: { open: boolean; onC
   return <Dialog open={open} onClose={close} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Agregar empleado</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
     {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack>
     <TextField required label="Email" type="email" value={form.email} onChange={e => setForm(value => ({ ...value, email: e.target.value }))} /><TextField label="Teléfono (opcional)" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl>
-    <PasswordField label="Contraseña temporal" value={form.password} onChange={password => setForm(value => ({ ...value, password }))} show={show} toggle={() => setShow(value => !value)} error={Boolean(form.password) && !strong} helperText="Mínimo 8 caracteres, mayúscula, minúscula y número" /><PasswordField label="Repetir contraseña" value={form.repeatPassword} onChange={repeatPassword => setForm(value => ({ ...value, repeatPassword }))} show={show} toggle={() => setShow(value => !value)} error={Boolean(form.repeatPassword) && form.password !== form.repeatPassword} helperText={form.repeatPassword && form.password !== form.repeatPassword ? 'Las contraseñas no coinciden' : ''} />
+    <PasswordField label="Contraseña temporal" value={form.password} onChange={password => setForm(value => ({ ...value, password }))} show={show} toggle={() => setShow(value => !value)} error={Boolean(form.password) && !strong} helperText="Mínimo 8 caracteres, mayúscula, minúscula y número" /><PasswordField label="Repetir contraseña" value={form.repeatPassword} onChange={repeatPassword => setForm(value => ({ ...value, repeatPassword }))} show={show} toggle={() => setShow(value => !value)} error={Boolean(form.repeatPassword) && form.password !== form.repeatPassword} helperText={form.repeatPassword && form.password !== form.repeatPassword ? 'Las contraseñas no coinciden' : ''} />{form.role === 'TECHNICIAN' && <PermissionFields value={form.permissions ?? []} onChange={permissions => setForm(value => ({ ...value, permissions }))} />}
   </Stack></DialogContent><DialogActions><Button onClick={close}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !strong || form.password !== form.repeatPassword}>{saving ? 'Creando…' : 'Crear empleado'}</Button></DialogActions></Box></Dialog>
 }
 
 function EditMemberDialog({ member, onClose, onCompleted }: { member: TeamMember | null; onClose: () => void; onCompleted: () => Promise<void> }) {
-  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', role: 'TECHNICIAN' as TeamRole, isActive: true })
+  const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', role: 'TECHNICIAN' as TeamRole, isActive: true, permissions: [] as string[] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => { if (member) setForm({ firstName: member.firstName ?? '', lastName: member.lastName ?? '', phone: member.phone ?? '', role: member.role, isActive: member.isActive }) }, [member])
+  useEffect(() => { if (member) setForm({ firstName: member.firstName ?? '', lastName: member.lastName ?? '', phone: member.phone ?? '', role: member.role, isActive: member.isActive, permissions: member.permissions }) }, [member])
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!member || saving) return
@@ -125,7 +130,7 @@ function EditMemberDialog({ member, onClose, onCompleted }: { member: TeamMember
     finally { setSaving(false) }
   }
   return <Dialog open={Boolean(member)} onClose={() => !saving && onClose()} fullWidth maxWidth="sm"><Box component="form" onSubmit={submit}><DialogTitle>Editar empleado</DialogTitle><DialogContent><Stack spacing={2} mt={1}>
-    {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack><TextField label="Teléfono" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl><FormControl><InputLabel>Estado</InputLabel><Select label="Estado" value={form.isActive ? 'active' : 'inactive'} onChange={e => setForm(value => ({ ...value, isActive: e.target.value === 'active' }))}><MenuItem value="active">Activo</MenuItem><MenuItem value="inactive">Inactivo</MenuItem></Select></FormControl>
+    {error && <Alert severity="error">{error}</Alert>}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} /><TextField fullWidth required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} /></Stack><TextField label="Teléfono" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} /><FormControl><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl><FormControl><InputLabel>Estado</InputLabel><Select label="Estado" value={form.isActive ? 'active' : 'inactive'} onChange={e => setForm(value => ({ ...value, isActive: e.target.value === 'active' }))}><MenuItem value="active">Activo</MenuItem><MenuItem value="inactive">Inactivo</MenuItem></Select></FormControl>{form.role === 'TECHNICIAN' && <PermissionFields value={form.permissions} onChange={permissions => setForm(value => ({ ...value, permissions }))} />}
   </Stack></DialogContent><DialogActions><Button onClick={onClose}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving || !form.firstName.trim() || !form.lastName.trim()}>{saving ? 'Guardando…' : 'Guardar cambios'}</Button></DialogActions></Box></Dialog>
 }
 

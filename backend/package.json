@@ -16,6 +16,7 @@
     "migrate:postgres": "tsx src/scripts/migrate-sqlite-to-postgres.ts",
     "migrate:postgres:dry-run": "tsx src/scripts/migrate-sqlite-to-postgres.ts --dry-run",
     "test:password-reset": "tsx tests/password-reset.ts",
+    "test:password-change": "tsx tests/password-change.ts",
     "test:inventory": "tsx tests/inventory.ts",
     "test:reports": "tsx tests/reports.ts",
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
@@ -37,6 +38,7 @@
     "express-rate-limit": "^8.6.1",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "resend": "^6.22.0",
     "zod": "^4.0.10"
   },
   "devDependencies": {

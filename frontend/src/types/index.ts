@@ -46,4 +46,5 @@ export interface Repair {
   warrantyStartedAt?: string
   warrantyExpiresAt?: string
   history?: RepairHistory[]
+  business?: { name: string | null; logoUrl: string | null }
 }

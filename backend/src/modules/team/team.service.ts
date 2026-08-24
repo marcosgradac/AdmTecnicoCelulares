@@ -1,6 +1,7 @@
 import type { Prisma, User } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../lib/prisma'
+import { permissionsFor, type Permission } from '../../config/permissions'
 
 export class TeamError extends Error {
   constructor(public status: number, message: string) { super(message) }
@@ -16,6 +17,7 @@ export const serializeTeamMember = (user: User) => ({
   phone: user.phone,
   role: user.role,
   isActive: user.isActive,
+  permissions: permissionsFor(user.role, user.permissions),
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 })
@@ -44,7 +46,7 @@ export async function getTeamMember(businessId: string, id: string) {
 
 export async function createTeamMember(businessId: string, input: {
   firstName: string; lastName: string; email: string; phone?: string | null
-  password: string; role: 'OWNER' | 'TECHNICIAN'
+  password: string; role: 'OWNER' | 'TECHNICIAN'; permissions?: Permission[]
 }) {
   const email = input.email.toLowerCase()
   if (await prisma.user.findUnique({ where: { email } })) throw new TeamError(409, 'Ya existe una cuenta con ese correo')
@@ -60,6 +62,7 @@ export async function createTeamMember(businessId: string, input: {
         phone: normalizePhone(input.phone),
         passwordHash,
         role: input.role,
+        permissions: input.role === 'TECHNICIAN' ? input.permissions ?? undefined : undefined,
       },
     }))
   } catch (error) {
@@ -72,13 +75,14 @@ export async function createTeamMember(businessId: string, input: {
 
 export async function updateTeamMember(businessId: string, actorId: string, id: string, input: {
   firstName?: string; lastName?: string; phone?: string | null
-  role?: 'OWNER' | 'TECHNICIAN'; isActive?: boolean
+  role?: 'OWNER' | 'TECHNICIAN'; isActive?: boolean; permissions?: Permission[]
 }) {
   return prisma.$transaction(async tx => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
     const user = await tx.user.findFirst({ where: { id, businessId } })
     if (!user) throw new TeamError(404, 'Usuario no encontrado')
     if (id === actorId && input.isActive === false) throw new TeamError(400, 'No podés desactivar tu propio usuario')
+    if (user.role === 'OWNER' && input.permissions) throw new TeamError(400, 'Los permisos del propietario no pueden limitarse')
 
     const removesActiveOwner = user.role === 'OWNER' && user.isActive && (
       input.isActive === false || input.role === 'TECHNICIAN'
@@ -98,6 +102,7 @@ export async function updateTeamMember(businessId: string, actorId: string, id: 
         ...(input.phone !== undefined ? { phone: normalizePhone(input.phone) } : {}),
         ...(input.role !== undefined ? { role: input.role } : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+        ...(input.permissions !== undefined && (input.role ?? user.role) === 'TECHNICIAN' ? { permissions: input.permissions } : {}),
         ...(firstName && lastName ? { name: `${firstName} ${lastName}` } : {}),
       },
     })

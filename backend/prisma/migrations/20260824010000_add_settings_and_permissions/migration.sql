@@ -1,0 +1,10 @@
+ALTER TABLE "Business"
+  ADD COLUMN "hours" TEXT,
+  ADD COLUMN "showNamePublic" BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN "showPhonePublic" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN "showAddressPublic" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN "showHoursPublic" BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE "User"
+  ADD COLUMN "themePreference" TEXT NOT NULL DEFAULT 'SYSTEM',
+  ADD COLUMN "permissions" JSONB;

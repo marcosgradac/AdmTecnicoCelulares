@@ -10,7 +10,6 @@ import { ClientsPage } from './pages/ClientsPage'
 import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { LoginPage } from './pages/LoginPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RegisterPage } from './pages/RegisterPage'
 import { RepairDetailPage } from './pages/RepairDetailPage'
@@ -24,6 +23,7 @@ import { PlatformAdminPage } from './features/platformAdmin/PlatformAdminPage'
 import { PlatformAdminGuard } from './features/platformAdmin/PlatformAdminGuard'
 import { TermsPage } from './features/legal/TermsPage'
 import { PrivacyPage } from './features/legal/PrivacyPage'
+import { SettingsPage } from './features/settings/SettingsPage'
 
 const PublicLandingLayout=()=> <Outlet/>
 const ParamRedirect=({base}:{base:string})=>{const {id}=useParams();return <Navigate to={`${base}/${id}`} replace/>}
@@ -40,7 +40,7 @@ export default function App(){return <><ScrollToTop/><Routes>
       <Route path="caja" element={<RoleGuard roles={['OWNER']}><CashPage/></RoleGuard>}/><Route path="reportes" element={<Navigate to="/admin" replace/>}/>
       <Route path="perfil" element={<ProfilePage/>}/><Route path="empleados" element={<RoleGuard roles={['OWNER']}><TeamPage/></RoleGuard>}/>
       <Route path="suscripcion" element={<SubscriptionPage/>}/>
-      <Route path="equipo" element={<Navigate to="/admin/empleados" replace/>}/><Route path="equipos/*" element={<Navigate to="/admin/reparaciones" replace/>}/><Route path="estadisticas" element={<Navigate to="/admin" replace/>}/><Route path="garantias" element={<WarrantiesPage/>}/><Route path="configuracion" element={<PlaceholderPage title="Configuración" description="Administrá las preferencias de tu servicio técnico."/>}/>
+      <Route path="equipo" element={<Navigate to="/admin/empleados" replace/>}/><Route path="equipos/*" element={<Navigate to="/admin/reparaciones" replace/>}/><Route path="estadisticas" element={<Navigate to="/admin" replace/>}/><Route path="garantias" element={<WarrantiesPage/>}/><Route path="configuracion" element={<SettingsPage/>}/>
     </Route>
     <Route path="/platform-admin" element={<PlatformAdminGuard><PlatformAdminPage/></PlatformAdminGuard>}/>
     <Route path="/inicio" element={<Navigate to="/admin" replace/>}/><Route path="/dashboard" element={<Navigate to="/admin" replace/>}/><Route path="/reparaciones" element={<Navigate to="/admin/reparaciones" replace/>}/><Route path="/reparaciones/nueva" element={<Navigate to="/admin/reparaciones?new=1" replace/>}/><Route path="/reparaciones/:id" element={<ParamRedirect base="/admin/reparaciones"/>}/>

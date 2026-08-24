@@ -2,8 +2,9 @@ import type { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import type { PlatformRole, UserRole } from '@prisma/client'
 import { prisma } from '../lib/prisma'
+import { permissionsFor, type Permission } from '../config/permissions'
 
-export interface AuthData { userId: string; businessId: string; role: UserRole; platformRole: PlatformRole; tokenVersion: number }
+export interface AuthData { userId: string; businessId: string; role: UserRole; platformRole: PlatformRole; tokenVersion: number; permissions?: Permission[] }
 
 declare global {
   namespace Express {
@@ -26,12 +27,12 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const payload = jwt.verify(token, jwtSecret) as AuthData
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true },
+      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true, permissions: true },
     })
     if (!user || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
     if ((payload.tokenVersion ?? 0) !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }
+    req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, permissions: permissionsFor(user.role, user.permissions) }
     next()
   } catch {
     return unauthorized(res, 'Token inválido o expirado')
@@ -50,3 +51,9 @@ export const requireSuperAdmin = (req: Request, res: Response, next: NextFunctio
   authOf(req).platformRole === 'SUPER_ADMIN'
     ? next()
     : res.status(403).json({ success: false, message: 'No tenés permisos para realizar esta acción' })
+
+export const requirePermission = (permission: Permission) =>
+  (req: Request, res: Response, next: NextFunction) =>
+    authOf(req).role === 'OWNER' || authOf(req).permissions?.includes(permission)
+      ? next()
+      : res.status(403).json({ success: false, message: 'No tenés permisos para realizar esta acción' })

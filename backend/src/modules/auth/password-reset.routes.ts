@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import { rateLimit } from 'express-rate-limit'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
-import { sendPasswordResetEmail } from '../../services/mail.service'
+import { sendPasswordResetEmail } from '../../services/email/email.service'
 
 export const passwordResetRouter = Router()
 
@@ -47,8 +47,9 @@ passwordResetRouter.post('/forgot-password', forgotLimiter, async (req, res) => 
       await sendPasswordResetEmail(user.email, token)
     }
     return res.json({ success: true, message: genericMessage })
-  } catch {
-    return res.status(500).json({ success: false, message: 'No pudimos procesar la solicitud' })
+  } catch (error) {
+    console.error('[mail] No se pudo enviar la recuperación de contraseña:', error instanceof Error ? error.message : 'error desconocido')
+    return res.status(502).json({ success: false, message: 'No pudimos enviar el correo de recuperación. Intentá nuevamente más tarde.' })
   }
 })
 

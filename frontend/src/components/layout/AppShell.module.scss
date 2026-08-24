@@ -3,7 +3,8 @@ $header: 72px;
 $sidebar-collapsed: 78px;
 
 .shell { min-height: 100vh; background: #F8F9FC; }
-.drawer { box-sizing: border-box; width: $sidebar; height: 100vh; padding: 16px 14px; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #E8EAF0; }
+.drawer { box-sizing: border-box; width: $sidebar-collapsed; height: 100vh; padding: 16px 14px; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #E8EAF0; overflow: hidden; transition: width .24s cubic-bezier(.4,0,.2,1), box-shadow .24s ease; }
+.drawer:hover { width: $sidebar; box-shadow: 10px 0 30px rgba(23,26,35,.08); }
 .brand { display: flex; align-items: center; gap: 11px; padding: 2px 8px 18px; }
 .logo { width: 40px; height: 40px; object-fit: contain; flex: none; }
 .mobileBrand { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
@@ -15,22 +16,24 @@ $sidebar-collapsed: 78px;
 .bottom { margin-top: auto; display: grid; gap: 8px; }
 .account { display: flex; align-items: center; gap: 10px; padding: 10px 8px 0; border-top: 1px solid #E8EAF0; }
 .account :global(.MuiAvatar-root), .headerUser :global(.MuiAvatar-root) { width: 36px; height: 36px; font-size: 14px; background: #EEE9FF; color: #5B3FD6; font-weight: 800; }
-.header { left: $sidebar !important; width: calc(100% - $sidebar) !important; height: $header; justify-content: center; border-bottom: 1px solid #E8EAF0; background: rgba(255,255,255,.94) !important; backdrop-filter: blur(12px); }
+.header { left: $sidebar-collapsed !important; width: calc(100% - $sidebar-collapsed) !important; height: $header; justify-content: center; border-bottom: 1px solid #E8EAF0; background: rgba(255,255,255,.94) !important; backdrop-filter: blur(12px); }
 .search { width: min(420px, 42vw); }
 .search :global(.MuiOutlinedInput-root) { height: 42px; min-height: 42px; background: #F8F9FC; }
 .headerUser { display: flex; align-items: center; gap: 9px; margin-left: 8px; }
-.content { padding: calc($header + 28px) 28px 40px calc($sidebar + 28px); min-height: 100vh; }
+.content { padding: calc($header + 28px) 28px 40px calc($sidebar-collapsed + 28px); min-height: 100vh; }
 .inner { max-width: 1480px; margin: 0 auto; }
 .mobileNav { display: none; }
-.collapsed { width: $sidebar-collapsed; }
-.collapsed .brand { justify-content: center; padding-inline: 4px; }
-.collapsed .brand > div:last-child, .collapsed .navLabel, .collapsed :global(.MuiListItemText-root), .collapsed .account > div:last-child { display: none; }
-.collapsed .nav :global(.MuiListItemButton-root), .collapsed .bottom :global(.MuiListItemButton-root) { justify-content: center; padding-inline: 10px; }
-.collapsed .nav :global(.MuiListItemIcon-root), .collapsed .bottom :global(.MuiListItemIcon-root) { min-width: 0; }
-.shellCollapsed .header { left: $sidebar-collapsed !important; width: calc(100% - $sidebar-collapsed) !important; }
-.shellCollapsed .content { padding-left: calc($sidebar-collapsed + 28px); }
+.drawer .brand { justify-content: center; padding-inline: 4px; }
+.drawer .brand > div:last-child, .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 0; visibility: hidden; white-space: nowrap; transition: opacity .14s ease; }
+.drawer .nav :global(.MuiListItemButton-root), .drawer .bottom :global(.MuiListItemButton-root) { padding-inline: 10px; }
+.drawer .nav :global(.MuiListItemIcon-root), .drawer .bottom :global(.MuiListItemIcon-root) { min-width: 38px; }
+.drawer:hover .brand { justify-content: flex-start; padding-inline: 8px; }
+.drawer:hover .brand > div:last-child, .drawer:hover .navLabel, .drawer:hover :global(.MuiListItemText-root), .drawer:hover .account > div:last-child { opacity: 1; visibility: visible; transition-delay: .08s; }
 
 @media (max-width: 899px) {
+  .drawer { width: 272px; overflow: visible; transition: none; }
+  .drawer .brand { justify-content: flex-start; padding-inline: 8px; }
+  .drawer .brand > div:last-child, .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 1; visibility: visible; }
   .header { left: 0 !important; width: 100% !important; height: 64px; }
   .headerUser { margin-left: 2px; }
   .headerUser > div:last-child { display: none; }

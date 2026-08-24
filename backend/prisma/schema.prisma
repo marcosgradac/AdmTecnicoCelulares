@@ -66,6 +66,11 @@ model Business {
   phone              String?
   address            String?
   logoUrl            String?
+  hours              String?
+  showNamePublic     Boolean             @default(true)
+  showPhonePublic    Boolean             @default(false)
+  showAddressPublic  Boolean             @default(false)
+  showHoursPublic    Boolean             @default(false)
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   users              User[]
@@ -95,6 +100,8 @@ model User {
   platformRole        PlatformRole          @default(USER)
   isActive            Boolean               @default(true)
   tokenVersion        Int                   @default(0)
+  themePreference     String                @default("SYSTEM")
+  permissions         Json?
   termsAccepted       Boolean               @default(false)
   termsVersion        String?
   termsAcceptedAt     DateTime?
@@ -119,10 +126,13 @@ model PasswordResetToken {
   tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
+  purpose   String    @default("PASSWORD_RESET")
+  attempts  Int       @default(0)
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, purpose, createdAt])
   @@index([expiresAt])
 }
 

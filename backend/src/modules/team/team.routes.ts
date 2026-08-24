@@ -1,11 +1,10 @@
 import { Router } from 'express'
-import { requireRole } from '../../middlewares/auth'
+import { requirePermission, requireRole } from '../../middlewares/auth'
 import * as controller from './team.controller'
 
 export const teamRouter = Router()
-teamRouter.use(requireRole('OWNER'))
-teamRouter.get('/', controller.list)
-teamRouter.post('/', controller.create)
-teamRouter.get('/:id', controller.get)
-teamRouter.patch('/:id', controller.update)
-teamRouter.post('/:id/reset-password', controller.resetPassword)
+teamRouter.get('/', requirePermission('team.view'), controller.list)
+teamRouter.post('/', requireRole('OWNER'), requirePermission('team.create'), controller.create)
+teamRouter.get('/:id', requirePermission('team.view'), controller.get)
+teamRouter.patch('/:id', requireRole('OWNER'), requirePermission('team.update'), controller.update)
+teamRouter.post('/:id/reset-password', requireRole('OWNER'), requirePermission('team.update'), controller.resetPassword)

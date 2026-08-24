@@ -16,6 +16,7 @@ export interface AuthUser {
   privacyVersion: string | null
   privacyAcceptedAt: string | null
   profileComplete: boolean
+  permissions: string[]
   business: { id: string; name: string }
 }
 
