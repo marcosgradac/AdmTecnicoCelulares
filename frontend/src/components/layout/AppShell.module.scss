@@ -5,10 +5,12 @@ $sidebar-collapsed: 78px;
 .shell { min-height: 100vh; background: #F8F9FC; }
 .drawer { box-sizing: border-box; width: $sidebar-collapsed; height: 100vh; padding: 16px 14px; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #E8EAF0; overflow: hidden; transition: width .24s cubic-bezier(.4,0,.2,1), box-shadow .24s ease; }
 .drawer:hover { width: $sidebar; box-shadow: 10px 0 30px rgba(23,26,35,.08); }
-.brand { display: flex; align-items: center; gap: 11px; padding: 2px 8px 18px; }
-.logo { width: 40px; height: 40px; object-fit: contain; flex: none; }
-.mobileBrand { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
-.mobileBrand img { width: 31px; height: 31px; object-fit: contain; }
+.brand { position: relative; display: flex; align-items: center; justify-content: center; height: 44px; min-height: 44px; padding: 0 0 18px; }
+.logoMark, .logoFull { position: absolute; object-fit: contain; transition: opacity .16s ease; }
+.logoMark { width: 42px; height: 42px; opacity: 1; }
+.logoFull { left: 8px; width: 184px; height: 44px; opacity: 0; }
+.mobileBrand { display: flex; align-items: center; width: 150px; height: 36px; margin-left: 8px; }
+.mobileBrand img { width: 100%; height: 100%; object-fit: contain; object-position: left center; }
 .navLabel { padding: 0 12px 8px; font-size: 10px !important; font-weight: 800 !important; letter-spacing: .1em !important; color: #9AA0AE; }
 .nav { display: grid; gap: 2px; }
 .nav :global(.MuiListItemIcon-root), .bottom :global(.MuiListItemIcon-root) { min-width: 38px; color: #687083; }
@@ -22,26 +24,22 @@ $sidebar-collapsed: 78px;
 .headerUser { display: flex; align-items: center; gap: 9px; margin-left: 8px; }
 .content { padding: calc($header + 28px) 28px 40px calc($sidebar-collapsed + 28px); min-height: 100vh; }
 .inner { max-width: 1480px; margin: 0 auto; }
-.mobileNav { display: none; }
-.drawer .brand { justify-content: center; padding-inline: 4px; }
-.drawer .brand > div:last-child, .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 0; visibility: hidden; white-space: nowrap; transition: opacity .14s ease; }
+.repairFab { display: none !important; }
+.drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 0; visibility: hidden; white-space: nowrap; transition: opacity .14s ease; }
 .drawer .nav :global(.MuiListItemButton-root), .drawer .bottom :global(.MuiListItemButton-root) { padding-inline: 10px; }
 .drawer .nav :global(.MuiListItemIcon-root), .drawer .bottom :global(.MuiListItemIcon-root) { min-width: 38px; }
-.drawer:hover .brand { justify-content: flex-start; padding-inline: 8px; }
-.drawer:hover .brand > div:last-child, .drawer:hover .navLabel, .drawer:hover :global(.MuiListItemText-root), .drawer:hover .account > div:last-child { opacity: 1; visibility: visible; transition-delay: .08s; }
+.drawer:hover .logoMark { opacity: 0; }
+.drawer:hover .logoFull { opacity: 1; transition-delay: .05s; }
+.drawer:hover .navLabel, .drawer:hover :global(.MuiListItemText-root), .drawer:hover .account > div:last-child { opacity: 1; visibility: visible; transition-delay: .08s; }
 
 @media (max-width: 899px) {
   .drawer { width: 272px; overflow: visible; transition: none; }
-  .drawer .brand { justify-content: flex-start; padding-inline: 8px; }
-  .drawer .brand > div:last-child, .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 1; visibility: visible; }
+  .drawer .logoMark { opacity: 0; }
+  .drawer .logoFull { opacity: 1; }
+  .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 1; visibility: visible; }
   .header { left: 0 !important; width: 100% !important; height: 64px; }
   .headerUser { margin-left: 2px; }
   .headerUser > div:last-child { display: none; }
-  .content { padding: 84px 16px calc(92px + env(safe-area-inset-bottom)); }
-  .mobileNav { position: fixed; z-index: 1300; inset: auto 0 0; height: calc(72px + env(safe-area-inset-bottom)); padding: 7px 7px env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, 1fr); align-items: start; background: #fff; border-top: 1px solid #E8EAF0; box-shadow: 0 -8px 24px rgba(23,26,35,.06); }
-  .mobileNav button { min-width: 0; height: 58px; border: 0; background: transparent; color: #7D8493; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; }
-  .mobileNav button svg { font-size: 22px; }
-  .mobileNav .active { color: #5B3FD6; font-weight: 700; }
-  .mobileNav .create { width: 56px; height: 56px; margin: -22px auto 0; border-radius: 18px; color: #fff; background: #5B3FD6; box-shadow: 0 8px 22px rgba(91,63,214,.3); }
-  .mobileNav .create span { position: absolute; margin-top: 82px; color: #5B3FD6; font-weight: 700; }
+  .content { padding: 84px 16px calc(32px + env(safe-area-inset-bottom)); }
+  .repairFab { display: inline-flex !important; position: fixed !important; z-index: 1200; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 8px 24px rgba(38, 25, 94, .24) !important; }
 }

@@ -80,7 +80,7 @@ export function RepairDetailPage() {
   const setField = <K extends keyof NonNullable<typeof form>>(key: K, value: NonNullable<typeof form>[K]) => setForm(current => current ? { ...current, [key]: value } : current)
 
   return <Box>
-    <PageHeader eyebrow={`REPARACIÓN #${repair.number}`} title={repair.device} description={`${repair.clientName} · Ingresó el ${formatDate(repair.createdAt)}`} action={<Stack direction="row" gap={1} alignItems="center"><StatusChip status={repair.status}/>{!editing && <Button variant="outlined" startIcon={<EditRounded/>} onClick={startEditing}>Editar</Button>}</Stack>} />
+    <PageHeader context={`REPARACIÓN #${repair.number}`} title={repair.device} description={`${repair.clientName} · Ingresó el ${formatDate(repair.createdAt)}`} action={<Stack direction="row" gap={1} alignItems="center"><StatusChip status={repair.status}/>{!editing && <Button variant="outlined" startIcon={<EditRounded/>} onClick={startEditing}>Editar</Button>}</Stack>} />
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
     {editing && form ? <Card sx={{ mb: 2.2 }}><CardContent>

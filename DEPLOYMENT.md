@@ -17,6 +17,8 @@ CelluFix es un monorepo. Railway debe trabajar desde `backend/` y Vercel desde `
    JWT_EXPIRES_IN=8h
    FRONTEND_URL=https://URL-DE-VERCEL
    CORS_ORIGINS=https://URL-DE-VERCEL
+   RESEND_API_KEY=<api-key-de-resend>
+   EMAIL_FROM=TecnoDesk <no-reply@dominio-verificado>
    ```
 
    Railway proporciona `PORT`; no se debe fijar manualmente. También pueden configurarse los límites documentados en `backend/.env.example`.
@@ -64,7 +66,7 @@ El cliente HTTP agrega el prefijo `/api` de forma centralizada. No se debe inclu
 
 ## Correo de restablecimiento
 
-El modo `MAIL_MODE=console` sirve solamente para desarrollo y no expone el enlace ni el token en logs de producción. Antes de ofrecer restablecimiento de contraseña en producción se debe integrar un proveedor real de correo; no hay credenciales de correo incluidas en este repositorio.
+El modo `MAIL_MODE=fake` se usa solamente en pruebas. En producción, `RESEND_API_KEY` y `EMAIL_FROM` (o el alias `RESEND_FROM_EMAIL`) son obligatorias y el dominio del remitente debe estar verificado en Resend. No hay credenciales de correo incluidas en este repositorio.
 
 ## Validación posterior al despliegue
 

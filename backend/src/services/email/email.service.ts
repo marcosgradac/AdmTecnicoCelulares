@@ -5,7 +5,7 @@ import { passwordChangeCodeTemplate } from './templates/password-change-code.tem
 const fakeOutbox: FakeMail[] = []
 const apiKey = process.env.RESEND_API_KEY
 const resend = apiKey ? new Resend(apiKey) : null
-const fromAddress = () => process.env.EMAIL_FROM?.trim()
+const fromAddress = () => (process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL)?.trim()
 
 export const clearFakeOutbox = () => { fakeOutbox.length = 0 }
 export const getFakeOutbox = () => [...fakeOutbox]
@@ -13,7 +13,7 @@ export const getFakeOutbox = () => [...fakeOutbox]
 const deliver = async (mail: FakeMail, html: string, text: string): Promise<EmailDelivery> => {
   if (process.env.MAIL_MODE === 'fake') { fakeOutbox.push(mail); return { id: `fake-${fakeOutbox.length}` } }
   const from = fromAddress()
-  if (!resend || !from) throw new Error('Configuración de email incompleta')
+  if (!resend || !from) throw new Error(`Configuración de email incompleta: ${!resend ? 'RESEND_API_KEY' : 'EMAIL_FROM'}`)
   const { data, error } = await resend.emails.send({ from, to: [mail.to], subject: mail.subject, html, text })
   if (error || !data?.id) throw new Error(error?.message || 'Resend no confirmó el envío')
   return { id: data.id }

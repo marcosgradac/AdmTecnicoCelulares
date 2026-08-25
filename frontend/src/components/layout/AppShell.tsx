@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AppBar, Avatar, Badge, Box, Divider, Drawer, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AccountCircleRounded, AddRounded, AdminPanelSettingsRounded, BuildRounded, DashboardRounded, GroupsRounded, LogoutRounded, MenuRounded, MoreHorizRounded, NotificationsNoneRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
+import { AppBar, Avatar, Box, Divider, Drawer, Fab, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { AccountCircleRounded, AdminPanelSettingsRounded, BuildRounded, DashboardRounded, GroupsRounded, LogoutRounded, MenuRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
@@ -36,10 +36,9 @@ function AppShellContent() {
   const roleLabel = user?.role === 'OWNER' ? 'Propietario' : 'Técnico'
   const closeAccount = () => setAccountAnchor(null)
   const visibleNavItems = navItems.filter(item => (!item.ownerOnly || user?.role === 'OWNER') && (!item.permission || canAccess(user, item.permission)))
-  const mobileItems = visibleNavItems.filter(item => !['/admin/configuracion', '/admin/empleados', '/admin/suscripcion'].includes(item.path)).slice(0, canAccess(user, 'repairs.create') ? 3 : 4)
 
   const drawer = <Box className={styles.drawer}>
-    <Box className={styles.brand}><BrandLogo compact className={styles.logo} /><Box><Typography fontWeight={800}>TecnoDesk</Typography><Typography variant="caption" color="text.secondary">Gestión técnica</Typography></Box></Box>
+    <Box className={styles.brand}><BrandLogo compact className={styles.logoMark} /><BrandLogo className={styles.logoFull} /></Box>
     <Typography className={styles.navLabel}>MENÚ PRINCIPAL</Typography>
     <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => <Tooltip key={path} title={!mobile ? label : ''} placement="right"><ListItemButton selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton></Tooltip>)}</List>
     <Box className={styles.bottom}>
@@ -53,8 +52,8 @@ function AppShellContent() {
     <Drawer open={mobile && open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: 272 } }}>{drawer}</Drawer>
     <AppBar className={styles.header} position="fixed" color="inherit" elevation={0}><Toolbar>
       {mobile && <IconButton aria-label="Abrir menú" onClick={() => setOpen(true)}><MenuRounded /></IconButton>}
-      {mobile ? <Box className={styles.mobileBrand}><BrandLogo compact /><Typography fontWeight={800}>TecnoDesk</Typography></Box> : <TextField placeholder="Buscar reparación, cliente o equipo…" aria-label="Búsqueda global" className={styles.search} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />}
-      <Box flex={1} /><Tooltip title="Notificaciones"><IconButton aria-label="Notificaciones"><Badge variant="dot" color="error"><NotificationsNoneRounded /></Badge></IconButton></Tooltip>
+      {mobile ? <Box className={styles.mobileBrand}><BrandLogo /></Box> : <TextField placeholder="Buscar reparación, cliente o equipo…" aria-label="Búsqueda global" className={styles.search} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />}
+      <Box flex={1} />
       <Box className={styles.headerUser} role="button" tabIndex={0} aria-label="Abrir menú de cuenta" onClick={event => setAccountAnchor(event.currentTarget)} onKeyDown={event => { if (event.key === 'Enter') setAccountAnchor(event.currentTarget) }} sx={{ cursor: 'pointer' }}><Avatar>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name}</Typography></Box></Box>
     </Toolbar></AppBar>
     <Menu anchorEl={accountAnchor} open={Boolean(accountAnchor)} onClose={closeAccount} slotProps={{ paper: { sx: { minWidth: 230, mt: 1 } } }}>
@@ -66,11 +65,7 @@ function AppShellContent() {
     </Menu>
     <ProfileCompletionDialog /><TrialStartedDialog />
     <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><Outlet /></Box></Box>
-    {mobile && <Box component="nav" aria-label="Navegación principal" className={styles.mobileNav}>
-      {mobileItems.map(({path,label,icon:Icon})=><button key={path} onClick={() => go(path)} className={selected(path) ? styles.active : ''}><Icon/><span>{label}</span></button>)}
-      {canAccess(user,'repairs.create')&&<button onClick={() => go('/admin/reparaciones/nueva')} className={styles.create}><AddRounded /><span>Nueva</span></button>}
-      <button onClick={() => setOpen(true)}><MoreHorizRounded /><span>Más</span></button>
-    </Box>}
+    {mobile && canAccess(user, 'repairs.create') && <Fab color="primary" aria-label="Crear nueva reparación" className={styles.repairFab} onClick={() => go('/admin/reparaciones/nueva')}><BuildRounded /></Fab>}
   </Box>
 }
 

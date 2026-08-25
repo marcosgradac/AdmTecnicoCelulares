@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Autocomplete, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { createRepair } from '../../services/repairs'
 import { getClients, type ClientRecord } from '../../services/operations'
 import type { Repair, RepairStatus } from '../../types'
 import { FormDrawer } from '../common/FormDrawer'
 import { CurrencyField } from '../common/CurrencyField'
 import { IntegerField } from '../common/IntegerField'
+import { NewClientDrawer } from '../clients/NewClientDrawer'
 
 const today = () => { const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}` }
 const initial = { brand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, estimatedDeliveryDate: today(), notes: '', status: 'received' as RepairStatus }
@@ -18,10 +19,11 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   const [customWarrantyDays, setCustomWarrantyDays] = useState(30)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [clientDrawerOpen, setClientDrawerOpen] = useState(false)
   useEffect(() => { if (open) void getClients().then(items => { setClients(items); setClientId(initialClientId ?? '') }).catch(() => setError('No pudimos cargar los clientes.')) }, [open, initialClientId])
   const client = useMemo(() => clients.find(item => item.id === clientId) ?? null, [clients, clientId])
   const change = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [key]: key === 'total' ? Number(event.target.value) : event.target.value }))
-  const close = () => { if (!saving) { setError(''); setForm({ ...initial, estimatedDeliveryDate: today() }); setWarrantyPreset('0'); setCustomWarrantyDays(30); onClose() } }
+  const close = () => { if (!saving) { setError(''); setForm({ ...initial, estimatedDeliveryDate: today() }); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }
   const save = async () => {
     const brand = form.brand.trim(), model = form.model.trim(), issue = form.issue.trim()
     if (!clientId) return setError('Seleccioná un cliente existente.')
@@ -34,10 +36,11 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
       setForm(initial); onCreated(repair)
     } catch { setError('No pudimos crear la reparación. Revisá los datos e intentá nuevamente.') } finally { setSaving(false) }
   }
-  return <FormDrawer open={open} eyebrow="NUEVO INGRESO" title="Nueva reparación" saving={saving} submitLabel="Crear reparación" onClose={close} onSubmit={() => void save()}>
+  return <><FormDrawer open={open && !clientDrawerOpen} eyebrow="NUEVO INGRESO" title="Nueva reparación" saving={saving} submitLabel="Crear reparación" onClose={close} onSubmit={() => void save()}>
         {error && <Alert severity="error">{error}</Alert>}
         <Typography variant="h2">Cliente</Typography>
         <Autocomplete options={clients} value={client} onChange={(_, value) => setClientId(value?.id ?? '')} getOptionLabel={option => `${option.name}${option.phone ? ` · ${option.phone}` : ''}`} filterOptions={(options, state) => options.filter(option => `${option.name} ${option.phone ?? ''}`.toLowerCase().includes(state.inputValue.toLowerCase()))} noOptionsText="No encontramos ese cliente. Crealo primero desde Clientes." renderInput={params => <TextField {...params} required label="Buscar cliente..." placeholder="Nombre, apellido o teléfono"/>}/>
+        <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button>
         <Divider/><Typography variant="h2">Dispositivo</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Marca" value={form.brand} onChange={change('brand')} inputProps={{ maxLength: 60 }}/><TextField fullWidth required label="Modelo" value={form.model} onChange={change('model')} inputProps={{ maxLength: 100 }}/></Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="IMEI (opcional)" value={form.imei} onChange={change('imei')} inputProps={{ maxLength: 32 }}/><TextField fullWidth label="Color (opcional)" value={form.color} onChange={change('color')} inputProps={{ maxLength: 60 }}/></Stack>
@@ -55,5 +58,5 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
           max={365}
         />}
         <TextField multiline minRows={3} label="Observaciones (opcional)" value={form.notes} onChange={change('notes')}/>
-  </FormDrawer>
+  </FormDrawer><NewClientDrawer open={clientDrawerOpen} onClose={() => setClientDrawerOpen(false)} onCreated={created => { setClients(current => [created, ...current.filter(item => item.id !== created.id)]); setClientId(created.id); setClientDrawerOpen(false) }} /></>
 }
