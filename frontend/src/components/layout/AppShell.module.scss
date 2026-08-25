@@ -17,11 +17,17 @@ $sidebar-collapsed: 78px;
 .nav :global(.MuiListItemText-primary), .bottom :global(.MuiListItemText-primary) { font-size: 14px; font-weight: 650; }
 .bottom { margin-top: auto; display: grid; gap: 8px; }
 .account { display: flex; align-items: center; gap: 10px; padding: 10px 8px 0; border-top: 1px solid #E8EAF0; }
-.account :global(.MuiAvatar-root), .headerUser :global(.MuiAvatar-root) { width: 36px; height: 36px; font-size: 14px; background: #EEE9FF; color: #5B3FD6; font-weight: 800; }
+.account :global(.MuiAvatar-root) { width: 36px; height: 36px; font-size: 14px; background: #EEE9FF; color: #5B3FD6; font-weight: 800; }
+.businessAccess :global(.MuiAvatar-root) { box-sizing: border-box; width: 44px; height: 44px; flex: 0 0 44px; padding: 4px; font-size: 13px; font-weight: 800; border-radius: 50%; }
+.businessAccess :global(.MuiAvatar-img) { width: 100%; height: 100%; object-fit: contain; }
 .header { left: $sidebar-collapsed !important; width: calc(100% - $sidebar-collapsed) !important; height: $header; justify-content: center; border-bottom: 1px solid #E8EAF0; background: rgba(255,255,255,.94) !important; backdrop-filter: blur(12px); }
 .search { width: min(420px, 42vw); }
 .search :global(.MuiOutlinedInput-root) { height: 42px; min-height: 42px; background: #F8F9FC; }
-.headerUser { display: flex; align-items: center; gap: 9px; margin-left: 8px; }
+.businessAccess { display: flex; align-items: center; gap: 10px; min-width: 0; margin-left: 8px; padding: 4px 7px 4px 5px; border: 1px solid transparent; border-radius: 14px; cursor: pointer; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.businessAccess:focus-visible { outline: none; }
+.businessAccessName { min-width: 0; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; font-size: 14.5px !important; font-weight: 650 !important; letter-spacing: .005em !important; line-height: 1.2 !important; }
+.businessAccessArrow { flex: 0 0 auto; color: #7D8493; font-size: 20px !important; transition: transform .18s ease, color .18s ease; }
+.businessAccess:hover .businessAccessArrow, .businessAccess:focus-visible .businessAccessArrow { transform: translateX(2px); color: #666E7D; }
 .content { padding: calc($header + 28px) 28px 40px calc($sidebar-collapsed + 28px); min-height: 100vh; }
 .inner { max-width: 1480px; margin: 0 auto; }
 .repairFab { display: none !important; }
@@ -38,8 +44,14 @@ $sidebar-collapsed: 78px;
   .drawer .logoFull { opacity: 1; }
   .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 1; visibility: visible; }
   .header { left: 0 !important; width: 100% !important; height: 64px; }
-  .headerUser { margin-left: 2px; }
-  .headerUser > div:last-child { display: none; }
+  .businessAccess { margin-left: 2px; padding: 3px 5px 3px 3px; gap: 6px; }
+  .businessAccessName { max-width: 110px; font-size: 13.5px !important; }
+  .businessAccessArrow { font-size: 18px !important; }
   .content { padding: 84px 16px calc(32px + env(safe-area-inset-bottom)); }
   .repairFab { display: inline-flex !important; position: fixed !important; z-index: 1200; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 8px 24px rgba(38, 25, 94, .24) !important; }
+}
+@media (max-width: 599px) {
+  .mobileBrand { width: 105px; margin-left: 3px; }
+  .businessAccessName { max-width: 82px; }
+  .businessAccess :global(.MuiAvatar-root) { width: 40px; height: 40px; flex-basis: 40px; padding: 4px; border-radius: 50%; }
 }

@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api, apiAssetUrl } from './api'
 import type { Repair, RepairStatus } from '../types'
 
 export type ApiRepairStatus = 'RECEIVED' | 'REVIEW' | 'BUDGET' | 'APPROVED' | 'WAITING_PART' | 'REPAIRING' | 'TESTING' | 'READY' | 'DELIVERED' | 'CANCELLED' | 'WARRANTY'
@@ -35,6 +35,7 @@ interface ApiRepair {
   createdAt: string
   updatedAt: string
   client: ApiClient
+  business?: { name: string | null; logoUrl: string | null }
 }
 
 export interface CreateRepairInput {
@@ -108,6 +109,7 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   warrantyStartedAt: repair.warrantyStartedAt ?? undefined,
   warrantyExpiresAt: repair.warrantyExpiresAt ?? undefined,
   history: (repair.statusHistory ?? []).map(item => ({ ...item, newStatus: statusFromApi[item.newStatus] })),
+  business: repair.business ? { ...repair.business, logoUrl: apiAssetUrl(repair.business.logoUrl) ?? null } : undefined,
 })
 
 export async function getRepairs() {

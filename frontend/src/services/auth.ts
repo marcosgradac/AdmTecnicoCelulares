@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api, apiAssetUrl } from './api'
 
 export interface AuthUser {
   id: string
@@ -18,7 +18,7 @@ export interface AuthUser {
   profileComplete: boolean
   tutorialSeen: boolean
   permissions: string[]
-  business: { id: string; name: string }
+  business: { id: string; name: string; logoUrl: string | null }
 }
 
 export interface RegisterInput {
@@ -37,12 +37,14 @@ export interface RegisterInput {
 }
 export interface ProfileInput { firstName: string; lastName: string; phone?: string | null }
 export interface AuthResponse { token: string; user: AuthUser }
-export const login = async (input: { email: string; password: string; turnstileToken?: string }) => (await api.post<AuthResponse>('/auth/login', input)).data
-export const register = async (input: RegisterInput) => (await api.post<AuthResponse>('/auth/register', input)).data
-export const getMe = async () => (await api.get<AuthUser>('/auth/me')).data
+const withResolvedBusinessLogo = (user: AuthUser): AuthUser => ({ ...user, business: { ...user.business, logoUrl: apiAssetUrl(user.business.logoUrl) ?? null } })
+const withResolvedAuthLogo = (response: AuthResponse): AuthResponse => ({ ...response, user: withResolvedBusinessLogo(response.user) })
+export const login = async (input: { email: string; password: string; turnstileToken?: string }) => withResolvedAuthLogo((await api.post<AuthResponse>('/auth/login', input)).data)
+export const register = async (input: RegisterInput) => withResolvedAuthLogo((await api.post<AuthResponse>('/auth/register', input)).data)
+export const getMe = async () => withResolvedBusinessLogo((await api.get<AuthUser>('/auth/me')).data)
 export const markTutorialSeen = async () => (await api.patch<{ success: true; tutorialSeen: true }>('/auth/tutorial-seen')).data
-export const getProfile = async () => (await api.get<AuthUser>('/profile')).data
-export const updateProfile = async (input: ProfileInput) => (await api.patch<AuthUser>('/profile', input)).data
+export const getProfile = async () => withResolvedBusinessLogo((await api.get<AuthUser>('/profile')).data)
+export const updateProfile = async (input: ProfileInput) => withResolvedBusinessLogo((await api.patch<AuthUser>('/profile', input)).data)
 export const forgotPassword = async (email: string) =>
   (await api.post<{ success: true; message: string }>('/auth/forgot-password', { email })).data
 export const resetPassword = async (token: string, password: string) =>

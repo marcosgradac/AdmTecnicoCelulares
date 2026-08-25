@@ -1,0 +1,20 @@
+.support-page { max-width: 1040px; }
+.support-intro { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding: 18px 20px; border-radius: 16px; background: rgba(108,78,242,.075); }
+.support-intro__icon { width: 46px; height: 46px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 13px; color: #6c4ef2; background: #fff; }
+.support-intro__icon svg { font-size: 25px; }
+.support-channels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.support-channel { display: flex; align-items: flex-start; gap: 14px; min-width: 0; padding: 18px; border: 1px solid #e8eaf0; border-radius: 15px; background: #fff; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.support-channel:hover { transform: translateY(-2px); border-color: rgba(108,78,242,.28); box-shadow: 0 10px 24px rgba(34,28,70,.07); }
+.support-channel__icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 11px; background: #f5f3ff; color: #6c4ef2; }
+.support-channel--whatsapp .support-channel__icon { color: #159b5b; background: #eaf8f0; }
+.support-channel--instagram .support-channel__icon { color: #c13584; background: #faedf5; }
+.support-channel--facebook .support-channel__icon { color: #316ff6; background: #edf3ff; }
+.support-channel__body { min-width: 0; }
+.support-channel__body > p { min-height: 44px; margin-top: 4px; font-size: 14px; }
+.support-channel__body .MuiButton-root { margin-top: 8px; margin-left: -8px; padding-inline: 8px; }
+.support-topics { margin-top: 30px; }
+.support-topics__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.support-topic { display: flex; align-items: flex-start; gap: 12px; padding: 15px 16px; border-radius: 13px; background: #fff; border: 1px solid #edf0f4; }
+.support-topic > svg { flex: 0 0 auto; color: #6c4ef2; margin-top: 1px; }
+@media (max-width: 899px) { .support-channels { grid-template-columns: 1fr; }.support-channel__body > p { min-height: 0; }.support-channel .MuiButton-root { min-height: 44px; } }
+@media (max-width: 599px) { .support-intro { align-items: flex-start; padding: 16px; }.support-channels, .support-topics__grid { grid-template-columns: 1fr; }.support-channel { padding: 16px; }.support-channel .MuiButton-root { width: 100%; justify-content: flex-start; }.support-topic { padding: 14px; } }

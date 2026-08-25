@@ -2,4 +2,9 @@
 .settings-menu { position: sticky; top: 96px; display: grid; padding: 8px; border: 1px solid; border-color: var(--settings-border, #e8eaf0); border-radius: 16px; background: var(--settings-paper, #fff); }
 .settings-menu button { border: 0; background: transparent; color: inherit; border-radius: 11px; padding: 12px; display: flex; justify-content: space-between; align-items: center; text-align: left; cursor: pointer; }
 .settings-menu button:hover { background: rgba(108,78,242,.09); }.settings-menu button > span { display: flex; align-items: center; gap: 11px; }.settings-menu button svg { color: #6c4ef2; }.settings-menu strong,.settings-menu small { display: block; }.settings-menu small { margin-top: 2px; color: #7d8493; }
+.business-logo { display: flex; align-items: center; gap: 18px; padding: 18px; border: 1px solid var(--settings-border, #e8eaf0); border-radius: 16px; background: rgba(108,78,242,.035); }
+.business-logo > .MuiAvatar-root { box-sizing: border-box; width: 84px; height: 84px; flex: 0 0 84px; padding: 6px; border-radius: 50%; background: #fff; color: #6c4ef2; border: 1.5px solid #6c4ef2; }
+.business-logo > .MuiAvatar-root img { object-fit: contain; }
+.business-logo__content { min-width: 0; flex: 1; }
 @media (max-width: 899px) { .settings-layout { grid-template-columns: 1fr; }.settings-menu { position: static; }.settings-content { min-width: 0; } }
+@media (max-width: 599px) { .business-logo { align-items: flex-start; padding: 15px; }.business-logo > .MuiAvatar-root { width: 84px; height: 84px; flex-basis: 84px; }.business-logo__content .MuiButton-root { width: 100%; } }

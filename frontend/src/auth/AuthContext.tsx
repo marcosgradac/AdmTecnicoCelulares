@@ -9,6 +9,7 @@ interface AuthContextValue {
   register: (input: RegisterInput) => Promise<void>
   updateProfile: (input: ProfileInput) => Promise<void>
   markTutorialSeen: () => Promise<void>
+  refreshUser: () => Promise<void>
   logout: () => void
 }
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -37,8 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, result.token); setUser(result.user)
   }
   const updateProfile = async (input: ProfileInput) => setUser(await updateProfileRequest(input))
+  const refreshUser = async () => setUser(await getMe())
   const markTutorialSeen = async () => { await markTutorialSeenRequest(); setUser(current => current ? { ...current, tutorialSeen: true } : current) }
-  const value = useMemo(() => ({ user, loading, login, register, updateProfile, markTutorialSeen, logout }), [user, loading, logout])
+  const value = useMemo(() => ({ user, loading, login, register, updateProfile, markTutorialSeen, refreshUser, logout }), [user, loading, logout])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export const useAuth = () => {

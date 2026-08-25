@@ -58,6 +58,7 @@ const normalizePhone = (value?: string | null) => {
   const normalized = value?.trim().replace(/\D/g, '')
   return normalized || null
 }
+const publicBusinessLogoUrl = (businessId: string, storedLogo: string | null) => storedLogo?.startsWith('data:') ? `/api/business-logo/${businessId}` : storedLogo
 const userResponse = <T extends {
   id: string
   name: string
@@ -75,7 +76,7 @@ const userResponse = <T extends {
   privacyAcceptedAt: Date | null
   permissions: unknown
   tutorialSeen: boolean
-  business: { id: string; name: string }
+  business: { id: string; name: string; logoUrl: string | null }
 }>(user: T) => ({
   id: user.id,
   firstName: user.firstName,
@@ -94,7 +95,7 @@ const userResponse = <T extends {
   profileComplete: Boolean(user.firstName && user.lastName),
   permissions: permissionsFor(user.role, user.permissions),
   tutorialSeen: user.tutorialSeen,
-  business: { id: user.business.id, name: user.business.name },
+  business: { id: user.business.id, name: user.business.name, logoUrl: publicBusinessLogoUrl(user.business.id, user.business.logoUrl) },
 })
 
 const health = async (_req: Request, res: Response) => {
@@ -108,6 +109,18 @@ const health = async (_req: Request, res: Response) => {
 }
 app.get('/api/health', health)
 app.get('/health', health)
+app.get('/api/business-logo/:businessId', async (req, res) => {
+  const business = await prisma.business.findUnique({ where: { id: String(req.params.businessId) }, select: { logoUrl: true } })
+  const match = business?.logoUrl?.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/)
+  if (!match) return res.status(404).end()
+  const image = Buffer.from(match[2], 'base64')
+  res.setHeader('Content-Type', match[1])
+  res.setHeader('Content-Length', String(image.length))
+  res.setHeader('Cache-Control', 'public, no-cache')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+  return res.send(image)
+})
 app.use('/api/auth', passwordResetRouter)
 app.use('/api/auth/password-change', passwordChangeRouter)
 
@@ -115,7 +128,7 @@ const publicRepairSelect = {
   id: true, number: true, deviceBrand: true, deviceModel: true, issue: true,
   status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
   estimatedDeliveryDate: true, createdAt: true, updatedAt: true,
-  business: { select: { name: true, logoUrl: true } },
+  business: { select: { id: true, name: true, logoUrl: true } },
   statusHistory: { where: { publicMessage: { not: null } }, select: { newStatus: true, publicMessage: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
 } as const
 app.get('/api/tracking/:token', publicTrackingLimiter, async (req, res) => {
@@ -139,7 +152,7 @@ app.get('/api/tracking/:token', publicTrackingLimiter, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Seguimiento no encontrado' })
     }
     trackingRisk.clear(ip)
-    return res.json({ ...repair, clientId: '', imei: null, color: null, diagnosis: null, notes: null, client: { id: '', name: '', phone: null, createdAt: repair.createdAt } })
+    return res.json({ ...repair, business: { name: repair.business.name, logoUrl: publicBusinessLogoUrl(repair.business.id, repair.business.logoUrl) }, clientId: '', imei: null, color: null, diagnosis: null, notes: null, client: { id: '', name: '', phone: null, createdAt: repair.createdAt } })
   } catch { return res.status(500).json({ success: false, message: 'Error obteniendo seguimiento' }) }
 })
 

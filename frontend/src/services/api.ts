@@ -2,6 +2,7 @@ import axios from 'axios'
 import { env } from '../config/env'
 
 export const API_URL = env.apiUrl
+export const apiAssetUrl = (path?: string | null) => path ? new URL(path, `${env.backendUrl}/`).toString() : undefined
 
 if (import.meta.env.DEV) console.info(`[TecnoDesk] API de desarrollo: ${new URL(API_URL).origin}`)
 

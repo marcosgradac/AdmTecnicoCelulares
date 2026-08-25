@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AppBar, Avatar, Box, Divider, Drawer, Fab, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { AccountCircleRounded, AdminPanelSettingsRounded, BuildRounded, DashboardRounded, GroupsRounded, LogoutRounded, MenuRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
+import { alpha, AppBar, Avatar, Box, Drawer, Fab, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, LogoutRounded, MenuRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
@@ -26,7 +26,6 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
 function AppShellContent() {
   const { user, logout } = useAuth()
   const [open, setOpen] = useState(false)
-  const [accountAnchor, setAccountAnchor] = useState<HTMLElement | null>(null)
   const theme = useTheme()
   const mobile = useMediaQuery(theme.breakpoints.down('md'))
   const location = useLocation()
@@ -34,8 +33,8 @@ function AppShellContent() {
   const go = (path: string) => { navigate(path); setOpen(false) }
   const selected = (path: string) => path === '/admin' ? location.pathname === path : location.pathname.startsWith(path)
   const initials = user?.fullName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U'
+  const businessInitials = user?.business.name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'TD'
   const roleLabel = user?.role === 'OWNER' ? 'Propietario' : 'Técnico'
-  const closeAccount = () => setAccountAnchor(null)
   const visibleNavItems = navItems.filter(item => (!item.ownerOnly || user?.role === 'OWNER') && (!item.permission || canAccess(user, item.permission)))
 
   const drawer = <Box className={styles.drawer}>
@@ -44,7 +43,7 @@ function AppShellContent() {
     <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => <Tooltip key={path} title={!mobile ? label : ''} placement="right"><ListItemButton data-tutorial={path === '/admin/clientes' ? 'clients' : path === '/admin/reparaciones' ? 'repairs' : path === '/admin/caja' ? 'cash' : undefined} selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton></Tooltip>)}</List>
     <Box className={styles.bottom}>
       <ListItemButton onClick={logout}><ListItemIcon><LogoutRounded /></ListItemIcon><ListItemText primary="Cerrar sesión" /></ListItemButton>
-      <Box className={styles.account}><Avatar>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name} · {roleLabel}</Typography></Box></Box>
+      <Box className={styles.account}><Avatar src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'contain' } }}>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name} · {roleLabel}</Typography></Box></Box>
     </Box>
   </Box>
 
@@ -55,15 +54,8 @@ function AppShellContent() {
       {mobile && <IconButton aria-label="Abrir menú" onClick={() => setOpen(true)}><MenuRounded /></IconButton>}
       {mobile ? <Box className={styles.mobileBrand}><BrandLogo /></Box> : <TextField placeholder="Buscar reparación, cliente o equipo…" aria-label="Búsqueda global" className={styles.search} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />}
       <Box flex={1} />
-      <Box className={styles.headerUser} role="button" tabIndex={0} aria-label="Abrir menú de cuenta" onClick={event => setAccountAnchor(event.currentTarget)} onKeyDown={event => { if (event.key === 'Enter') setAccountAnchor(event.currentTarget) }} sx={{ cursor: 'pointer' }}><Avatar>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name}</Typography></Box></Box>
+      <Box className={styles.businessAccess} role="button" tabIndex={0} aria-label="Abrir Mi negocio" onClick={() => go('/admin/configuracion#negocio')} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') go('/admin/configuracion#negocio') }} sx={theme => ({ borderColor: 'transparent', '&:hover, &:focus-visible': { bgcolor: alpha(theme.palette.primary.main, .055), borderColor: alpha(theme.palette.primary.main, .12), boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, .07)}` } })}><Avatar variant="rounded" src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'contain' } }} sx={theme => ({ border: `1.5px solid ${theme.palette.primary.main}`, bgcolor: alpha(theme.palette.primary.main, .045), color: 'primary.main', boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, .1)}` })}>{businessInitials}</Avatar><Typography className={styles.businessAccessName}>{user?.business.name}</Typography><ChevronRightRounded className={styles.businessAccessArrow} /></Box>
     </Toolbar></AppBar>
-    <Menu anchorEl={accountAnchor} open={Boolean(accountAnchor)} onClose={closeAccount} slotProps={{ paper: { sx: { minWidth: 230, mt: 1 } } }}>
-      <Box px={2} py={1}><Typography fontWeight={800}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{roleLabel} · {user?.business.name}</Typography></Box>
-      <Divider />
-      <MenuItem onClick={() => { closeAccount(); navigate('/admin/perfil') }}><ListItemIcon><AccountCircleRounded fontSize="small" /></ListItemIcon>Mi perfil</MenuItem>
-      {user?.platformRole === 'SUPER_ADMIN' && <MenuItem onClick={() => { closeAccount(); navigate('/platform-admin') }}><ListItemIcon><AdminPanelSettingsRounded fontSize="small" /></ListItemIcon>Administración de TecnoDesk</MenuItem>}
-      <MenuItem onClick={() => { closeAccount(); logout() }}><ListItemIcon><LogoutRounded fontSize="small" /></ListItemIcon>Cerrar sesión</MenuItem>
-    </Menu>
     <ProfileCompletionDialog /><TrialStartedDialog /><GuidedTutorial />
     <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><Outlet /></Box></Box>
     {mobile && canAccess(user, 'repairs.create') && <Fab data-tutorial="new-repair" color="primary" aria-label="Crear nueva reparación" className={styles.repairFab} onClick={() => go('/admin/reparaciones/nueva')}><BuildRounded /></Fab>}
