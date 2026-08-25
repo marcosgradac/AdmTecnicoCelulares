@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { getMe, login as loginRequest, register as registerRequest, updateProfile as updateProfileRequest, type AuthUser, type ProfileInput, type RegisterInput } from '../services/auth'
+import { getMe, login as loginRequest, markTutorialSeen as markTutorialSeenRequest, register as registerRequest, updateProfile as updateProfileRequest, type AuthUser, type ProfileInput, type RegisterInput } from '../services/auth'
 
 const TOKEN_KEY = 'cellufix_access_token'
 interface AuthContextValue {
@@ -8,6 +8,7 @@ interface AuthContextValue {
   login: (email: string, password: string, turnstileToken?: string) => Promise<AuthUser>
   register: (input: RegisterInput) => Promise<void>
   updateProfile: (input: ProfileInput) => Promise<void>
+  markTutorialSeen: () => Promise<void>
   logout: () => void
 }
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -36,7 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(TOKEN_KEY, result.token); setUser(result.user)
   }
   const updateProfile = async (input: ProfileInput) => setUser(await updateProfileRequest(input))
-  const value = useMemo(() => ({ user, loading, login, register, updateProfile, logout }), [user, loading, logout])
+  const markTutorialSeen = async () => { await markTutorialSeenRequest(); setUser(current => current ? { ...current, tutorialSeen: true } : current) }
+  const value = useMemo(() => ({ user, loading, login, register, updateProfile, markTutorialSeen, logout }), [user, loading, logout])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export const useAuth = () => {

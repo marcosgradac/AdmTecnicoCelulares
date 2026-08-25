@@ -63,6 +63,7 @@ export async function createTeamMember(businessId: string, input: {
         phone: normalizePhone(input.phone),
         passwordHash,
         role: input.role,
+        tutorialSeen: false,
         permissions: input.role === 'TECHNICIAN' ? input.permissions ?? undefined : undefined,
       },
     }))

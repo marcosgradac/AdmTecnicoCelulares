@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Autocomplete, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Box, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { createRepair } from '../../services/repairs'
 import { getClients, type ClientRecord } from '../../services/operations'
 import type { Repair, RepairStatus } from '../../types'
@@ -38,9 +38,9 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   }
   return <><FormDrawer open={open && !clientDrawerOpen} eyebrow="NUEVO INGRESO" title="Nueva reparación" saving={saving} submitLabel="Crear reparación" onClose={close} onSubmit={() => void save()}>
         {error && <Alert severity="error">{error}</Alert>}
-        <Typography variant="h2">Cliente</Typography>
+        <Box data-tutorial="repair-form" display="grid" gap={2.2}><Typography variant="h2">Cliente</Typography>
         <Autocomplete options={clients} value={client} onChange={(_, value) => setClientId(value?.id ?? '')} getOptionLabel={option => `${option.name}${option.phone ? ` · ${option.phone}` : ''}`} filterOptions={(options, state) => options.filter(option => `${option.name} ${option.phone ?? ''}`.toLowerCase().includes(state.inputValue.toLowerCase()))} noOptionsText="No encontramos ese cliente. Crealo primero desde Clientes." renderInput={params => <TextField {...params} required label="Buscar cliente..." placeholder="Nombre, apellido o teléfono"/>}/>
-        <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button>
+        <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button></Box>
         <Divider/><Typography variant="h2">Dispositivo</Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Marca" value={form.brand} onChange={change('brand')} inputProps={{ maxLength: 60 }}/><TextField fullWidth required label="Modelo" value={form.model} onChange={change('model')} inputProps={{ maxLength: 100 }}/></Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="IMEI (opcional)" value={form.imei} onChange={change('imei')} inputProps={{ maxLength: 32 }}/><TextField fullWidth label="Color (opcional)" value={form.color} onChange={change('color')} inputProps={{ maxLength: 60 }}/></Stack>

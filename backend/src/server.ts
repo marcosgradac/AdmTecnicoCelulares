@@ -74,6 +74,7 @@ const userResponse = <T extends {
   privacyVersion: string | null
   privacyAcceptedAt: Date | null
   permissions: unknown
+  tutorialSeen: boolean
   business: { id: string; name: string }
 }>(user: T) => ({
   id: user.id,
@@ -92,6 +93,7 @@ const userResponse = <T extends {
   privacyAcceptedAt: user.privacyAcceptedAt,
   profileComplete: Boolean(user.firstName && user.lastName),
   permissions: permissionsFor(user.role, user.permissions),
+  tutorialSeen: user.tutorialSeen,
   business: { id: user.business.id, name: user.business.name },
 })
 
@@ -189,6 +191,7 @@ app.post('/api/auth/register', signupLimiter, async (req, res) => {
           privacyAccepted: true,
           privacyVersion: CURRENT_PRIVACY_VERSION,
           privacyAcceptedAt: new Date(),
+          tutorialSeen: false,
         },
         include: { business: true },
       })
@@ -279,6 +282,13 @@ app.patch('/api/profile', authenticate, authenticatedWriteLimiter, async (req, r
     include: { business: true },
   })
   return res.json(userResponse(user))
+})
+
+app.patch('/api/auth/tutorial-seen', authenticate, authenticatedWriteLimiter, async (req, res) => {
+  const auth = authOf(req)
+  const updated = await prisma.user.updateMany({ where: { id: auth.userId, businessId: auth.businessId }, data: { tutorialSeen: true } })
+  if (updated.count !== 1) return unauthorized(res)
+  return res.json({ success: true, tutorialSeen: true })
 })
 
 app.get('/api/billing/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))
