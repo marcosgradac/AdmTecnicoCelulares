@@ -16,7 +16,7 @@ import { canAccess } from '../auth/permissions'
 export function ClientsPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canCreate = canAccess(user, 'clients.create'), canUpdate = canAccess(user, 'clients.update'), canCreateRepair = canAccess(user, 'repairs.create')
+  const canCreate = canAccess(user, 'clients.create')
   const [items, setItems] = useState<ClientRecord[]>([]), [total, setTotal] = useState(0), [page, setPage] = useState(0)
   const [query, setQuery] = useState(''), [search, setSearch] = useState(''), [loading, setLoading] = useState(true)
   const [newOpen, setNewOpen] = useState(false), [editing, setEditing] = useState<ClientRecord>()

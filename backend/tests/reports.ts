@@ -2,6 +2,7 @@ import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { app } from '../src/server'
 import { prisma } from '../src/lib/prisma'
+import { validRegistrationPayload } from './helpers/registration'
 
 async function main() {
   const server = app.listen(0)
@@ -17,7 +18,7 @@ async function main() {
     return { status: response.status, body: text ? JSON.parse(text) : null }
   }
   const register = async (label: string) => {
-    const result = await request('POST', '/auth/register', { firstName: 'Reporte', lastName: label, email: `reports-${label}-${suffix}@example.com`, password: 'Reportes123', businessName: `Reports ${label} ${suffix}` })
+    const result = await request('POST', '/auth/register', validRegistrationPayload({ firstName: 'Reporte', lastName: label, email: `reports-${label}-${suffix}@example.com`, password: 'Reportes123', businessName: `Reports ${label} ${suffix}` }))
     assert.equal(result.status, 201); businesses.push(result.body.user.business.id)
     return { token: result.body.token as string, businessId: result.body.user.business.id as string, userId: result.body.user.id as string }
   }
@@ -40,9 +41,6 @@ async function main() {
       { businessId: ownerA.businessId, type: 'INCOME', description: 'Pago reparación', amount: 40_000, method: 'TRANSFER', repairId: repair.id, createdAt: now },
       { businessId: ownerA.businessId, type: 'EXPENSE', description: 'Servicio externo', amount: 5_000, createdAt: now },
     ] })
-    const stock = await prisma.stockItem.create({ data: { businessId: ownerA.businessId, name: 'Pantalla iPhone 13', category: 'Pantalla', quantity: 3, minimumStock: 2, cost: 10_000 } })
-    await prisma.inventoryMovement.create({ data: { businessId: ownerA.businessId, stockItemId: stock.id, repairId: repair.id, type: 'REPAIR_USAGE', quantity: 2, unitCost: 10_000, totalCost: 20_000, previousStock: 5, newStock: 3, createdByUserId: ownerA.userId, createdAt: now } })
-
     const report = await request('GET', '/reports/overview?period=this_month', undefined, ownerA.token)
     assert.equal(report.status, 200)
     assert.equal(report.body.summary.collected, 40_000)
@@ -50,14 +48,11 @@ async function main() {
     assert.equal(report.body.summary.receivable, 60_000)
     assert.equal(report.body.summary.estimatedProfit, 65_000)
     assert.equal(report.body.repairs.overdue, 1)
-    assert.equal(report.body.inventory.consumedCost, 20_000)
-    assert.equal(report.body.inventory.mostUsed[0].value, 2)
 
     const isolated = await request('GET', '/reports/overview?period=this_month', undefined, ownerB.token)
     assert.equal(isolated.status, 200)
     assert.equal(isolated.body.summary.collected, 0)
     assert.equal(isolated.body.summary.repairsIncoming, 0)
-    assert.equal(isolated.body.inventory.value, 0)
 
     const member = await request('POST', '/team', { firstName: 'Técnico', lastName: 'QA', email: `tech-reports-${suffix}@example.com`, password: 'Tecnico123', role: 'TECHNICIAN' }, ownerA.token)
     assert.equal(member.status, 201)

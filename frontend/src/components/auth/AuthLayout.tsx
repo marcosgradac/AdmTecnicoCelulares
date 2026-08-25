@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react'
-import { Box, CircularProgress, Paper, Stack, Typography } from '@mui/material'
+import { Box, CircularProgress, Stack, Typography } from '@mui/material'
 import { Link } from 'react-router-dom'
 import { BrandLogo } from '../brand/BrandLogo'
 import type { AuthVisualVariant } from './auth-visual.types'

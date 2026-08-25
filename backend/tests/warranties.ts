@@ -3,12 +3,13 @@ import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { app } from '../src/server'
 import { prisma } from '../src/lib/prisma'
+import { validRegistrationPayload } from './helpers/registration'
 
 async function main() {
   const server = app.listen(0); await new Promise<void>(resolve => server.once('listening', resolve)); const address = server.address(); assert.ok(address && typeof address === 'object')
   const base = `http://127.0.0.1:${address.port}/api`, suffix = Date.now(), businesses: string[] = []
   const request = async (method: string, path: string, body?: object, token?: string) => { const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? JSON.parse(text) : null } }
-  const register = async (label: string) => { const password = `Qa-${randomBytes(12).toString('base64url')}9!`; const result = await request('POST','/auth/register',{firstName:'Garantía',lastName:label,email:`warranty-${label}-${suffix}@example.com`,password,businessName:`Warranty ${label}`}); assert.equal(result.status,201); businesses.push(result.body.user.business.id); return { token:result.body.token as string, businessId:result.body.user.business.id as string } }
+  const register = async (label: string) => { const password = `Qa-${randomBytes(12).toString('base64url')}9!`; const result = await request('POST','/auth/register',validRegistrationPayload({firstName:'Garantía',lastName:label,email:`warranty-${label}-${suffix}@example.com`,password,businessName:`Warranty ${label}`})); assert.equal(result.status,201); businesses.push(result.body.user.business.id); return { token:result.body.token as string, businessId:result.body.user.business.id as string } }
   try {
     const ownerA = await register('A'), ownerB = await register('B')
     const clientA = (await request('POST','/clients',{name:'Cliente garantía A',phone:'1111111111'},ownerA.token)).body

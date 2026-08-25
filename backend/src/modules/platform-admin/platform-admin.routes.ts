@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireSuperAdmin } from '../../middlewares/auth'
-import { addDays, approvePayment, getAccountAccessStatus, refreshSubscriptionStatus, subscriptionUsage } from '../billing/billing.service'
+import { addDays, approvePayment, getAccountAccessStatus, subscriptionUsage } from '../billing/billing.service'
 import { limitSuperAdminWrites } from '../../middlewares/security'
 
 export const platformAdminRouter = Router()

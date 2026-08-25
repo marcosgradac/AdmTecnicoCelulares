@@ -1,4 +1,6 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom'
+import { Box, CircularProgress } from '@mui/material'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { RoleGuard } from './auth/RoleGuard'
 import { PermissionGuard } from './auth/PermissionGuard'
@@ -8,7 +10,6 @@ import { LandingPage } from './features/landing/pages/LandingPage'
 import { CashPage } from './pages/CashPage'
 import { ClientDetailPage } from './pages/ClientDetailPage'
 import { ClientsPage } from './pages/ClientsPage'
-import { DashboardPage } from './pages/dashboard/DashboardPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { LoginPage } from './pages/LoginPage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -29,6 +30,8 @@ import { NoModulesPage } from './pages/NoModulesPage'
 
 const PublicLandingLayout=()=> <Outlet/>
 const ParamRedirect=({base}:{base:string})=>{const {id}=useParams();return <Navigate to={`${base}/${id}`} replace/>}
+const DashboardPage=lazy(()=>import('./pages/dashboard/DashboardPage').then(module=>({default:module.DashboardPage})))
+const DashboardRoute=()=> <Suspense fallback={<Box minHeight={240} display="grid" sx={{placeItems:'center'}}><CircularProgress size={28}/></Box>}><DashboardPage/></Suspense>
 
 export default function App(){return <><ScrollToTop/><Routes>
   <Route path="/" element={<PublicLandingLayout/>}><Route index element={<LandingPage/>}/></Route>
@@ -37,7 +40,7 @@ export default function App(){return <><ScrollToTop/><Routes>
   <Route path="/seguimiento/:token" element={<TrackingPage/>}/><Route path="/terminos-y-condiciones" element={<TermsPage/>}/><Route path="/terminos" element={<Navigate to="/terminos-y-condiciones" replace/>}/><Route path="/politica-de-privacidad" element={<PrivacyPage/>}/><Route path="/privacidad" element={<Navigate to="/politica-de-privacidad" replace/>}/>
   <Route element={<ProtectedRoute/>}>
     <Route path="/admin" element={<AppShell/>}>
-      <Route index element={<PermissionGuard ownerOnly><DashboardPage/></PermissionGuard>}/><Route path="reparaciones" element={<PermissionGuard permission="repairs.view"><RepairsPage/></PermissionGuard>}/><Route path="reparaciones/nueva" element={<PermissionGuard permission="repairs.create"><Navigate to="/admin/reparaciones?new=1" replace/></PermissionGuard>}/><Route path="reparaciones/:id" element={<PermissionGuard permission="repairs.view"><RepairDetailPage/></PermissionGuard>}/>
+      <Route index element={<PermissionGuard ownerOnly><DashboardRoute/></PermissionGuard>}/><Route path="reparaciones" element={<PermissionGuard permission="repairs.view"><RepairsPage/></PermissionGuard>}/><Route path="reparaciones/nueva" element={<PermissionGuard permission="repairs.create"><Navigate to="/admin/reparaciones?new=1" replace/></PermissionGuard>}/><Route path="reparaciones/:id" element={<PermissionGuard permission="repairs.view"><RepairDetailPage/></PermissionGuard>}/>
       <Route path="clientes" element={<PermissionGuard permission="clients.view"><ClientsPage/></PermissionGuard>}/><Route path="clientes/:id" element={<PermissionGuard permission="clients.view"><ClientDetailPage/></PermissionGuard>}/>
       <Route path="caja" element={<PermissionGuard permission="cash.view"><CashPage/></PermissionGuard>}/><Route path="reportes" element={<PermissionGuard permission="reports.view"><Navigate to="/admin/caja" replace/></PermissionGuard>}/>
       <Route path="perfil" element={<ProfilePage/>}/><Route path="empleados" element={<RoleGuard roles={['OWNER']}><TeamPage/></RoleGuard>}/>
