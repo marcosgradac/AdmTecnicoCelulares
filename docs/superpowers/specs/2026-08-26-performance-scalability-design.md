@@ -50,7 +50,7 @@ A lightweight client-options query will return only `id`, `name`, and `phone`, o
 - `items`, `total`, `page`, `pageSize`, and `pages`;
 - `summary` with today's income, expense, balance, and the real total movement count.
 
-The backend will compute page items, total count, and today's aggregates without loading historical rows into application memory. The frontend will use Material UI pagination controls with 10 rows per page. Reloading after a mutation will move to the preceding page when the requested page is empty but the collection still contains records. The existing visual row design and creation flow remain unchanged.
+The backend will compute page items, total count, and today's aggregates without loading historical rows into application memory. Income today, expense today, and today's balance must preserve the current Argentina calendar-day semantics: day boundaries are calculated in `America/Argentina/Buenos_Aires`, never as a UTC day, so movements around local midnight are assigned to the correct day. The total movement count remains the real all-time historical total and is not limited by the local-day window. The frontend will use Material UI pagination controls with 10 rows per page. Reloading after a mutation will move to the preceding page when the requested page is empty but the collection still contains records. The existing visual row design and creation flow remain unchanged.
 
 ## Database indexes
 
