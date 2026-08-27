@@ -24,6 +24,7 @@
     "test:warranties": "tsx tests/warranties.ts",
     "test:pagination": "tsx tests/pagination.ts",
     "test:billing": "tsx tests/billing.ts",
+    "test:performance-access": "tsx tests/performance-access.ts",
     "test:subscription-lifecycle": "tsx tests/subscription-lifecycle.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
     "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",

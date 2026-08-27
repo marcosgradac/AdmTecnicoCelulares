@@ -6,7 +6,7 @@ export async function requireSubscriptionWriteAccess(req: Request, res: Response
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next()
   if (req.path.startsWith('/billing') || req.path.startsWith('/platform-admin') || req.path === '/profile') return next()
   try {
-    const access = await getBusinessAccessStatus(authOf(req).businessId)
+    const access = 'accountAccess' in req ? req.accountAccess : await getBusinessAccessStatus(authOf(req).businessId)
     if (access?.shouldBlock) {
       return res.status(403).json({ success: false, code: 'SUBSCRIPTION_SUSPENDED', message: 'Tu suscripción necesita renovarse.' })
     }

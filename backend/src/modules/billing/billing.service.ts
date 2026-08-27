@@ -4,20 +4,55 @@ import { prisma } from '../../lib/prisma'
 export const TRIAL_DAYS = 30
 export const GRACE_DAYS = 5
 export type AccountAccessStatusCode = 'NO_EXPIRY' | 'ACTIVE' | 'EXPIRING' | 'GRACE' | 'BLOCKED'
+export interface BillingLifecycleSettings {
+  expirationWarningDays: number
+  defaultGraceDays: number
+}
+export interface AccountAccessStatus {
+  status: AccountAccessStatusCode
+  expiresAt: Date | null
+  graceEndsAt: Date | null
+  warningDays: number
+  graceDays: number
+  daysRemaining: number | null
+  graceDaysRemaining: number | null
+  shouldBlock: boolean
+  blockType: 'MANUAL' | 'AUTOMATIC' | null
+  blockedAt: Date | null
+  blockReason: string | null
+  blockNote: string | null
+}
+const BILLING_SETTINGS_TTL_MS = 30_000
+let billingSettingsCache: { value: BillingLifecycleSettings; expiresAt: number } | null = null
 const DAY_MS = 86_400_000
 const daysBetween = (future: Date, now: Date) => Math.max(0, Math.ceil((future.getTime() - now.getTime()) / DAY_MS))
 
-export async function getAccountAccessStatus(subscription: Subscription, now = new Date()) {
+export function invalidateBillingLifecycleSettingsCache() {
+  billingSettingsCache = null
+}
+
+export async function getBillingLifecycleSettings(): Promise<BillingLifecycleSettings> {
+  if (billingSettingsCache && billingSettingsCache.expiresAt > Date.now()) return billingSettingsCache.value
   const settings = await prisma.billingSettings.findUnique({ where: { id: 'default' }, select: { expirationWarningDays: true, defaultGraceDays: true } })
-  const warningDays = settings?.expirationWarningDays ?? 7
-  const graceDays = subscription.graceDaysOverride ?? settings?.defaultGraceDays ?? GRACE_DAYS
+  const value = { expirationWarningDays: settings?.expirationWarningDays ?? 7, defaultGraceDays: settings?.defaultGraceDays ?? GRACE_DAYS }
+  billingSettingsCache = { value, expiresAt: Date.now() + BILLING_SETTINGS_TTL_MS }
+  return value
+}
+
+export function calculateAccountAccessStatus(subscription: Subscription, settings: BillingLifecycleSettings, now = new Date()): AccountAccessStatus {
+  const warningDays = settings.expirationWarningDays
+  const graceDays = subscription.graceDaysOverride ?? settings.defaultGraceDays
   const expiresAt = subscription.accessExpiresAt
   const graceEndsAt = expiresAt ? addDays(expiresAt, graceDays) : null
-  if (subscription.manuallyBlockedAt) return { status: 'BLOCKED' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: 0, shouldBlock: true, blockType: 'MANUAL' as const, blockedAt: subscription.manuallyBlockedAt, blockReason: subscription.manualBlockReason, blockNote: subscription.manualBlockNote }
-  if (!expiresAt) return { status: 'NO_EXPIRY' as const, expiresAt: null, graceEndsAt: null, warningDays, graceDays, daysRemaining: null, graceDaysRemaining: null, shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null }
-  if (now <= expiresAt) { const daysRemaining = daysBetween(expiresAt, now); return { status: daysRemaining <= warningDays ? 'EXPIRING' as const : 'ACTIVE' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining, graceDaysRemaining: 0, shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null } }
-  if (graceEndsAt && now <= graceEndsAt) return { status: 'GRACE' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: Math.max(1, daysBetween(graceEndsAt, now)), shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null }
-  return { status: 'BLOCKED' as const, expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: 0, shouldBlock: true, blockType: 'AUTOMATIC' as const, blockedAt: graceEndsAt, blockReason: 'SUBSCRIPTION_EXPIRED', blockNote: null }
+  if (subscription.manuallyBlockedAt) return { status: 'BLOCKED', expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: 0, shouldBlock: true, blockType: 'MANUAL', blockedAt: subscription.manuallyBlockedAt, blockReason: subscription.manualBlockReason, blockNote: subscription.manualBlockNote }
+  if (!expiresAt) return { status: 'NO_EXPIRY', expiresAt: null, graceEndsAt: null, warningDays, graceDays, daysRemaining: null, graceDaysRemaining: null, shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null }
+  if (now <= expiresAt) { const daysRemaining = daysBetween(expiresAt, now); return { status: daysRemaining <= warningDays ? 'EXPIRING' : 'ACTIVE', expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining, graceDaysRemaining: 0, shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null } }
+  if (graceEndsAt && now <= graceEndsAt) return { status: 'GRACE', expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: Math.max(1, daysBetween(graceEndsAt, now)), shouldBlock: false, blockType: null, blockedAt: null, blockReason: null, blockNote: null }
+  return { status: 'BLOCKED', expiresAt, graceEndsAt, warningDays, graceDays, daysRemaining: 0, graceDaysRemaining: 0, shouldBlock: true, blockType: 'AUTOMATIC', blockedAt: graceEndsAt, blockReason: 'SUBSCRIPTION_EXPIRED', blockNote: null }
+}
+
+export async function getAccountAccessStatus(subscription: Subscription, now = new Date(), settings?: BillingLifecycleSettings): Promise<AccountAccessStatus> {
+  return calculateAccountAccessStatus(subscription, settings ?? await getBillingLifecycleSettings(), now)
 }
 
 export async function getBusinessAccessStatus(businessId: string, now = new Date()) {
