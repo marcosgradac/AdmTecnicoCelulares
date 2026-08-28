@@ -5,7 +5,9 @@ import jwt from 'jsonwebtoken'
 
 const beforeMidnight = new Date('2026-08-27T02:30:00.000Z')
 const afterMidnight = new Date('2026-08-27T03:30:00.000Z')
-const historicalDates = Array.from({ length: 10 }, (_, index) => new Date(`2026-08-${String(17 - index).padStart(2, '0')}T12:00:00.000Z`))
+const historicalDates = Array.from({ length: 7 }, (_, index) => new Date(`2026-08-${String(17 - index).padStart(2, '0')}T12:00:00.000Z`))
+const tiedAt = new Date('2026-08-10T12:00:00.000Z')
+const olderThanTie = new Date('2026-08-09T12:00:00.000Z')
 const NativeDate = globalThis.Date
 
 const withFixedNow = async <T>(instant: Date, action: () => Promise<T>) => {
@@ -98,6 +100,9 @@ async function main() {
           method: null,
           createdAt,
         })),
+        { id: 'cash-tie-a', businessId: businessA, type: 'INCOME', description: 'Empate A', amount: 8, method: null, createdAt: tiedAt },
+        { id: 'cash-tie-z', businessId: businessA, type: 'EXPENSE', description: 'Empate Z', amount: 9, method: null, createdAt: tiedAt },
+        { businessId: businessA, type: 'INCOME', description: 'Histórico antiguo', amount: 10, method: null, createdAt: olderThanTie },
         { businessId: businessB, type: 'INCOME', description: 'Ingreso de otro negocio', amount: 99_999, method: 'CASH', createdAt: afterMidnight },
       ],
     })
@@ -115,6 +120,14 @@ async function main() {
     assert.equal(pageTwo.status, 200)
     assert.equal(pageTwo.body.items.length, 2, 'page two returns the remaining movements')
     assert.equal(pageTwo.body.total, 12)
+    const allPageItems = [...pageOne.body.items, ...pageTwo.body.items] as Array<{ id: string; description: string }>
+    assert.equal(new Set(allPageItems.map(item => item.id)).size, 12, 'pages contain no duplicate movements')
+    assert.deepEqual(new Set(allPageItems.map(item => item.description)), new Set([
+      'Antes de medianoche', 'Después de medianoche', ...historicalDates.map((_, index) => `Histórico ${index + 1}`),
+      'Empate A', 'Empate Z', 'Histórico antiguo',
+    ]), 'pages contain every movement exactly once')
+    assert.equal(pageOne.body.items[9].id, 'cash-tie-z', 'id breaks a timestamp tie at the page boundary')
+    assert.equal(pageTwo.body.items[0].id, 'cash-tie-a', 'the next page starts after the tie boundary')
 
     for (const query of ['pageSize=0', 'pageSize=101']) {
       const invalid = await request('GET', `/cash/movements?page=1&${query}`, undefined, tokenA)

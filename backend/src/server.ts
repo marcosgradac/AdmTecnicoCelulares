@@ -526,7 +526,7 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
   const where = { businessId }
   const todayWhere = { businessId, createdAt: { gte: start, lt: end } }
   const [items, total, grouped] = await prisma.$transaction([
-    prisma.cashMovement.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.cashMovement.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
     prisma.cashMovement.count({ where }),
     prisma.cashMovement.groupBy({ by: ['type'], where: todayWhere, orderBy: { type: 'asc' }, _sum: { amount: true } }),
   ])

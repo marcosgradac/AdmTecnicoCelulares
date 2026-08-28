@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Alert, Box, Button, Card, CardContent, Chip, Grid, Stack, TablePagination, Typography } from '@mui/material'
 import { AddRounded, ArrowDownwardRounded, ArrowUpwardRounded, PaymentsRounded, PendingActionsRounded } from '@mui/icons-material'
 import { PageHeader } from '../components/common/PageHeader'
@@ -16,11 +16,14 @@ export function CashPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [open, setOpen] = useState(false)
+  const latestRequest = useRef(0)
   const load = async (requestedPage = page) => {
+    const requestId = ++latestRequest.current
     setLoading(true)
     setError('')
     try {
       const data = await getCashMovements({ page: requestedPage + 1, pageSize: 10 })
+      if (requestId !== latestRequest.current) return
       if (requestedPage > 0 && !data.items.length && data.total > 0) {
         setPage(requestedPage - 1)
         return
@@ -29,9 +32,9 @@ export function CashPage() {
       setTotal(data.total)
       setSummary(data.summary)
     } catch {
-      setError('No pudimos cargar los movimientos.')
+      if (requestId === latestRequest.current) setError('No pudimos cargar los movimientos.')
     } finally {
-      setLoading(false)
+      if (requestId === latestRequest.current) setLoading(false)
     }
   }
   useEffect(() => { void load(page) }, [page])

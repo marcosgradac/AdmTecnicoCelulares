@@ -206,7 +206,14 @@ const belowPaid = await request(`/repairs/${repair.body.id}`, {
 check(belowPaid.status === 400, 'total menor a pagado rechazado')
 
 const cash = await request('/cash/movements', { token: tokenA })
-check(cash.status === 200 && cash.body.some((row) => row.repairId === repair.body.id && row.amount === 75), 'pago genera movimiento de caja')
+check(
+  cash.status === 200
+    && Array.isArray(cash.body.items)
+    && cash.body.items.some((row) => row.repairId === repair.body.id && row.amount === 75)
+    && cash.body.total >= cash.body.items.length
+    && cash.body.summary?.totalMovements === cash.body.total,
+  'pago genera movimiento de caja',
+)
 
 const crossRepair = await request(`/repairs/${repair.body.id}`, { token: tokenB })
 check(crossRepair.status === 404, 'reparación aislada entre negocios')
