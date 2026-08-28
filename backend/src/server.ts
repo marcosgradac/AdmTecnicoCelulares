@@ -315,6 +315,13 @@ app.use('/api/team', teamRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/settings', settingsRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true, warrantyClaims: { orderBy: { createdAt: 'desc' as const } } } as const
+const repairListSelect = {
+  id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, imei: true, color: true, issue: true,
+  diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
+  estimatedDeliveryDate: true, warrantyEnabled: true, warrantyDurationDays: true, warrantyStartedAt: true,
+  warrantyExpiresAt: true, createdAt: true, updatedAt: true,
+  client: { select: { id: true, name: true, phone: true, createdAt: true } },
+} as const
 
 app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
   const parsed = z.object({
@@ -339,7 +346,7 @@ app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
       ] } : {}),
     }
     const [items, total] = await prisma.$transaction([
-      prisma.repair.findMany({ where, include: includeRepair, orderBy: { createdAt: order }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.repair.findMany({ where, select: repairListSelect, orderBy: { createdAt: order }, skip: (page - 1) * pageSize, take: pageSize }),
       prisma.repair.count({ where }),
     ])
     return res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
