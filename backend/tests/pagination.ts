@@ -18,7 +18,13 @@ async function main() {
     const foreign = (await request('POST', '/clients', { name: 'Cliente ajeno', phone: '1199999999' }, tokenB)).body
     assert.equal((await request('POST', '/repairs', { clientId: foreign.id, deviceBrand: 'MarcaBuscable', deviceModel: 'Ajeno', issue: 'No visible', total: 1 }, tokenB)).status, 201)
     const clientsFirst = await request('GET', '/clients?paginated=true&page=1&pageSize=10', undefined, tokenA); assert.equal(clientsFirst.status, 200); assert.equal(clientsFirst.body.items.length, 10); assert.equal(clientsFirst.body.total, 12); assert.equal(clientsFirst.body.totalPages, 2)
+    const clientListItem = clientsFirst.body.items[0]
+    assert.equal(clientListItem.repairCount, 1); assert.equal(Object.hasOwn(clientListItem, 'repairs'), false, 'paginated client omits repair history')
     const clientsSecond = await request('GET', '/clients?paginated=true&page=2&pageSize=10', undefined, tokenA); assert.equal(clientsSecond.body.items.length, 2)
+    const clientOptions = await request('GET', '/clients/options', undefined, tokenA); assert.equal(clientOptions.status, 200); assert.equal(clientOptions.body.length, 12); assert.deepEqual(clientOptions.body.map((client: { name: string }) => client.name), Array.from({ length: 12 }, (_, index) => `Cliente QA ${String(index + 1).padStart(2, '0')}`))
+    for (const option of clientOptions.body) assert.deepEqual(Object.keys(option).sort(), ['id', 'name', 'phone'])
+    assert.ok(!clientOptions.body.some((client: { id: string }) => client.id === foreign.id), 'options exclude clients from another tenant')
+    const clientDetail = await request('GET', `/clients/${clientListItem.id}`, undefined, tokenA); assert.equal(clientDetail.status, 200); assert.equal(clientDetail.body.repairs.length, 1)
     const repairsFirst = await request('GET', '/repairs?page=1&pageSize=10', undefined, tokenA); assert.equal(repairsFirst.body.items.length, 10); assert.equal(repairsFirst.body.total, 12); assert.equal(repairsFirst.body.page, 1); assert.equal(repairsFirst.body.pageSize, 10); assert.equal(repairsFirst.body.pages, 2)
     const listItem = repairsFirst.body.items[0]
     assert.equal(typeof listItem.id, 'string'); assert.equal(typeof listItem.number, 'number'); assert.equal(typeof listItem.status, 'string'); assert.equal(typeof listItem.total, 'number'); assert.equal(typeof listItem.paid, 'number'); assert.equal(typeof listItem.trackingEnabled, 'boolean')

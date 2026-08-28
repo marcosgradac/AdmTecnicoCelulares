@@ -10,7 +10,7 @@ import { PageHeader } from '../components/common/PageHeader'
 import { UiState } from '../components/common/UiState'
 import { formatDate, formatMoney } from '../utils/format'
 import { getRepair, updateRepair, updateRepairStatus, type UpdateRepairInput } from '../services/repairs'
-import { getClients, registerPayment, type ClientRecord } from '../services/operations'
+import { getClientOptions, registerPayment, type ClientOption } from '../services/operations'
 import { useAuth } from '../auth/AuthContext'
 import { canAccess } from '../auth/permissions'
 import { CurrencyField } from '../components/common/CurrencyField'
@@ -23,7 +23,7 @@ export function RepairDetailPage() {
   const canRegisterPayment = canAccess(user, 'payments:create')
   const { id } = useParams()
   const [repair, setRepair] = useState<Repair | null>(null)
-  const [clients, setClients] = useState<ClientRecord[]>([])
+  const [clients, setClients] = useState<ClientOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -36,7 +36,7 @@ export function RepairDetailPage() {
     if (!id) return
     setLoading(true); setError('')
     try {
-      const [repairData, clientData] = await Promise.all([getRepair(id), getClients()])
+      const [repairData, clientData] = await Promise.all([getRepair(id), getClientOptions()])
       setRepair(repairData); setClients(clientData)
     } catch (loadError) { setError(messageFrom(loadError, 'No pudimos cargar la reparación.')) }
     finally { setLoading(false) }

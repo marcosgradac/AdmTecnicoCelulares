@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, Autocomplete, Box, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { createRepair } from '../../services/repairs'
-import { getClients, type ClientRecord } from '../../services/operations'
+import { getClientOptions, type ClientOption } from '../../services/operations'
 import type { Repair, RepairStatus } from '../../types'
 import { FormDrawer } from '../common/FormDrawer'
 import { CurrencyField } from '../common/CurrencyField'
@@ -12,7 +12,7 @@ const today = () => { const now=new Date();return `${now.getFullYear()}-${String
 const initial = { brand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, estimatedDeliveryDate: today(), notes: '', status: 'received' as RepairStatus }
 
 export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: { open: boolean; initialClientId?: string; onClose: () => void; onCreated: (repair: Repair) => void }) {
-  const [clients, setClients] = useState<ClientRecord[]>([])
+  const [clients, setClients] = useState<ClientOption[]>([])
   const [clientId, setClientId] = useState(initialClientId ?? '')
   const [form, setForm] = useState(initial)
   const [warrantyPreset, setWarrantyPreset] = useState('0')
@@ -20,7 +20,7 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [clientDrawerOpen, setClientDrawerOpen] = useState(false)
-  useEffect(() => { if (open) void getClients().then(items => { setClients(items); setClientId(initialClientId ?? '') }).catch(() => setError('No pudimos cargar los clientes.')) }, [open, initialClientId])
+  useEffect(() => { if (open) void getClientOptions().then(items => { setClients(items); setClientId(initialClientId ?? '') }).catch(() => setError('No pudimos cargar los clientes.')) }, [open, initialClientId])
   const client = useMemo(() => clients.find(item => item.id === clientId) ?? null, [clients, clientId])
   const change = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [key]: key === 'total' ? Number(event.target.value) : event.target.value }))
   const close = () => { if (!saving) { setError(''); setForm({ ...initial, estimatedDeliveryDate: today() }); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }

@@ -437,8 +437,11 @@ app.get('/api/clients', requirePermission('clients.view'), async (req, res) => {
   if (!parsed.success) return res.status(400).json({ success:false, message:'Filtros inválidos' })
   const {page,pageSize,search}=parsed.data
   const where={businessId,...(search?{OR:[{name:{contains:search,mode:'insensitive' as const}},{phone:{contains:search}}]}:{})}
-  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,include:{repairs:{orderBy:{createdAt:'desc' as const}}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
-  return res.json({items,total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
+  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,select:{id:true,name:true,phone:true,createdAt:true,_count:{select:{repairs:true}}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
+  return res.json({items:items.map(({_count,...client})=>({...client,repairCount:_count.repairs})),total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
+})
+app.get('/api/clients/options', requirePermission('clients.view'), async (req, res) => {
+  return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId }, select: { id: true, name: true, phone: true }, orderBy: { name: 'asc' } }))
 })
 app.get('/api/clients/:id', requirePermission('clients.view'), async (req, res) => {
   const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } } })

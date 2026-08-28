@@ -1,10 +1,18 @@
 import { api } from './api'
 import type { Repair } from '../types'
 
-export interface ClientRecord {
+export interface ClientOption {
   id: string
   name: string
   phone: string | null
+}
+
+export interface ClientListRecord extends ClientOption {
+  createdAt: string
+  repairCount: number
+}
+
+export interface ClientRecord extends ClientOption {
   createdAt: string
   repairs: Array<{ id: string; number: number; total: number; paid: number; createdAt: string; updatedAt: string; deviceBrand: string; deviceModel: string; issue: string; status: string }>
 }
@@ -35,7 +43,8 @@ export interface DashboardSummary {
 }
 
 export const getClients = async () => (await api.get<ClientRecord[]>('/clients')).data
-export const getClientsPage = async (params:{page:number;pageSize?:number;search?:string}) => (await api.get<{items:ClientRecord[];total:number;page:number;pageSize:number;totalPages:number}>('/clients',{params:{...params,paginated:true}})).data
+export const getClientsPage = async (params:{page:number;pageSize?:number;search?:string}) => (await api.get<{items:ClientListRecord[];total:number;page:number;pageSize:number;totalPages:number}>('/clients',{params:{...params,paginated:true}})).data
+export const getClientOptions = async () => (await api.get<ClientOption[]>('/clients/options')).data
 export const getClient = async (id: string) => (await api.get<ClientRecord>(`/clients/${id}`)).data
 export const createClient = async (input: { name: string; phone?: string }) => (await api.post<ClientRecord>('/clients', input)).data
 export const updateClient = async (id: string, input: { name: string; phone?: string | null }) => (await api.patch<ClientRecord>(`/clients/${id}`, input)).data
