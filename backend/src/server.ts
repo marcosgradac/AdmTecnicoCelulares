@@ -23,6 +23,7 @@ import { settingsRouter } from './modules/settings/settings.routes'
 import { securityConfig } from './config/security'
 import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
+import { getArgentinaDayBounds } from './lib/argentina-day'
 
 export const app = express()
 app.set('trust proxy', 1)
@@ -512,7 +513,34 @@ app.patch('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTrac
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
-app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
+app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) => {
+  const parsed = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(10),
+  }).safeParse(req.query)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Parámetros de paginación inválidos' })
+
+  const { page, pageSize } = parsed.data
+  const businessId = authOf(req).businessId
+  const { start, end } = getArgentinaDayBounds(new Date())
+  const where = { businessId }
+  const todayWhere = { businessId, createdAt: { gte: start, lt: end } }
+  const [items, total, grouped] = await prisma.$transaction([
+    prisma.cashMovement.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.cashMovement.count({ where }),
+    prisma.cashMovement.groupBy({ by: ['type'], where: todayWhere, orderBy: { type: 'asc' }, _sum: { amount: true } }),
+  ])
+  const incomeToday = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
+  const expenseToday = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
+  return res.json({
+    items,
+    total,
+    page,
+    pageSize,
+    pages: Math.max(1, Math.ceil(total / pageSize)),
+    summary: { incomeToday, expenseToday, balanceToday: incomeToday - expenseToday, totalMovements: total },
+  })
+})
 app.post('/api/cash/movements', requirePermission('cash.create'), async (req, res) => {
   const parsed = z.object({ type: z.nativeEnum(CashMovementType), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })

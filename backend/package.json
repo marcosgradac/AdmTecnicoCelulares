@@ -23,6 +23,7 @@
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
     "test:warranties": "tsx tests/warranties.ts",
     "test:pagination": "tsx tests/pagination.ts",
+    "test:cash-pagination": "tsx tests/cash-pagination.ts",
     "test:billing": "tsx tests/billing.ts",
     "test:performance-access": "tsx tests/performance-access.ts",
     "test:subscription-lifecycle": "node --env-file=.env ./node_modules/tsx/dist/cli.mjs tests/subscription-lifecycle.ts",
