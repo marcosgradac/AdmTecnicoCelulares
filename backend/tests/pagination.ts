@@ -15,13 +15,16 @@ async function main() {
   try {
     const tokenA = await register('A'), tokenB = await register('B')
     for (let index = 1; index <= 12; index++) { const client = (await request('POST', '/clients', { name: `Cliente QA ${String(index).padStart(2, '0')}`, phone: `1155500${String(index).padStart(3, '0')}` }, tokenA)).body; assert.equal((await request('POST', '/repairs', { clientId: client.id, deviceBrand: index === 12 ? 'MarcaBuscable' : 'Motorola', deviceModel: `Modelo ${index}`, imei: `IMEI-${index}`, issue: `Falla QA ${index}`, total: index * 1000, status: index === 11 ? 'READY' : 'RECEIVED' }, tokenA)).status, 201) }
+    await request('POST', '/clients', { name: 'Cliente sin reparaciones', phone: '1155500999' }, tokenA)
     const foreign = (await request('POST', '/clients', { name: 'Cliente ajeno', phone: '1199999999' }, tokenB)).body
     assert.equal((await request('POST', '/repairs', { clientId: foreign.id, deviceBrand: 'MarcaBuscable', deviceModel: 'Ajeno', issue: 'No visible', total: 1 }, tokenB)).status, 201)
-    const clientsFirst = await request('GET', '/clients?paginated=true&page=1&pageSize=10', undefined, tokenA); assert.equal(clientsFirst.status, 200); assert.equal(clientsFirst.body.items.length, 10); assert.equal(clientsFirst.body.total, 12); assert.equal(clientsFirst.body.totalPages, 2)
-    const clientListItem = clientsFirst.body.items[0]
-    assert.equal(clientListItem.repairCount, 1); assert.equal(Object.hasOwn(clientListItem, 'repairs'), false, 'paginated client omits repair history')
-    const clientsSecond = await request('GET', '/clients?paginated=true&page=2&pageSize=10', undefined, tokenA); assert.equal(clientsSecond.body.items.length, 2)
-    const clientOptions = await request('GET', '/clients/options', undefined, tokenA); assert.equal(clientOptions.status, 200); assert.equal(clientOptions.body.length, 12); assert.deepEqual(clientOptions.body.map((client: { name: string }) => client.name), Array.from({ length: 12 }, (_, index) => `Cliente QA ${String(index + 1).padStart(2, '0')}`))
+    const clientsFirst = await request('GET', '/clients?paginated=true&page=1&pageSize=10', undefined, tokenA); assert.equal(clientsFirst.status, 200); assert.equal(clientsFirst.body.items.length, 10); assert.equal(clientsFirst.body.total, 13); assert.equal(clientsFirst.body.totalPages, 2)
+    const clientsSecond = await request('GET', '/clients?paginated=true&page=2&pageSize=10', undefined, tokenA); assert.equal(clientsSecond.body.items.length, 3)
+    const paginatedClients = [...clientsFirst.body.items, ...clientsSecond.body.items]
+    const clientListItem = paginatedClients.find((client: { name: string }) => client.name === 'Cliente QA 01'); assert.ok(clientListItem)
+    assert.equal(clientListItem.repairCount, 1); assert.equal(Object.hasOwn(clientListItem, 'repairs'), false, 'paginated client omits repair history'); assert.deepEqual(clientListItem.lastRepair, { deviceBrand: 'Motorola', deviceModel: 'Modelo 1' })
+    const clientWithoutRepairs = paginatedClients.find((client: { name: string }) => client.name === 'Cliente sin reparaciones'); assert.ok(clientWithoutRepairs); assert.equal(clientWithoutRepairs.repairCount, 0); assert.equal(clientWithoutRepairs.lastRepair, null)
+    const clientOptions = await request('GET', '/clients/options', undefined, tokenA); assert.equal(clientOptions.status, 200); assert.equal(clientOptions.body.length, 13); assert.deepEqual(clientOptions.body.map((client: { name: string }) => client.name), [...Array.from({ length: 12 }, (_, index) => `Cliente QA ${String(index + 1).padStart(2, '0')}`), 'Cliente sin reparaciones'])
     for (const option of clientOptions.body) assert.deepEqual(Object.keys(option).sort(), ['id', 'name', 'phone'])
     assert.ok(!clientOptions.body.some((client: { id: string }) => client.id === foreign.id), 'options exclude clients from another tenant')
     const clientDetail = await request('GET', `/clients/${clientListItem.id}`, undefined, tokenA); assert.equal(clientDetail.status, 200); assert.equal(clientDetail.body.repairs.length, 1)

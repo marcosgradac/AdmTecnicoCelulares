@@ -10,6 +10,7 @@ export interface ClientOption {
 export interface ClientListRecord extends ClientOption {
   createdAt: string
   repairCount: number
+  lastRepair: { deviceBrand: string; deviceModel: string } | null
 }
 
 export interface ClientRecord extends ClientOption {
