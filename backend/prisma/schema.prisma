@@ -157,6 +157,7 @@ model Client {
   business   Business  @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+  @@index([businessId, createdAt])
 }
 
 model Device {
@@ -226,6 +227,8 @@ model Repair {
   @@unique([businessId, number])
   @@index([businessId])
   @@index([businessId, trackingCreatedAt])
+  @@index([businessId, createdAt])
+  @@index([businessId, status, createdAt])
 }
 
 model WarrantyClaim {
@@ -393,6 +396,7 @@ model CashMovement {
   business    Business         @relation(fields: [businessId], references: [id])
 
   @@index([businessId])
+  @@index([businessId, createdAt])
 }
 
 model Plan {
