@@ -1,14 +1,23 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import type { Subscription } from '@prisma/client'
-import { app } from '../src/server'
 import {
   calculateAccountAccessStatus,
   getBillingLifecycleSettings,
   invalidateBillingLifecycleSettingsCache,
 } from '../src/modules/billing/billing.service'
-import { prisma } from '../src/lib/prisma'
 import { validRegistrationPayload } from './helpers/registration'
+
+process.env.NODE_ENV = 'test'
+process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
+const nativeFetch = globalThis.fetch
+globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+  String(input).includes('challenges.cloudflare.com/turnstile')
+    ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+    : nativeFetch(input, init)) as typeof fetch
+
+let app: typeof import('../src/server').app
+let prisma: typeof import('../src/lib/prisma').prisma
 
 const now = new Date('2026-08-24T15:00:00.000Z')
 const base = {
@@ -84,6 +93,8 @@ async function assertServiceSettingsInvalidatesCachedLifecycleSettings() {
 }
 
 async function run() {
+  ;({ app } = await import('../src/server'))
+  ;({ prisma } = await import('../src/lib/prisma'))
   const active = { ...base, accessExpiresAt: new Date('2026-09-10T15:00:00.000Z') }
   const manuallyBlocked = { ...base, manuallyBlockedAt: now, manualBlockReason: 'ADMINISTRATIVE' }
   const expired = { ...base, accessExpiresAt: new Date('2026-08-23T15:00:00.000Z') }

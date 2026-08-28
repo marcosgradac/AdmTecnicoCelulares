@@ -1,11 +1,18 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { app } from '../src/server'
-import { prisma } from '../src/lib/prisma'
 import { validRegistrationPayload } from './helpers/registration'
 
+process.env.NODE_ENV = 'test'
+process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
+const nativeFetch = globalThis.fetch
+globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+  String(input).includes('challenges.cloudflare.com/turnstile')
+    ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+    : nativeFetch(input, init)) as typeof fetch
+
 async function main() {
+  const [{ app }, { prisma }] = await Promise.all([import('../src/server'), import('../src/lib/prisma')])
   const server = app.listen(0)
   await new Promise<void>(resolve => server.once('listening', resolve))
   const address = server.address(); assert.ok(address && typeof address === 'object')
