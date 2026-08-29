@@ -1,11 +1,17 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { app } from '../src/server'
-import { prisma } from '../src/lib/prisma'
 import { validRegistrationPayload } from './helpers/registration'
 
-async function main(){const server=app.listen(0);await new Promise<void>(resolve=>server.once('listening',resolve));const address=server.address();assert.ok(address&&typeof address==='object');const base=`http://127.0.0.1:${address.port}/api`,suffix=Date.now(),businesses:string[]=[]
+process.env.NODE_ENV = 'test'
+process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
+const nativeFetch = globalThis.fetch
+globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+  String(input).includes('challenges.cloudflare.com/turnstile')
+    ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+    : nativeFetch(input, init)) as typeof fetch
+
+async function main(){const [{ app }, { prisma }]=await Promise.all([import('../src/server'),import('../src/lib/prisma')]);const server=app.listen(0);await new Promise<void>(resolve=>server.once('listening',resolve));const address=server.address();assert.ok(address&&typeof address==='object');const base=`http://127.0.0.1:${address.port}/api`,suffix=Date.now(),businesses:string[]=[]
  const request=async(method:string,path:string,body?:object,token?:string)=>{const response=await fetch(`${base}${path}`,{method,headers:{...(body?{'content-type':'application/json'}:{}),...(token?{authorization:`Bearer ${token}`}:{})},body:body?JSON.stringify(body):undefined});return{status:response.status,body:await response.json() as any}}
  const register=async(label:string)=>{const password=`Qa-${randomBytes(12).toString('base64url')}9!`;const result=await request('POST','/auth/register',validRegistrationPayload({firstName:'QA',lastName:label,email:`simple-${label}-${suffix}@example.com`,password,businessName:`Simple ${label}`}));assert.equal(result.status,201);businesses.push(result.body.user.business.id);return result.body.token as string}
  try{const tokenA=await register('A'),tokenB=await register('B');const clientA=(await request('POST','/clients',{name:'Cliente QA A',phone:'1111111111'},tokenA)).body;const clientB=(await request('POST','/clients',{name:'Cliente QA B',phone:'2222222222'},tokenB)).body

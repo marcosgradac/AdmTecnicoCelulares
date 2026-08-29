@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Alert, MenuItem, TextField } from '@mui/material'
 import type { Repair } from '../../types'
-import { getClients, type ClientRecord } from '../../services/operations'
+import { getClientOptions, type ClientOption } from '../../services/operations'
 import { updateRepair, type UpdateRepairInput } from '../../services/repairs'
 import { CurrencyField } from '../common/CurrencyField'
 import { FormDrawer } from '../common/FormDrawer'
 
 export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: boolean; repair?: Repair; onClose: () => void; onUpdated: (repair: Repair) => void }) {
-  const [clients, setClients] = useState<ClientRecord[]>([]), [form, setForm] = useState<(Omit<UpdateRepairInput, 'total'> & { total: number | null })>(), [saving, setSaving] = useState(false), [error, setError] = useState('')
-  useEffect(() => { if (open) void getClients().then(setClients).catch(() => setError('No pudimos cargar los clientes.')) }, [open])
+  const [clients, setClients] = useState<ClientOption[]>([]), [form, setForm] = useState<(Omit<UpdateRepairInput, 'total'> & { total: number | null })>(), [saving, setSaving] = useState(false), [error, setError] = useState('')
+  useEffect(() => { if (open) void getClientOptions().then(setClients).catch(() => setError('No pudimos cargar los clientes.')) }, [open])
   useEffect(() => { if (repair) setForm({ clientId: repair.clientId, deviceBrand: repair.deviceBrand, deviceModel: repair.deviceModel, imei: repair.imei, color: repair.color, issue: repair.issue, diagnosis: repair.diagnosis, notes: repair.notes, total: repair.total }) }, [repair])
   const field = <K extends keyof NonNullable<typeof form>>(key: K, value: NonNullable<typeof form>[K]) => setForm(current => current ? { ...current, [key]: value } : current)
   const save = async () => { if (!repair || !form) return; if (form.total == null) return setError('Ingresá un monto'); setSaving(true); setError(''); try { onUpdated(await updateRepair(repair.id, { ...form, total: form.total })) } catch { setError('No pudimos guardar los cambios de la reparación.') } finally { setSaving(false) } }

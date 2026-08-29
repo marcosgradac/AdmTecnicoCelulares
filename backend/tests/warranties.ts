@@ -1,11 +1,18 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { app } from '../src/server'
-import { prisma } from '../src/lib/prisma'
 import { validRegistrationPayload } from './helpers/registration'
 
+process.env.NODE_ENV = 'test'
+process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
+const nativeFetch = globalThis.fetch
+globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+  String(input).includes('challenges.cloudflare.com/turnstile')
+    ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+    : nativeFetch(input, init)) as typeof fetch
+
 async function main() {
+  const [{ app }, { prisma }] = await Promise.all([import('../src/server'), import('../src/lib/prisma')])
   const server = app.listen(0); await new Promise<void>(resolve => server.once('listening', resolve)); const address = server.address(); assert.ok(address && typeof address === 'object')
   const base = `http://127.0.0.1:${address.port}/api`, suffix = Date.now(), businesses: string[] = []
   const request = async (method: string, path: string, body?: object, token?: string) => { const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? JSON.parse(text) : null } }

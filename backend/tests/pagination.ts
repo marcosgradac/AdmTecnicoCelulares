@@ -1,11 +1,18 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { app } from '../src/server'
-import { prisma } from '../src/lib/prisma'
 import { validRegistrationPayload } from './helpers/registration'
 
+process.env.NODE_ENV = 'test'
+process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
+const nativeFetch = globalThis.fetch
+globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+  String(input).includes('challenges.cloudflare.com/turnstile')
+    ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+    : nativeFetch(input, init)) as typeof fetch
+
 async function main() {
+  const [{ app }, { prisma }] = await Promise.all([import('../src/server'), import('../src/lib/prisma')])
   const server = app.listen(0)
   await new Promise<void>(resolve => server.once('listening', resolve))
   const address = server.address(); assert.ok(address && typeof address === 'object')
@@ -14,13 +21,44 @@ async function main() {
   const register = async (label: string) => { const password = `Qa-${randomBytes(12).toString('base64url')}9!`; const result = await request('POST', '/auth/register', validRegistrationPayload({ firstName: 'QA', lastName: label, email: `pagination-${label}-${suffix}@example.com`, password, businessName: `Pagination ${label}` })); assert.equal(result.status, 201); businesses.push(result.body.user.business.id); return result.body.token as string }
   try {
     const tokenA = await register('A'), tokenB = await register('B')
-    for (let index = 1; index <= 12; index++) { const client = (await request('POST', '/clients', { name: `Cliente QA ${String(index).padStart(2, '0')}`, phone: `1155500${String(index).padStart(3, '0')}` }, tokenA)).body; assert.equal((await request('POST', '/repairs', { clientId: client.id, deviceBrand: index === 12 ? 'MarcaBuscable' : 'Motorola', deviceModel: `Modelo ${index}`, imei: `IMEI-${index}`, issue: `Falla QA ${index}`, total: index * 1000 }, tokenA)).status, 201) }
+    let firstClientId = ''
+    for (let index = 1; index <= 12; index++) { const client = (await request('POST', '/clients', { name: `Cliente QA ${String(index).padStart(2, '0')}`, phone: `1155500${String(index).padStart(3, '0')}` }, tokenA)).body; if (index === 1) firstClientId = client.id; assert.equal((await request('POST', '/repairs', { clientId: client.id, deviceBrand: index === 12 ? 'MarcaBuscable' : 'Motorola', deviceModel: `Modelo ${index}`, imei: `IMEI-${index}`, issue: `Falla QA ${index}`, total: index * 1000, status: index === 11 ? 'READY' : 'RECEIVED' }, tokenA)).status, 201) }
+    await request('POST', '/clients', { name: 'Cliente sin reparaciones', phone: '1155500999' }, tokenA)
     const foreign = (await request('POST', '/clients', { name: 'Cliente ajeno', phone: '1199999999' }, tokenB)).body
     assert.equal((await request('POST', '/repairs', { clientId: foreign.id, deviceBrand: 'MarcaBuscable', deviceModel: 'Ajeno', issue: 'No visible', total: 1 }, tokenB)).status, 201)
-    const clientsFirst = await request('GET', '/clients?paginated=true&page=1&pageSize=10', undefined, tokenA); assert.equal(clientsFirst.status, 200); assert.equal(clientsFirst.body.items.length, 10); assert.equal(clientsFirst.body.total, 12); assert.equal(clientsFirst.body.totalPages, 2)
-    const clientsSecond = await request('GET', '/clients?paginated=true&page=2&pageSize=10', undefined, tokenA); assert.equal(clientsSecond.body.items.length, 2)
-    const repairsFirst = await request('GET', '/repairs?page=1&pageSize=10', undefined, tokenA); assert.equal(repairsFirst.body.items.length, 10); assert.equal(repairsFirst.body.total, 12); assert.equal(repairsFirst.body.pages, 2)
+    const tiedClientA = `pagination-client-a-${suffix}`, tiedClientZ = `pagination-client-z-${suffix}`
+    await prisma.client.createMany({ data: [
+      { id: tiedClientZ, businessId: businesses[0], name: 'Cliente empatado', phone: '1155510002' },
+      { id: tiedClientA, businessId: businesses[0], name: 'Cliente empatado', phone: '1155510001' },
+    ] })
+    const tiedRepairA = `pagination-repair-a-${suffix}`, tiedRepairZ = `pagination-repair-z-${suffix}`, tiedAt = new Date('2030-01-01T12:00:00.000Z')
+    await prisma.repair.createMany({ data: [
+      { id: tiedRepairA, businessId: businesses[0], number: 50_001, clientId: firstClientId, deviceBrand: 'Tie', deviceModel: 'Tie A', issue: 'Tie A', createdAt: tiedAt },
+      { id: tiedRepairZ, businessId: businesses[0], number: 50_002, clientId: firstClientId, deviceBrand: 'Tie', deviceModel: 'Tie Z', issue: 'Tie Z', createdAt: tiedAt },
+    ] })
+    const bareClients = await request('GET', '/clients', undefined, tokenA); assert.equal(bareClients.status, 200); assert.equal(bareClients.body.length, 15)
+    for (const client of bareClients.body) assert.equal(Object.hasOwn(client, 'repairs'), false, 'bare client list omits repair history')
+    const clientsFirst = await request('GET', '/clients?paginated=true&page=1&pageSize=10', undefined, tokenA); assert.equal(clientsFirst.status, 200); assert.equal(clientsFirst.body.items.length, 10); assert.equal(clientsFirst.body.total, 15); assert.equal(clientsFirst.body.totalPages, 2)
+    const clientsSecond = await request('GET', '/clients?paginated=true&page=2&pageSize=10', undefined, tokenA); assert.equal(clientsSecond.body.items.length, 5)
+    const paginatedClients = [...clientsFirst.body.items, ...clientsSecond.body.items]
+    for (const client of paginatedClients) assert.equal(Object.hasOwn(client, 'repairs'), false, 'paginated client list omits repair history')
+    const clientListItem = paginatedClients.find((client: { name: string }) => client.name === 'Cliente QA 01'); assert.ok(clientListItem)
+    assert.equal(clientListItem.repairCount, 3); assert.equal(Object.hasOwn(clientListItem, 'repairs'), false, 'paginated client omits repair history'); assert.deepEqual(clientListItem.lastRepair, { deviceBrand: 'Tie', deviceModel: 'Tie Z' })
+    const clientWithoutRepairs = paginatedClients.find((client: { name: string }) => client.name === 'Cliente sin reparaciones'); assert.ok(clientWithoutRepairs); assert.equal(clientWithoutRepairs.repairCount, 0); assert.equal(clientWithoutRepairs.lastRepair, null)
+    const clientOptions = await request('GET', '/clients/options', undefined, tokenA); assert.equal(clientOptions.status, 200); assert.equal(clientOptions.body.length, 15)
+    assert.deepEqual(clientOptions.body.filter((client: { name: string }) => client.name === 'Cliente empatado').map((client: { id: string }) => client.id), [tiedClientA, tiedClientZ], 'id breaks an options name tie')
+    for (const option of clientOptions.body) assert.deepEqual(Object.keys(option).sort(), ['id', 'name', 'phone'])
+    assert.ok(!clientOptions.body.some((client: { id: string }) => client.id === foreign.id), 'options exclude clients from another tenant')
+    const clientDetail = await request('GET', `/clients/${clientListItem.id}`, undefined, tokenA); assert.equal(clientDetail.status, 200); assert.equal(clientDetail.body.repairs.length, 3); assert.equal(clientDetail.body.repairs[0].id, tiedRepairZ, 'id breaks a latest-repair timestamp tie')
+    const repairsFirst = await request('GET', '/repairs?page=1&pageSize=10', undefined, tokenA); assert.equal(repairsFirst.body.items.length, 10); assert.equal(repairsFirst.body.total, 14); assert.equal(repairsFirst.body.page, 1); assert.equal(repairsFirst.body.pageSize, 10); assert.equal(repairsFirst.body.pages, 2); assert.equal(repairsFirst.body.items[0].id, tiedRepairZ, 'id breaks a repair-list timestamp tie')
+    const listItem = repairsFirst.body.items[0]
+    assert.equal(typeof listItem.id, 'string'); assert.equal(typeof listItem.number, 'number'); assert.equal(typeof listItem.status, 'string'); assert.equal(typeof listItem.total, 'number'); assert.equal(typeof listItem.paid, 'number'); assert.equal(typeof listItem.trackingEnabled, 'boolean')
+    for (const key of ['payments', 'statusHistory', 'photos', 'warrantyClaims', 'device']) {
+      assert.equal(Object.hasOwn(listItem, key), false, `list item omits ${key}`)
+    }
+    assert.equal(typeof listItem.client.name, 'string')
     const searched = await request('GET', '/repairs?page=1&pageSize=10&search=MarcaBuscable', undefined, tokenA); assert.equal(searched.body.items.length, 1); assert.equal(searched.body.items[0].deviceBrand, 'MarcaBuscable')
+    const filtered = await request('GET', '/repairs?page=1&pageSize=10&status=READY', undefined, tokenA); assert.equal(filtered.body.items.length, 1); assert.equal(filtered.body.items[0].deviceModel, 'Modelo 11')
     assert.ok(!clientsFirst.body.items.some((client: { id: string }) => client.id === foreign.id)); assert.ok(!repairsFirst.body.items.some((repair: { clientId: string }) => repair.clientId === foreign.id))
     console.log('PAGINATION TESTS PASSED: 12 records, page size 10, search and tenant isolation')
   } finally {

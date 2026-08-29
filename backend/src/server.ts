@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { randomBytes } from 'node:crypto'
-import { CashMovementType, PaymentMethod, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
+import { CashMovementType, PaymentMethod, Prisma, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
@@ -23,6 +23,7 @@ import { settingsRouter } from './modules/settings/settings.routes'
 import { securityConfig } from './config/security'
 import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
+import { getArgentinaDayBounds } from './lib/argentina-day'
 
 export const app = express()
 app.set('trust proxy', 1)
@@ -315,6 +316,13 @@ app.use('/api/team', teamRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/settings', settingsRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true, warrantyClaims: { orderBy: { createdAt: 'desc' as const } } } as const
+const repairListSelect = {
+  id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, imei: true, color: true, issue: true,
+  diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
+  estimatedDeliveryDate: true, warrantyEnabled: true, warrantyDurationDays: true, warrantyStartedAt: true,
+  warrantyExpiresAt: true, createdAt: true, updatedAt: true,
+  client: { select: { id: true, name: true, phone: true, createdAt: true } },
+} as const
 
 app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
   const parsed = z.object({
@@ -339,7 +347,7 @@ app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
       ] } : {}),
     }
     const [items, total] = await prisma.$transaction([
-      prisma.repair.findMany({ where, include: includeRepair, orderBy: { createdAt: order }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.repair.findMany({ where, select: repairListSelect, orderBy: [{ createdAt: order }, { id: order }], skip: (page - 1) * pageSize, take: pageSize }),
       prisma.repair.count({ where }),
     ])
     return res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
@@ -425,16 +433,19 @@ app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), s
 
 app.get('/api/clients', requirePermission('clients.view'), async (req, res) => {
   const businessId = authOf(req).businessId
-  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } }, orderBy: { createdAt: 'desc' } }))
+  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, orderBy: { createdAt: 'desc' } }))
   const parsed = z.object({ page:z.coerce.number().int().positive().default(1), pageSize:z.coerce.number().int().min(1).max(100).default(10), search:z.string().trim().optional() }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success:false, message:'Filtros inválidos' })
   const {page,pageSize,search}=parsed.data
   const where={businessId,...(search?{OR:[{name:{contains:search,mode:'insensitive' as const}},{phone:{contains:search}}]}:{})}
-  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,include:{repairs:{orderBy:{createdAt:'desc' as const}}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
-  return res.json({items,total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
+  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,select:{id:true,name:true,phone:true,createdAt:true,_count:{select:{repairs:true}},repairs:{select:{deviceBrand:true,deviceModel:true},orderBy:[{createdAt:'desc'},{id:'desc'}],take:1}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
+  return res.json({items:items.map(({_count,repairs,...client})=>({...client,repairCount:_count.repairs,lastRepair:repairs[0]??null})),total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
+})
+app.get('/api/clients/options', requirePermission('clients.view'), async (req, res) => {
+  return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId }, select: { id: true, name: true, phone: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] }))
 })
 app.get('/api/clients/:id', requirePermission('clients.view'), async (req, res) => {
-  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } } })
+  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } } })
   return client ? res.json(client) : res.status(404).json({ success: false, message: 'Cliente no encontrado' })
 })
 app.post('/api/clients', requirePermission('clients.create'), async (req, res) => {
@@ -502,7 +513,34 @@ app.patch('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTrac
   return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingEnabled: false }, select: { trackingToken: true, trackingEnabled: true } }))
 })
 
-app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) => res.json(await prisma.cashMovement.findMany({ where: { businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } })))
+app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) => {
+  const parsed = z.object({
+    page: z.coerce.number().int().positive().default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(10),
+  }).safeParse(req.query)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Parámetros de paginación inválidos' })
+
+  const { page, pageSize } = parsed.data
+  const businessId = authOf(req).businessId
+  const { start, end } = getArgentinaDayBounds(new Date())
+  const where = { businessId }
+  const todayWhere = { businessId, createdAt: { gte: start, lt: end } }
+  const [items, total, grouped] = await prisma.$transaction([
+    prisma.cashMovement.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.cashMovement.count({ where }),
+    prisma.cashMovement.groupBy({ by: ['type'], where: todayWhere, orderBy: { type: 'asc' }, _sum: { amount: true } }),
+  ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+  const incomeToday = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
+  const expenseToday = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
+  return res.json({
+    items,
+    total,
+    page,
+    pageSize,
+    pages: Math.max(1, Math.ceil(total / pageSize)),
+    summary: { incomeToday, expenseToday, balanceToday: incomeToday - expenseToday, totalMovements: total },
+  })
+})
 app.post('/api/cash/movements', requirePermission('cash.create'), async (req, res) => {
   const parsed = z.object({ type: z.nativeEnum(CashMovementType), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })

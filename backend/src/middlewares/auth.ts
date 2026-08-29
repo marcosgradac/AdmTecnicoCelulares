@@ -3,13 +3,13 @@ import jwt from 'jsonwebtoken'
 import type { PlatformRole, UserRole } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { permissionsFor, type Permission } from '../config/permissions'
-import { getBusinessAccessStatus } from '../modules/billing/billing.service'
+import { getAccountAccessStatus, type AccountAccessStatus } from '../modules/billing/billing.service'
 
 export interface AuthData { userId: string; businessId: string; role: UserRole; platformRole: PlatformRole; tokenVersion: number; permissions?: Permission[] }
 
 declare global {
   namespace Express {
-    interface Request { auth?: AuthData }
+    interface Request { auth?: AuthData; accountAccess?: AccountAccessStatus | null }
   }
 }
 
@@ -28,16 +28,16 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const payload = jwt.verify(token, jwtSecret) as AuthData
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true, permissions: true, business: { select: { isActive: true } } },
+      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true, permissions: true, business: { select: { isActive: true, subscription: true } } },
     })
     if (!user || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
     if ((payload.tokenVersion ?? 0) !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
     if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: 'El negocio se encuentra desactivado', code: 'BUSINESS_BLOCKED', audience: user.role })
-    if (user.platformRole !== 'SUPER_ADMIN') {
-      const access = await getBusinessAccessStatus(user.businessId)
-      if (access?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
-    }
+    req.accountAccess = user.platformRole === 'SUPER_ADMIN'
+      ? null
+      : user.business.subscription ? await getAccountAccessStatus(user.business.subscription) : null
+    if (req.accountAccess?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
     req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, permissions: permissionsFor(user.role, user.permissions) }
     next()
   } catch {
