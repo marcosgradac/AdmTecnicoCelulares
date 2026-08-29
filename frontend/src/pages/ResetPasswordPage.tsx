@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import axios from 'axios'
 import { Alert, Box, Button, IconButton, InputAdornment, Link as MuiLink, TextField } from '@mui/material'
-import { VisibilityOffRounded, VisibilityRounded } from '@mui/icons-material'
+import { EastRounded, LockRounded, VisibilityOffRounded, VisibilityRounded } from '@mui/icons-material'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { resetPassword } from '../services/auth'
 
@@ -39,18 +39,19 @@ export function ResetPasswordPage() {
     {!token && <Alert severity="error">El enlace es inválido o está incompleto.</Alert>}
     {success && <Alert severity="success">{success}</Alert>}
     {error && <Alert severity="error">{error}</Alert>}
-    {!success && <Box component="form" onSubmit={submit} display="grid" gap={2}>
+    {!success && <Box component="form" className="auth-password-form" onSubmit={submit}>
       <TextField required label="Nueva contraseña" type={showPassword ? 'text' : 'password'} autoComplete="new-password"
         value={form.password} onChange={event => setForm(value => ({ ...value, password: event.target.value }))}
         helperText="Mínimo 8 caracteres, mayúscula, minúscula y número."
-        InputProps={{ endAdornment: <InputAdornment position="end"><IconButton aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}</IconButton></InputAdornment> }} />
+        InputProps={{ startAdornment: <InputAdornment position="start"><LockRounded /></InputAdornment>, endAdornment: <InputAdornment position="end"><IconButton aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} onClick={() => setShowPassword(value => !value)}>{showPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}</IconButton></InputAdornment> }} />
       <TextField required label="Repetir contraseña" type={showPassword ? 'text' : 'password'} autoComplete="new-password"
-        value={form.confirmation} onChange={event => setForm(value => ({ ...value, confirmation: event.target.value }))} />
-      <Button type="submit" size="large" variant="contained" disabled={saving || !token || !form.password || !form.confirmation} sx={{ minHeight: 48 }}>
+        value={form.confirmation} onChange={event => setForm(value => ({ ...value, confirmation: event.target.value }))}
+        InputProps={{ startAdornment: <InputAdornment position="start"><LockRounded /></InputAdornment> }} />
+      <Button className="login-submit" type="submit" size="large" variant="contained" disabled={saving || !token || !form.password || !form.confirmation} endIcon={!saving && <EastRounded />}>
         {saving ? 'Guardando…' : 'Guardar nueva contraseña'}
       </Button>
     </Box>}
-    <MuiLink component={Link} to="/login" underline="hover" textAlign="center">
+    <MuiLink className="auth-return-link" component={Link} to="/login" underline="hover" textAlign="center">
       {success ? 'Iniciar sesión' : 'Volver al inicio de sesión'}
     </MuiLink>
   </AuthLayout>

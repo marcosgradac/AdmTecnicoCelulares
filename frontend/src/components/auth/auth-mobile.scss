@@ -99,3 +99,43 @@
   .auth-page--register .auth-form-logo{width:172px}
   .auth-page--register .auth-form-surface h1{font-size:26px}
 }
+
+/* Password recovery follows the approved login shell without changing login or register. */
+:is(.auth-page--forgot-password,.auth-page--reset-password){height:100dvh;overflow:hidden}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-region{position:relative;background:radial-gradient(circle at 88% 12%,#c9dfff55,transparent 28%),linear-gradient(145deg,#fbfcff,#f3f6fc)}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface{position:relative;width:100%;max-width:540px!important;padding:42px 46px!important;border:1px solid #e6e9f3!important;border-radius:32px!important;background:#ffffffdf!important;box-shadow:0 30px 80px #32386b14!important;backdrop-filter:blur(18px)}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-logo{display:block;width:218px;height:auto;margin:0 0 10px;object-fit:contain;object-position:left center}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface h1{font-weight:900;line-height:1.15;letter-spacing:-.035em;color:#17172a}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface>p{margin-top:0!important;margin-bottom:22px!important;color:#73768b}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-content-stack{width:100%;gap:0}
+:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-content-stack>.MuiAlert-root{margin-bottom:15px}
+.auth-password-form{display:grid;width:100%;gap:15px}
+.auth-password-form .MuiOutlinedInput-root{min-height:58px;border-radius:16px;background:#fff!important;transition:box-shadow .2s ease,background .2s ease}
+.auth-password-form .MuiOutlinedInput-input{background:transparent!important}
+.auth-password-form .MuiOutlinedInput-root.Mui-focused{box-shadow:0 0 0 4px #5a55db12}
+.auth-password-form .MuiInputAdornment-root svg{color:#716ee1;font-size:20px}
+.auth-password-form .login-submit{width:100%;margin-top:0}
+.auth-return-link{display:block;margin-top:17px;color:#5646d6!important;font-size:13px;font-weight:750}
+@media(max-width:1180px) and (min-width:768px){:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface{padding:34px!important}}
+@media(max-width:767px){
+  :is(.auth-page--forgot-password,.auth-page--reset-password){display:block!important;height:auto!important;min-height:100dvh!important;overflow-x:hidden!important;color:#17172a;background:linear-gradient(180deg,#eef2ff 0,#fff 240px)!important}
+  :is(.auth-page--forgot-password,.auth-page--reset-password):before{display:none}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-region{display:grid!important;min-height:100dvh;padding:max(22px,env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))!important;background:radial-gradient(circle at 85% 0,#7d73ff3d,transparent 27%),linear-gradient(180deg,#eef2ff 0,#fff 26%)!important}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface{max-width:470px!important;margin:0 auto;padding:0!important;color:#17172a!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-logo{width:188px;max-width:62vw;margin-bottom:9px}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface h1{font-size:27px;line-height:1.16}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface>p{margin-bottom:20px!important;color:#73768b!important;font-size:15px;line-height:1.5}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiTypography-root{color:#17172a}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiTypography-colorTextSecondary,:is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiFormHelperText-root{color:#73768b!important}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiOutlinedInput-root{color:#17172a;background:#fff!important;box-shadow:inset 0 0 0 1px #e3e6f0,0 8px 22px #49508a0a}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiInputLabel-root{color:#6e7184}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiIconButton-root{color:#6b6b80}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface a{color:#5849d8}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface .MuiButton-contained{width:100%;min-height:56px;color:#fff;background:linear-gradient(100deg,#6d3ed7,#2d90ea)}
+  .auth-password-form{gap:15px}
+  .auth-return-link{margin-top:16px}
+}
+@media(max-width:380px){
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-region{padding-inline:16px!important}
+  :is(.auth-page--forgot-password,.auth-page--reset-password) .auth-form-surface h1{font-size:25px}
+}
