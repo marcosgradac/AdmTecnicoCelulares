@@ -24,19 +24,33 @@ export interface AccountAccessStatus {
 }
 const BILLING_SETTINGS_TTL_MS = 30_000
 let billingSettingsCache: { value: BillingLifecycleSettings; expiresAt: number } | null = null
+let billingSettingsGeneration = 0
+let billingSettingsLoad: { generation: number; promise: Promise<BillingLifecycleSettings> } | null = null
 const DAY_MS = 86_400_000
 const daysBetween = (future: Date, now: Date) => Math.max(0, Math.ceil((future.getTime() - now.getTime()) / DAY_MS))
 
 export function invalidateBillingLifecycleSettingsCache() {
+  billingSettingsGeneration += 1
   billingSettingsCache = null
+  billingSettingsLoad = null
 }
 
 export async function getBillingLifecycleSettings(): Promise<BillingLifecycleSettings> {
   if (billingSettingsCache && billingSettingsCache.expiresAt > Date.now()) return billingSettingsCache.value
-  const settings = await prisma.billingSettings.findUnique({ where: { id: 'default' }, select: { expirationWarningDays: true, defaultGraceDays: true } })
-  const value = { expirationWarningDays: settings?.expirationWarningDays ?? 7, defaultGraceDays: settings?.defaultGraceDays ?? GRACE_DAYS }
-  billingSettingsCache = { value, expiresAt: Date.now() + BILLING_SETTINGS_TTL_MS }
-  return value
+  const generation = billingSettingsGeneration
+  if (billingSettingsLoad?.generation === generation) return billingSettingsLoad.promise
+  const promise = (async () => {
+    const settings = await prisma.billingSettings.findUnique({ where: { id: 'default' }, select: { expirationWarningDays: true, defaultGraceDays: true } })
+    const value = { expirationWarningDays: settings?.expirationWarningDays ?? 7, defaultGraceDays: settings?.defaultGraceDays ?? GRACE_DAYS }
+    if (billingSettingsGeneration === generation) billingSettingsCache = { value, expiresAt: Date.now() + BILLING_SETTINGS_TTL_MS }
+    return value
+  })()
+  billingSettingsLoad = { generation, promise }
+  try {
+    return await promise
+  } finally {
+    if (billingSettingsLoad?.generation === generation && billingSettingsLoad.promise === promise) billingSettingsLoad = null
+  }
 }
 
 export function calculateAccountAccessStatus(subscription: Subscription, settings: BillingLifecycleSettings, now = new Date()): AccountAccessStatus {

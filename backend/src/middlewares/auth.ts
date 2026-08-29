@@ -34,8 +34,10 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     if ((payload.tokenVersion ?? 0) !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
     if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: 'El negocio se encuentra desactivado', code: 'BUSINESS_BLOCKED', audience: user.role })
-    req.accountAccess = user.business.subscription ? await getAccountAccessStatus(user.business.subscription) : null
-    if (user.platformRole !== 'SUPER_ADMIN' && req.accountAccess?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
+    req.accountAccess = user.platformRole === 'SUPER_ADMIN'
+      ? null
+      : user.business.subscription ? await getAccountAccessStatus(user.business.subscription) : null
+    if (req.accountAccess?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
     req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, permissions: permissionsFor(user.role, user.permissions) }
     next()
   } catch {

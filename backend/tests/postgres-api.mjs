@@ -107,7 +107,7 @@ const repairPayload = {
 const repair = await request('/repairs', { token: tokenA, method: 'POST', body: repairPayload })
 check(repair.status === 201 && repair.body.clientId === clientA.body.id, 'reparación reutiliza cliente seleccionado')
 
-const clientsA = await request('/clients', { token: tokenA })
+const clientsA = await request('/clients/options', { token: tokenA })
 check(clientsA.status === 200 && clientsA.body.length === 1, 'no duplica cliente al crear reparación')
 
 const updatedRepair = await request(`/repairs/${repair.body.id}`, {

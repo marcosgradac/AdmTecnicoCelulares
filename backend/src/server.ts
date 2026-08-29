@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { randomBytes } from 'node:crypto'
-import { CashMovementType, PaymentMethod, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
+import { CashMovementType, PaymentMethod, Prisma, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
@@ -347,7 +347,7 @@ app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
       ] } : {}),
     }
     const [items, total] = await prisma.$transaction([
-      prisma.repair.findMany({ where, select: repairListSelect, orderBy: { createdAt: order }, skip: (page - 1) * pageSize, take: pageSize }),
+      prisma.repair.findMany({ where, select: repairListSelect, orderBy: [{ createdAt: order }, { id: order }], skip: (page - 1) * pageSize, take: pageSize }),
       prisma.repair.count({ where }),
     ])
     return res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
@@ -433,19 +433,19 @@ app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), s
 
 app.get('/api/clients', requirePermission('clients.view'), async (req, res) => {
   const businessId = authOf(req).businessId
-  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } }, orderBy: { createdAt: 'desc' } }))
+  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, orderBy: { createdAt: 'desc' } }))
   const parsed = z.object({ page:z.coerce.number().int().positive().default(1), pageSize:z.coerce.number().int().min(1).max(100).default(10), search:z.string().trim().optional() }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success:false, message:'Filtros inválidos' })
   const {page,pageSize,search}=parsed.data
   const where={businessId,...(search?{OR:[{name:{contains:search,mode:'insensitive' as const}},{phone:{contains:search}}]}:{})}
-  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,select:{id:true,name:true,phone:true,createdAt:true,_count:{select:{repairs:true}},repairs:{select:{deviceBrand:true,deviceModel:true},orderBy:{createdAt:'desc'},take:1}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
+  const [items,total]=await prisma.$transaction([prisma.client.findMany({where,select:{id:true,name:true,phone:true,createdAt:true,_count:{select:{repairs:true}},repairs:{select:{deviceBrand:true,deviceModel:true},orderBy:[{createdAt:'desc'},{id:'desc'}],take:1}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
   return res.json({items:items.map(({_count,repairs,...client})=>({...client,repairCount:_count.repairs,lastRepair:repairs[0]??null})),total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
 })
 app.get('/api/clients/options', requirePermission('clients.view'), async (req, res) => {
-  return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId }, select: { id: true, name: true, phone: true }, orderBy: { name: 'asc' } }))
+  return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId }, select: { id: true, name: true, phone: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] }))
 })
 app.get('/api/clients/:id', requirePermission('clients.view'), async (req, res) => {
-  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: { createdAt: 'desc' } } } })
+  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } } })
   return client ? res.json(client) : res.status(404).json({ success: false, message: 'Cliente no encontrado' })
 })
 app.post('/api/clients', requirePermission('clients.create'), async (req, res) => {
@@ -529,7 +529,7 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
     prisma.cashMovement.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
     prisma.cashMovement.count({ where }),
     prisma.cashMovement.groupBy({ by: ['type'], where: todayWhere, orderBy: { type: 'asc' }, _sum: { amount: true } }),
-  ])
+  ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
   const incomeToday = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
   const expenseToday = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
   return res.json({

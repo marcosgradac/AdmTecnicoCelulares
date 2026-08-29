@@ -2,6 +2,7 @@ import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import jwt from 'jsonwebtoken'
+import { Prisma } from '@prisma/client'
 
 const beforeMidnight = new Date('2026-08-27T02:30:00.000Z')
 const afterMidnight = new Date('2026-08-27T03:30:00.000Z')
@@ -107,7 +108,19 @@ async function main() {
       ],
     })
 
-    const pageOne = await request('GET', '/cash/movements?page=1&pageSize=10', undefined, tokenA)
+    const originalTransaction = prisma.$transaction
+    let cashReadIsolation: unknown
+    prisma.$transaction = ((...args: unknown[]) => {
+      if (Array.isArray(args[0]) && args[0].length === 3) cashReadIsolation = (args[1] as { isolationLevel?: unknown } | undefined)?.isolationLevel
+      return Reflect.apply(originalTransaction, prisma, args)
+    }) as typeof originalTransaction
+    let pageOne
+    try {
+      pageOne = await request('GET', '/cash/movements?page=1&pageSize=10', undefined, tokenA)
+    } finally {
+      prisma.$transaction = originalTransaction
+    }
+    assert.equal(cashReadIsolation, Prisma.TransactionIsolationLevel.RepeatableRead, 'cash page and summary share a repeatable-read snapshot')
     assert.equal(pageOne.status, 200)
     assert.equal(pageOne.body.items.length, 10, 'page one returns ten movements')
     assert.equal(pageOne.body.total, 12, 'total excludes the other tenant')

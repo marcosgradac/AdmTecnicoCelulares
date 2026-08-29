@@ -59,7 +59,6 @@ export interface DashboardSummary {
   cashFlow: Array<{ label: string; income: number; expense: number }>
 }
 
-export const getClients = async () => (await api.get<ClientRecord[]>('/clients')).data
 export const getClientsPage = async (params:{page:number;pageSize?:number;search?:string}) => (await api.get<{items:ClientListRecord[];total:number;page:number;pageSize:number;totalPages:number}>('/clients',{params:{...params,paginated:true}})).data
 export const getClientOptions = async () => (await api.get<ClientOption[]>('/clients/options')).data
 export const getClient = async (id: string) => (await api.get<ClientRecord>(`/clients/${id}`)).data
