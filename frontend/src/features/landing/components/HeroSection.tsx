@@ -15,8 +15,8 @@ export function HeroSection() {
           <span className="hero-trial-promo__icon" aria-hidden="true"><AutoAwesomeRounded /></span>
           <span className="hero-trial-promo__copy">
             <strong>30 DÍAS GRATIS</strong>
-            <b>Probá TecnoDesk completo durante tu primer mes</b>
-            <small>Sin tarjeta · Sin compromiso · Empezá en minutos</small>
+            <b>Probá TecnoDesk completo durante 30 días</b>
+            <small>Sin tarjeta · Sin compromiso</small>
           </span>
         </div>
         <span className="hero-kicker"><i/> La forma más clara de gestionar tu taller</span>
