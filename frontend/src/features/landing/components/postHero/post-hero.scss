@@ -1178,3 +1178,274 @@
 .audience-grid{gap:20px}.audience-grid article{padding:32px}.audience-grid article>i{width:54px;height:54px}.audience-grid article>i svg{font-size:27px}.audience-grid h3{font-size:20px}.audience-grid p{font-size:16px;line-height:1.65}
 @media(max-width:900px){.story-section{padding:84px 0}.story-grid,.story-grid--reverse{grid-template-columns:1fr;gap:40px}.tracking-flow{grid-template-columns:1fr;max-width:620px}}
 @media(max-width:600px){.story-section{padding:68px 0}.story-copy h2,.audience-heading h2{font-size:clamp(2.2rem,10.5vw,3rem)}.story-copy>p,.audience-heading>p{font-size:16px}.story-points small{font-size:14px}.audience-grid article{padding:25px}.audience-grid h3{font-size:19px}.audience-grid p{font-size:16px}}
+
+/* Mockup legibility */
+.ui-window > header small,
+.technician-card header small,
+.client-phone > header small {
+  font-size: 10px;
+}
+
+.badge {
+  padding: 7px 10px;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.repairs-list > header > button {
+  font-size: 12px;
+}
+
+.list-toolbar label {
+  font-size: 10px;
+}
+
+.list-toolbar button,
+.table-head {
+  font-size: 9px;
+}
+
+.repair-table article > b {
+  font-size: 11px;
+}
+
+.repair-table article strong {
+  font-size: 13px;
+}
+
+.repair-table article small {
+  font-size: 10px;
+}
+
+.repair-detail > header p,
+.device-card p {
+  font-size: 10px;
+}
+
+.device-card small,
+.money-strip small,
+.work-progress label {
+  font-size: 9px;
+}
+
+.device-card strong {
+  font-size: 13px;
+}
+
+.money-strip strong {
+  font-size: 16px;
+}
+
+.repair-timeline small {
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.tech-device strong {
+  font-size: 13px;
+}
+
+.tech-device small,
+.technician-card > label,
+.link-field {
+  font-size: 10px;
+}
+
+.technician-card > button {
+  font-size: 11px;
+}
+
+.client-phone > header span,
+.client-status small,
+.client-status p,
+.client-phone footer small {
+  font-size: 9px;
+}
+
+.client-status strong {
+  font-size: 14px;
+}
+
+.client-timeline small,
+.client-phone footer b {
+  font-size: 10px;
+}
+
+.payment-totals small,
+.balance-bar span {
+  font-size: 10px;
+}
+
+.payment-totals strong {
+  font-size: 18px;
+}
+
+.movements > label {
+  font-size: 11px;
+}
+
+.movements article > span:first-child,
+.movements article small {
+  font-size: 9px;
+}
+
+.movements article strong,
+.movements article > b {
+  font-size: 12px;
+}
+
+.business-dashboard > header > b {
+  font-size: 10px;
+}
+
+.business-stats strong {
+  font-size: 26px;
+}
+
+.business-stats small {
+  font-size: 11px;
+}
+
+.recent-activity > label {
+  font-size: 12px;
+}
+
+.recent-activity strong {
+  font-size: 12px;
+}
+
+.recent-activity small,
+.recent-activity em {
+  font-size: 10px;
+}
+
+@media (max-width: 600px) {
+  .ui-window > header h3 {
+    font-size: 20px;
+  }
+
+  .repairs-list > header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .repairs-list > header > button {
+    flex: 0 0 auto;
+    padding: 9px 10px;
+    font-size: 10px;
+  }
+
+  .list-toolbar > div {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .list-toolbar button {
+    padding: 7px 9px;
+    font-size: 9px;
+  }
+
+  .repair-table article {
+    grid-template-columns: 46px minmax(0, 1fr) auto;
+    gap: 7px;
+    min-height: 68px;
+  }
+
+  .repair-table article > em {
+    display: none;
+  }
+
+  .repair-table article strong {
+    font-size: 12px;
+  }
+
+  .repair-table article small,
+  .repair-table article .badge {
+    font-size: 9px;
+  }
+
+  .money-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .money-strip span {
+    padding: 10px 8px;
+  }
+
+  .money-strip strong {
+    font-size: 14px;
+  }
+
+  .repair-timeline small {
+    font-size: 10px;
+  }
+
+  .link-field span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .client-phone {
+    max-width: 310px;
+  }
+
+  .payment-totals {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .payment-totals article {
+    padding: 12px 9px;
+  }
+
+  .payment-totals strong {
+    font-size: 15px;
+  }
+
+  .movements article {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 7px;
+  }
+
+  .movements article > b {
+    font-size: 11px;
+  }
+
+  .business-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .business-stats article {
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px 8px;
+  }
+
+  .business-stats article > i {
+    width: 6px;
+    height: 38px;
+    flex: 0 0 auto;
+  }
+
+  .business-stats strong {
+    font-size: 22px;
+  }
+
+  .business-stats small {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .recent-activity article {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .recent-activity .badge {
+    font-size: 9px;
+  }
+}

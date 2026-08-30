@@ -11,7 +11,7 @@ export function LandingHeader() {
     <Link className="landing-logo" to="/" onClick={close}><BrandLogo className="landing-brand-image" /><span className="landing-brand-fallback">TecnoDesk<small>Gestión técnica</small></span></Link>
     <IconButton className="landing-menu-button" aria-label={open?'Cerrar menú':'Abrir menú'} aria-expanded={open} onClick={()=>setOpen(v=>!v)}>{open?<CloseRounded/>:<MenuRounded/>}</IconButton>
     <Box component="nav" aria-label="Navegación de la landing" className={open?'is-open':''}>
-      <a href="#funciones" onClick={close}>Funciones</a><a href="#como-funciona" onClick={close}>Cómo funciona</a><a href="#seguimiento" onClick={close}>Seguimiento</a><a href="#preguntas" onClick={close}>Preguntas frecuentes</a>
+      <a href="#funciones" onClick={close}>Funciones</a><a href="#seguimiento" onClick={close}>Seguimiento</a><a href="#preguntas" onClick={close}>Preguntas frecuentes</a>
       <Button component={Link} to="/login" variant="text">Iniciar sesión</Button><Button component={Link} to="/registro" variant="contained">Crear cuenta</Button>
     </Box>
   </div></header>
