@@ -10,3 +10,26 @@
 .auth-page--login .phone-showcase-view{animation:showcaseSlideIn .5s ease both}@keyframes showcaseSlideIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}@media(prefers-reduced-motion:reduce){.auth-page--login .phone-showcase-view{animation:showcaseFade .12s linear}}
 .auth-page--login .phone-stage{top:-14px}.auth-page--login .phone-indicators{bottom:-56px}.auth-page--login .auth-hero footer{left:52px;bottom:42px}
 @media(max-width:1100px){.auth-page--login .phone-stage{top:-10px}.auth-page--login .auth-hero footer{left:38px;bottom:34px}}
+
+/* Keep the auth phone motion subtle across login, registration and recovery. */
+.auth-page:not(.auth-page--login) .phone-stage{animation:phoneFloatGentle 7s ease-in-out infinite}
+.auth-page .phone-shell{animation:phoneTurnGentle 11s ease-in-out infinite}
+.auth-page--login .phone-floating-wrapper{animation:phoneFloatLoginGentle 7s ease-in-out infinite}
+@keyframes phoneFloatGentle{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes phoneFloatLoginGentle{0%,100%{transform:translate3d(0,0,0) rotate(-.25deg)}50%{transform:translate3d(0,-5px,0) rotate(.25deg)}}
+@keyframes phoneTurnGentle{0%,100%{transform:rotateX(4deg) rotateY(-4deg)}50%{transform:rotateX(3deg) rotateY(4deg)}}
+@media(prefers-reduced-motion:reduce){.auth-page:not(.auth-page--login) .phone-stage,.auth-page .phone-shell,.auth-page--login .phone-floating-wrapper{animation:none}}
+
+/* Give the activity cards more breathing room around the phone. */
+.auth-page .float-card--one{left:max(4%,calc(50% - 325px))}
+.auth-page .float-card--two{right:max(3%,calc(50% - 335px))}
+.auth-page .float-card--tracking{right:max(3%,calc(50% - 340px))}
+.auth-page .float-card--budget{left:max(3%,calc(50% - 340px))}
+.auth-page--login .float-card--ready{right:max(2%,calc(50% - 355px))}
+.auth-page--login .float-card--payment{left:max(2%,calc(50% - 350px))}
+@media(max-width:1100px){.auth-page--login .float-card--ready{right:0}.auth-page--login .float-card--payment{left:0}.auth-page .float-card--tracking{right:1%}.auth-page .float-card--budget{left:1%}}
+
+@media(min-width:1101px){
+	.auth-page .float-card--one,.auth-page .float-card--budget,.auth-page .float-card--payment{left:calc(50% - 138px - .5rem);right:auto;translate:-100% 0}
+	.auth-page .float-card--two,.auth-page .float-card--tracking,.auth-page .float-card--ready{left:auto;right:calc(50% - 138px - .5rem);translate:100% 0}
+}
