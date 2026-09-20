@@ -1,5 +1,6 @@
 import { api } from './api'
 import type { Repair } from '../types'
+import type { EquipmentSummary } from './equipmentSales'
 
 export interface ClientOption {
   id: string
@@ -27,6 +28,9 @@ export interface CashMovement {
   repairId: string | null
   clientName: string | null
   origin: 'GENERAL' | 'REPAIR' | 'EQUIPMENT' | 'COMMERCE'
+  resaleDeviceId: string | null
+  resaleKind: 'PURCHASE' | 'REPAIR' | 'PURCHASE_ADJUSTMENT' | 'REPAIR_ADJUSTMENT' | 'SALE' | null
+  resaleVersion: number | null
   createdAt: string
 }
 
@@ -44,6 +48,7 @@ export interface CashMovementsPage {
   pageSize: number
   pages: number
   summary: CashMovementsSummary
+  equipmentSummary?: EquipmentSummary
 }
 
 export interface DashboardSummary {

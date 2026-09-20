@@ -21,6 +21,8 @@ import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 import { permissionsFor } from './config/permissions'
 import { settingsRouter } from './modules/settings/settings.routes'
 import { commerceRouter } from './modules/commerce/commerce.routes'
+import { equipmentSalesRouter } from './modules/equipment-sales/equipment-sales.routes'
+import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
 import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
@@ -314,6 +316,7 @@ app.use('/api/billing', billingRouter)
 app.use('/api/platform-admin', platformAdminRouter)
 app.use('/api', requireSubscriptionWriteAccess)
 app.use('/api/commerce', commerceRouter)
+app.use('/api/equipment-sales', equipmentSalesRouter)
 app.use('/api/team', teamRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/settings', settingsRouter)
@@ -539,6 +542,7 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
   ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
   const incomeToday = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
   const expenseToday = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
+  const equipmentSummary = parsed.data.origin === 'EQUIPMENT' ? await deviceSummary(businessId) : undefined
   return res.json({
     items,
     total,
@@ -546,6 +550,7 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
     pageSize,
     pages: Math.max(1, Math.ceil(total / pageSize)),
     summary: { incomeToday, expenseToday, balanceToday: incomeToday - expenseToday, totalMovements: total },
+    ...(equipmentSummary ? { equipmentSummary } : {}),
   })
 })
 app.post('/api/cash/movements', requirePermission('cash.create'), async (req, res) => {

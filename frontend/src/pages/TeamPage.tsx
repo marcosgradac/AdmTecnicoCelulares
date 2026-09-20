@@ -26,6 +26,7 @@ const emptyCreate: CreateTeamMemberInput & { repeatPassword: string } = {
   firstName: '', lastName: '', email: '', phone: '', password: '', repeatPassword: '', role: 'TECHNICIAN', permissions: ['repairs.view','repairs.create','repairs.update','repairs.changeStatus','repairs.shareTracking','clients.view','clients.create','clients.update','settings.access'],
 }
 const permissionOptions = [
+  ['equipmentSales.view','Ver Venta de equipos'],['equipmentSales.manage','Administrar equipos para reventa'],['equipmentSales.sell','Vender equipos'],
   ['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes'],
   ['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio'],['cash.view','Ver caja'],['cash.create','Registrar caja'],['reports.view','Ver reportes'],['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio'],
 ] as const

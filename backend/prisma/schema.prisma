@@ -90,6 +90,7 @@ model Business {
   commerceProducts   CommerceProduct[]
   commerceSales      CommerceSale[]
   commerceCategories CommerceCategory[]
+  resaleDevices      ResaleDevice[]
 }
 
 model User {
@@ -394,6 +395,13 @@ enum CashMovementType {
 }
 
 model CashMovement {
+  resaleDeviceId String?
+  resaleDevice   ResaleDevice? @relation(fields: [resaleDeviceId], references: [id], onDelete: Restrict)
+  resaleKind     EquipmentCashKind?
+  resaleVersion  Int?
+
+  @@unique([resaleDeviceId, resaleVersion, resaleKind])
+
   id          String           @id @default(cuid())
   businessId  String
   type        CashMovementType
@@ -590,4 +598,43 @@ model SubscriptionAuditLog {
 
   @@index([businessId, createdAt])
   @@index([actorUserId, createdAt])
+}
+
+enum ResaleDeviceStatus {
+  PURCHASED
+  REPAIRING
+  READY_FOR_SALE
+  SOLD
+}
+
+enum EquipmentCashKind {
+  PURCHASE
+  REPAIR
+  PURCHASE_ADJUSTMENT
+  REPAIR_ADJUSTMENT
+  SALE
+}
+
+model ResaleDevice {
+  id                 String @id @default(cuid())
+  businessId         String
+  brand              String
+  model              String
+  purchasePrice      Int
+  repairExpenses     Int @default(0)
+  estimatedSalePrice Int
+  status             ResaleDeviceStatus @default(PURCHASED)
+  version            Int @default(0)
+  actualSalePrice    Int?
+  salePaymentMethod  PaymentMethod?
+  saleCostBasis      Int?
+  soldAt             DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  business           Business @relation(fields: [businessId], references: [id])
+  cashMovements      CashMovement[]
+
+  @@index([businessId, createdAt, id])
+  @@index([businessId, status, createdAt, id])
+  @@index([businessId, soldAt])
 }

@@ -6,6 +6,7 @@ export type Permission =
   | 'reports.view' | 'reports.viewSensitive' | 'settings.access' | 'settings.business.update' | 'settings.repairs.update'
   | 'team.view' | 'team.create' | 'team.update' | 'team.permissions.update' | 'team.deactivate'
   | 'commerce.view' | 'commerce.sell' | 'commerce.manage'
+  | 'equipmentSales.view' | 'equipmentSales.manage' | 'equipmentSales.sell'
   | 'cash:manage' | 'payments:create'
 
 export const hasRole = (user: AuthUser | null, ...roles: AuthUser['role'][]) =>
@@ -20,7 +21,7 @@ export const firstAllowedPath = (user: AuthUser | null) => {
   if (!user) return '/login'
   if (user.role === 'OWNER') return '/admin'
   const candidates: Array<[Permission, string]> = [
-    ['repairs.view', '/admin/reparaciones'], ['clients.view', '/admin/clientes'], ['cash.view', '/admin/caja'], ['commerce.view', '/admin/comercio'],
+    ['repairs.view', '/admin/reparaciones'], ['clients.view', '/admin/clientes'], ['cash.view', '/admin/caja'], ['commerce.view', '/admin/comercio'], ['equipmentSales.view', '/admin/venta-equipos'],
     ['reports.view', '/admin/reportes'], ['team.view', '/admin/empleados'], ['settings.access', '/admin/configuracion'],
   ]
   return candidates.find(([permission]) => canAccess(user, permission))?.[1] ?? '/admin/sin-modulos'

@@ -29,6 +29,7 @@ import { SettingsPage } from './features/settings/SettingsPage'
 import { SupportPage } from './features/settings/SupportPage'
 import { NoModulesPage } from './pages/NoModulesPage'
 import { CommercePageV2 as CommercePage } from './pages/CommercePageV2'
+import { EquipmentSalesPage } from './features/equipmentSales/EquipmentSalesPage'
 
 const PublicLandingLayout=()=> <Outlet/>
 const ParamRedirect=({base}:{base:string})=>{const {id}=useParams();return <Navigate to={`${base}/${id}`} replace/>}
@@ -45,6 +46,7 @@ export default function App(){return <><ScrollToTop/><Routes>
       <Route index element={<PermissionGuard ownerOnly><DashboardRoute/></PermissionGuard>}/><Route path="reparaciones" element={<PermissionGuard permission="repairs.view"><RepairsPage/></PermissionGuard>}/><Route path="reparaciones/nueva" element={<PermissionGuard permission="repairs.create"><Navigate to="/admin/reparaciones?new=1" replace/></PermissionGuard>}/><Route path="reparaciones/:id" element={<PermissionGuard permission="repairs.view"><RepairDetailPage/></PermissionGuard>}/>
       <Route path="clientes" element={<PermissionGuard permission="clients.view"><ClientsPage/></PermissionGuard>}/><Route path="clientes/:id" element={<PermissionGuard permission="clients.view"><ClientDetailPage/></PermissionGuard>}/>
       <Route path="comercio" element={<PermissionGuard permission="commerce.view"><CommercePage/></PermissionGuard>}/>
+      <Route path="venta-equipos" element={<PermissionGuard permission="equipmentSales.view"><EquipmentSalesPage/></PermissionGuard>}/>
       <Route path="caja" element={<PermissionGuard permission="cash.view"><CashPage/></PermissionGuard>}/><Route path="reportes" element={<PermissionGuard permission="reports.view"><Navigate to="/admin/caja" replace/></PermissionGuard>}/>
       <Route path="perfil" element={<ProfilePage/>}/><Route path="empleados" element={<RoleGuard roles={['OWNER']}><TeamPage/></RoleGuard>}/>
       <Route path="suscripcion" element={<PermissionGuard ownerOnly><SubscriptionPage/></PermissionGuard>}/>

@@ -26,6 +26,7 @@
     "test:cash-pagination": "tsx tests/cash-pagination.ts",
     "test:billing": "tsx tests/billing.ts",
     "test:commerce": "tsx tests/commerce.ts && tsx tests/commerce-sqlite.ts",
+    "test:equipment-sales": "tsx tests/equipment-sales.ts && tsx tests/equipment-sales-sqlite.ts",
     "test:performance-access": "tsx tests/performance-access.ts",
     "test:subscription-lifecycle": "node --env-file=.env ./node_modules/tsx/dist/cli.mjs tests/subscription-lifecycle.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
