@@ -22,6 +22,7 @@ import { permissionsFor } from './config/permissions'
 import { settingsRouter } from './modules/settings/settings.routes'
 import { commerceRouter } from './modules/commerce/commerce.routes'
 import { equipmentSalesRouter } from './modules/equipment-sales/equipment-sales.routes'
+import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
 import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
@@ -317,6 +318,7 @@ app.use('/api/platform-admin', platformAdminRouter)
 app.use('/api', requireSubscriptionWriteAccess)
 app.use('/api/commerce', commerceRouter)
 app.use('/api/equipment-sales', equipmentSalesRouter)
+app.use('/api/dashboard', dashboardRouter)
 app.use('/api/team', teamRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/settings', settingsRouter)
