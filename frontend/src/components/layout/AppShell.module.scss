@@ -3,8 +3,8 @@ $header: 72px;
 $sidebar-collapsed: 78px;
 
 .shell { min-height: 100vh; background: #F8F9FC; }
-.drawer { box-sizing: border-box; width: $sidebar-collapsed; height: 100vh; padding: 16px 14px; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #E8EAF0; overflow: hidden; transition: width .24s cubic-bezier(.4,0,.2,1), box-shadow .24s ease; }
-.drawer:hover { width: $sidebar; box-shadow: 10px 0 30px rgba(23,26,35,.08); }
+.drawer { box-sizing: border-box; width: $sidebar-collapsed; height: 100dvh; padding: 16px 14px; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #E8EAF0; overflow: hidden; transition: width .24s cubic-bezier(.4,0,.2,1), box-shadow .24s ease; }
+.drawer:is(:hover, :focus-within) { width: $sidebar; box-shadow: 10px 0 30px rgba(23,26,35,.08); }
 .brand { position: relative; display: flex; align-items: center; justify-content: center; height: 44px; min-height: 44px; padding: 0 0 18px; }
 .logoMark, .logoFull { position: absolute; object-fit: contain; transition: opacity .16s ease; }
 .logoMark { width: 42px; height: 42px; opacity: 1; }
@@ -12,7 +12,9 @@ $sidebar-collapsed: 78px;
 .mobileBrand { display: flex; align-items: center; width: 150px; height: 36px; margin-left: 8px; }
 .mobileBrand img { width: 100%; height: 100%; object-fit: contain; object-position: left center; }
 .navLabel { padding: 0 12px 8px; font-size: 10px !important; font-weight: 800 !important; letter-spacing: .1em !important; color: #9AA0AE; }
-.nav { display: grid; gap: 2px; }
+.nav { display: grid; gap: 4px; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+.nav :global(.MuiListItemButton-root) { min-height: 46px; border-radius: 12px; }
+.nav :global(.Mui-selected) :global(.MuiListItemIcon-root) { color: #5B3FD6; }
 .nav :global(.MuiListItemIcon-root), .bottom :global(.MuiListItemIcon-root) { min-width: 38px; color: #687083; }
 .nav :global(.MuiListItemText-primary), .bottom :global(.MuiListItemText-primary) { font-size: 14px; font-weight: 650; }
 .bottom { margin-top: auto; display: grid; gap: 8px; }
@@ -29,17 +31,18 @@ $sidebar-collapsed: 78px;
 .businessAccessArrow { flex: 0 0 auto; color: #7D8493; font-size: 20px !important; transition: transform .18s ease, color .18s ease; }
 .businessAccess:hover .businessAccessArrow, .businessAccess:focus-visible .businessAccessArrow { transform: translateX(2px); color: #666E7D; }
 .content { padding: calc($header + 28px) 28px 40px calc($sidebar-collapsed + 28px); min-height: 100vh; }
-.inner { max-width: 1480px; margin: 0 auto; }
+.inner { min-width: 0; max-width: 1480px; margin: 0 auto; }
 .repairFab { display: none !important; }
 .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 0; visibility: hidden; white-space: nowrap; transition: opacity .14s ease; }
 .drawer .nav :global(.MuiListItemButton-root), .drawer .bottom :global(.MuiListItemButton-root) { padding-inline: 10px; }
 .drawer .nav :global(.MuiListItemIcon-root), .drawer .bottom :global(.MuiListItemIcon-root) { min-width: 38px; }
-.drawer:hover .logoMark { opacity: 0; }
-.drawer:hover .logoFull { opacity: 1; transition-delay: .05s; }
-.drawer:hover .navLabel, .drawer:hover :global(.MuiListItemText-root), .drawer:hover .account > div:last-child { opacity: 1; visibility: visible; transition-delay: .08s; }
+.drawer:is(:hover, :focus-within) .logoMark { opacity: 0; }
+.drawer:is(:hover, :focus-within) .logoFull { opacity: 1; transition-delay: .05s; }
+.drawer:is(:hover, :focus-within) .navLabel, .drawer:is(:hover, :focus-within) :global(.MuiListItemText-root), .drawer:is(:hover, :focus-within) .account > div:last-child { opacity: 1; visibility: visible; transition-delay: .08s; }
 
 @media (max-width: 899px) {
-  .drawer { width: 272px; overflow: visible; transition: none; }
+  .drawer { width: 272px; overflow: hidden; transition: none; }
+  .drawer:is(:hover, :focus-within) { width: 272px; }
   .drawer .logoMark { opacity: 0; }
   .drawer .logoFull { opacity: 1; }
   .drawer .navLabel, .drawer :global(.MuiListItemText-root), .drawer .account > div:last-child { opacity: 1; visibility: visible; }
@@ -47,7 +50,7 @@ $sidebar-collapsed: 78px;
   .businessAccess { margin-left: 2px; padding: 3px 5px 3px 3px; gap: 6px; }
   .businessAccessName { max-width: 110px; font-size: 13.5px !important; }
   .businessAccessArrow { font-size: 18px !important; }
-  .content { padding: 84px 16px calc(32px + env(safe-area-inset-bottom)); }
+  .content { padding: 84px 16px calc(100px + env(safe-area-inset-bottom)); }
   .repairFab { display: inline-flex !important; position: fixed !important; z-index: 1200; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 8px 24px rgba(38, 25, 94, .24) !important; }
 }
 @media (max-width: 599px) {

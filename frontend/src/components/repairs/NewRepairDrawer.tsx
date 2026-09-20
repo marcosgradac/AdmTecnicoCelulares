@@ -1,5 +1,7 @@
+import { FormSection } from '../admin/AdminPatterns'
+import { useAdminVisual } from '../admin/AdminVisualScope'
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Autocomplete, Box, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { createRepair } from '../../services/repairs'
 import { getClientOptions, type ClientOption } from '../../services/operations'
 import type { Repair, RepairStatus } from '../../types'
@@ -12,6 +14,7 @@ const today = () => { const now=new Date();return `${now.getFullYear()}-${String
 const initial = { brand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, estimatedDeliveryDate: today(), notes: '', status: 'received' as RepairStatus }
 
 export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: { open: boolean; initialClientId?: string; onClose: () => void; onCreated: (repair: Repair) => void }) {
+  const modern = useAdminVisual()
   const [clients, setClients] = useState<ClientOption[]>([])
   const [clientId, setClientId] = useState(initialClientId ?? '')
   const [form, setForm] = useState(initial)
@@ -38,17 +41,17 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   }
   return <><FormDrawer open={open && !clientDrawerOpen} eyebrow="NUEVO INGRESO" title="Nueva reparación" saving={saving} submitLabel="Crear reparación" onClose={close} onSubmit={() => void save()}>
         {error && <Alert severity="error">{error}</Alert>}
-        <Box data-tutorial="repair-form" display="grid" gap={2.2}><Typography variant="h2">Cliente</Typography>
+        <FormSection title="Cliente"><Box data-tutorial="repair-form" display="grid" gap={2.2}>{!modern && <Typography variant="h2">Cliente</Typography>}
         <Autocomplete options={clients} value={client} onChange={(_, value) => setClientId(value?.id ?? '')} getOptionLabel={option => `${option.name}${option.phone ? ` · ${option.phone}` : ''}`} filterOptions={(options, state) => options.filter(option => `${option.name} ${option.phone ?? ''}`.toLowerCase().includes(state.inputValue.toLowerCase()))} noOptionsText="No encontramos ese cliente. Crealo primero desde Clientes." renderInput={params => <TextField {...params} required label="Buscar cliente..." placeholder="Nombre, apellido o teléfono"/>}/>
-        <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button></Box>
-        <Divider/><Typography variant="h2">Dispositivo</Typography>
+        <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button></Box></FormSection>
+        <FormSection legacyHeading legacyDivider title="Dispositivo" description="Datos para identificar el equipo que ingresa.">
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Marca" value={form.brand} onChange={change('brand')} inputProps={{ maxLength: 60 }}/><TextField fullWidth required label="Modelo" value={form.model} onChange={change('model')} inputProps={{ maxLength: 100 }}/></Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="IMEI (opcional)" value={form.imei} onChange={change('imei')} inputProps={{ maxLength: 32 }}/><TextField fullWidth label="Color (opcional)" value={form.color} onChange={change('color')} inputProps={{ maxLength: 60 }}/></Stack>
-        <Divider/><Typography variant="h2">Reparación</Typography>
+        </FormSection><FormSection legacyHeading legacyDivider title={modern ? 'Reparación y presupuesto' : 'Reparación'}>
         <TextField required multiline minRows={3} label="Falla informada" value={form.issue} onChange={change('issue')}/><TextField multiline minRows={2} label="Diagnóstico (opcional)" value={form.diagnosis} onChange={change('diagnosis')}/>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><CurrencyField required fullWidth label="Presupuesto / precio" value={form.total} onValueChange={value=>setForm(current=>({...current,total:value}))} onEmpty={()=>setForm(current=>({...current,total:null}))} error={Boolean(error) && form.total == null} helperText={Boolean(error) && form.total == null ? 'Ingresá un monto' : undefined}/><TextField fullWidth type="date" label="Fecha estimada" value={form.estimatedDeliveryDate} onChange={change('estimatedDeliveryDate')} InputLabelProps={{ shrink: true }}/></Stack>
         <TextField select label="Estado inicial" value={form.status} onChange={change('status')}>{[['received','Recibido'],['review','En revisión'],['budget','Presupuesto informado'],['approved','Presupuesto aceptado'],['repairing','En reparación']].map(([value,label])=><MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>
-        <Divider/><Typography variant="h2">Garantía</Typography>
+        </FormSection><FormSection legacyHeading legacyDivider title={modern ? 'Garantía y observaciones' : 'Garantía'}>
         <TextField select label="Duración de la garantía" value={warrantyPreset} onChange={event => setWarrantyPreset(event.target.value)} helperText="La garantía comienza automáticamente al marcar la reparación como Entregada."><MenuItem value="0">Sin garantía</MenuItem>{[7,15,30,60,90].map(days => <MenuItem key={days} value={String(days)}>{days} días</MenuItem>)}<MenuItem value="custom">Personalizada</MenuItem></TextField>
         {warrantyPreset === 'custom' && <IntegerField
           label="Días de garantía"
@@ -58,5 +61,5 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
           max={365}
         />}
         <TextField multiline minRows={3} label="Observaciones (opcional)" value={form.notes} onChange={change('notes')}/>
-  </FormDrawer><NewClientDrawer open={clientDrawerOpen} onClose={() => setClientDrawerOpen(false)} onCreated={created => { setClients(current => [created, ...current.filter(item => item.id !== created.id)]); setClientId(created.id); setClientDrawerOpen(false) }} /></>
+  </FormSection></FormDrawer><NewClientDrawer open={clientDrawerOpen} onClose={() => setClientDrawerOpen(false)} onCreated={created => { setClients(current => [created, ...current.filter(item => item.id !== created.id)]); setClientId(created.id); setClientDrawerOpen(false) }} /></>
 }

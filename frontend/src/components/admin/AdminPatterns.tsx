@@ -1,0 +1,32 @@
+import type { ReactNode } from 'react'
+import { Box, Button, Divider, Stack, Typography } from '@mui/material'
+import { CloseRounded } from '@mui/icons-material'
+import { useAdminVisual } from './AdminVisualScope'
+
+export function FilterBar({ children, onClear }: { children: ReactNode; onClear?: () => void }) {
+  return <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5} alignItems={{ md: 'center' }} sx={{ mb: 2.5, p: 1.5, bgcolor: '#F7F8FC', borderRadius: 3, '& > *': { minWidth: 0 }, '& .MuiTextField-root': { flex: 1 } }}>
+    {children}{onClear && <Button startIcon={<CloseRounded />} onClick={onClear} sx={{ flexShrink: 0 }}>Limpiar filtros</Button>}
+  </Stack>
+}
+
+export function RecordCard({ title, subtitle, status, actions, children, onOpen }: { title: ReactNode; subtitle?: ReactNode; status?: ReactNode; actions?: ReactNode; children?: ReactNode; onOpen?: () => void }) {
+  return <Box component="article" sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.paper', p: 2, minWidth: 0 }}>
+    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
+      <Box minWidth={0} flex={1}>{status && <Box mb={1.5}>{status}</Box>}{onOpen ? <Button onClick={onOpen} sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left', color: 'text.primary', fontSize: '1rem', fontWeight: 750, overflowWrap: 'anywhere' }}>{title}</Button> : <Typography fontWeight={750} sx={{ overflowWrap: 'anywhere' }}>{title}</Typography>}{subtitle && <Typography component="div" variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{subtitle}</Typography>}</Box>
+      {actions && <Box flexShrink={0}>{actions}</Box>}
+    </Stack>
+    {children && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.5, pt: 2, mt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>{children}</Box>}
+  </Box>
+}
+
+export function RecordField({ label, children, color }: { label: string; children: ReactNode; color?: string }) {
+  return <Box minWidth={0}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="body2" fontWeight={650} color={color} sx={{ overflowWrap: 'anywhere', fontVariantNumeric: 'tabular-nums' }}>{children}</Typography></Box>
+}
+
+export function FormSection({ title, description, children, legacyHeading, legacyDivider }: { title: string; description?: string; children: ReactNode; legacyHeading?: boolean; legacyDivider?: boolean }) {
+  const modern = useAdminVisual()
+  if (!modern) return <>{legacyDivider && <Divider />}{legacyHeading && <Typography variant="h2">{title}</Typography>}{children}</>
+  return <Stack component="section" spacing={2} sx={{ p: { xs: 2, sm: 2.5 }, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+    <Box><Typography variant="subtitle2" fontWeight={750}>{title}</Typography>{description && <Typography variant="body2" color="text.secondary" mt={.5}>{description}</Typography>}</Box>{children}
+  </Stack>
+}

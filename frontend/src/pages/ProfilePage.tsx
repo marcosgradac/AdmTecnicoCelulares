@@ -1,3 +1,4 @@
+import { PageHeader } from '../components/common/PageHeader'
 import { useEffect, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import { Alert, Avatar, Box, Button, Card, CardContent, Stack, TextField, Typography } from '@mui/material'
@@ -19,11 +20,9 @@ export function ProfilePage() {
     } finally { setSaving(false) }
   }
   return <Box maxWidth={720}>
-    <Typography variant="overline" color="primary.main" fontWeight={800}>CUENTA</Typography>
-    <Typography variant="h1">Mi perfil</Typography>
-    <Typography color="text.secondary" mt={.5} mb={3}>Administrá tus datos personales de TecnoDesk.</Typography>
+    <PageHeader eyebrow="CUENTA" title="Mi perfil" description="Administrá tus datos personales de TecnoDesk." />
     <Card><CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-      <Stack direction="row" spacing={2} alignItems="center" mb={3}><Avatar sx={{ width: 58, height: 58, bgcolor: 'primary.main' }}>{user.fullName.charAt(0).toUpperCase()}</Avatar><Box><Typography fontWeight={850} fontSize={18}>{user.fullName}</Typography><Typography color="text.secondary">{user.email}</Typography><Typography variant="caption">{user.business.name} · {user.role === 'OWNER' ? 'Propietario' : 'Técnico'}</Typography></Box></Stack>
+      <Stack direction="row" spacing={2} alignItems="center" mb={3}><Avatar sx={{ width: 58, height: 58, bgcolor: 'primary.main' }}>{user.fullName.charAt(0).toUpperCase()}</Avatar><Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Typography fontWeight={850} fontSize={18}>{user.fullName}</Typography><Typography color="text.secondary">{user.email}</Typography><Typography variant="caption">{user.business.name} · {user.role === 'OWNER' ? 'Propietario' : 'Técnico'}</Typography></Box></Stack>
       <Stack component="form" onSubmit={submit} spacing={2}>
         {message && <Alert severity={message.type}>{message.text}</Alert>}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

@@ -1,7 +1,8 @@
+import { AdminVisualScope } from '../admin/AdminVisualScope'
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { alpha, AppBar, Avatar, Box, Drawer, Fab, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, Inventory2Rounded, LockRounded, LogoutRounded, MenuRounded, PeopleRounded, PhoneIphoneRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
+import { alpha, AppBar, Avatar, Box, Drawer, Fab, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, Inventory2Rounded, LockRounded, LogoutRounded, MenuRounded, PeopleRounded, PhoneIphoneRounded, PointOfSaleRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
@@ -56,12 +57,12 @@ function AppShellContent() {
     <Drawer open={mobile && open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: 272 } }}>{drawer}</Drawer>
     <AppBar className={styles.header} position="fixed" color="inherit" elevation={0}><Toolbar>
       {mobile && <IconButton aria-label="Abrir menú" onClick={() => setOpen(true)}><MenuRounded /></IconButton>}
-      {mobile ? <Box className={styles.mobileBrand}><BrandLogo /></Box> : <TextField placeholder="Buscar reparación, cliente o equipo…" aria-label="Búsqueda global" className={styles.search} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }} />}
+      {mobile ? <Box className={styles.mobileBrand}><BrandLogo /></Box> : <Box><Typography variant="caption" color="text.secondary">Espacio de trabajo</Typography><Typography fontWeight={700} fontSize={14}>{navItems.find(item => selected(item.path))?.label ?? 'Mi perfil'}</Typography></Box>}
       <Box flex={1} />
       <Box className={styles.businessAccess} role="button" tabIndex={0} aria-label="Abrir Mi negocio" onClick={() => go('/admin/configuracion#negocio')} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') go('/admin/configuracion#negocio') }} sx={theme => ({ borderColor: 'transparent', '&:hover, &:focus-visible': { bgcolor: alpha(theme.palette.primary.main, .055), borderColor: alpha(theme.palette.primary.main, .12), boxShadow: `0 4px 14px ${alpha(theme.palette.primary.main, .07)}` } })}><Avatar variant="rounded" src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'contain' } }} sx={theme => ({ border: `1.5px solid ${theme.palette.primary.main}`, bgcolor: alpha(theme.palette.primary.main, .045), color: 'primary.main', boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, .1)}` })}>{businessInitials}</Avatar><Typography className={styles.businessAccessName}>{user?.business.name}</Typography><ChevronRightRounded className={styles.businessAccessArrow} /></Box>
     </Toolbar></AppBar>
     <ProfileCompletionDialog /><TrialStartedDialog /><GuidedTutorial />
-    <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><Outlet /></Box></Box>
+    <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><AdminVisualScope enabled={/^\/admin\/(reparaciones(?:\/|$)|clientes$|caja$|comercio$|venta-equipos$|empleados$|garantias$|perfil$|sin-modulos$)/.test(location.pathname)}><Outlet /></AdminVisualScope></Box></Box>
     {mobile && canAccess(user, 'repairs.create') && <Fab data-tutorial="new-repair" color="primary" aria-label="Crear nueva reparación" className={styles.repairFab} onClick={() => go('/admin/reparaciones/nueva')}><BuildRounded /></Fab>}
   </Box>
 }
