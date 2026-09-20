@@ -31,6 +31,13 @@ enum PaymentMethod {
   OTHER
 }
 
+enum CashMovementOrigin {
+  GENERAL
+  REPAIR
+  EQUIPMENT
+  COMMERCE
+}
+
 enum CashMovementType {
   INCOME
   EXPENSE
@@ -50,6 +57,9 @@ model Business {
   stockItems    StockItem[]
   cashMovements CashMovement[]
   payments      Payment[]
+  commerceProducts CommerceProduct[]
+  commerceSales CommerceSale[]
+  commerceCategories CommerceCategory[]
 }
 
 model User {
@@ -168,10 +178,83 @@ model CashMovement {
   description String
   amount      Int
   method      PaymentMethod?
+  origin      CashMovementOrigin @default(GENERAL)
   repairId    String?
   clientName  String?
+  commerceSaleId String? @unique
   createdAt   DateTime         @default(now())
   business    Business         @relation(fields: [businessId], references: [id])
+  commerceSale CommerceSale?   @relation(fields: [commerceSaleId], references: [id])
 
   @@index([businessId])
+  @@index([businessId, origin, createdAt, id])
+}
+
+model CommerceProduct {
+  id           String        @id @default(cuid())
+  businessId   String
+  name         String
+  category     String
+  purchaseCost Int
+  salePrice    Int
+  currentStock Int           @default(0)
+  minimumStock Int           @default(0)
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  business     Business      @relation(fields: [businessId], references: [id])
+  saleLines    CommerceSaleLine[]
+
+  @@index([businessId, active])
+  @@index([businessId, category])
+  @@index([businessId, currentStock])
+}
+
+model CommerceCategory {
+  id         String   @id @default(cuid())
+  businessId String
+  name       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id])
+
+  @@unique([businessId, name])
+  @@index([businessId])
+}
+
+model CommerceSale {
+  // Nullable only for sales created before idempotency was introduced.
+  idempotencyKey  String?
+  id              String            @id @default(cuid())
+  businessId      String
+  total           Int
+  costOfGoodsSold Int
+  profit          Int
+  paymentMethod   PaymentMethod
+  createdAt       DateTime          @default(now())
+  business        Business          @relation(fields: [businessId], references: [id])
+  lines           CommerceSaleLine[]
+  cashMovement    CashMovement?
+
+  @@unique([businessId, idempotencyKey])
+
+  @@index([businessId, createdAt])
+}
+
+model CommerceSaleLine {
+  id            String          @id @default(cuid())
+  saleId        String
+  productId     String
+  productName   String
+  quantity      Int
+  unitCost      Int
+  unitPrice     Int
+  lineTotal     Int
+  lineCost      Int
+  lineProfit    Int
+  sale          CommerceSale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product       CommerceProduct @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId, saleId])
 }

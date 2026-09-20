@@ -6,13 +6,13 @@ import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { randomBytes } from 'node:crypto'
-import { CashMovementType, PaymentMethod, Prisma, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
+import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
 import { requireSubscriptionWriteAccess } from './modules/billing/billing.middleware'
-import { addDays, getBusinessAccessStatus } from './modules/billing/billing.service'
+import { addDays, assertFeatureAccess, getBusinessAccessStatus } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { passwordChangeRouter } from './modules/auth/password-change.routes'
@@ -20,6 +20,7 @@ import { reportsRouter } from './modules/reports/reports.routes'
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 import { permissionsFor } from './config/permissions'
 import { settingsRouter } from './modules/settings/settings.routes'
+import { commerceRouter } from './modules/commerce/commerce.routes'
 import { securityConfig } from './config/security'
 import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
@@ -312,6 +313,7 @@ app.use('/api', limitAuthenticatedWrites)
 app.use('/api/billing', billingRouter)
 app.use('/api/platform-admin', platformAdminRouter)
 app.use('/api', requireSubscriptionWriteAccess)
+app.use('/api/commerce', commerceRouter)
 app.use('/api/team', teamRouter)
 app.use('/api/reports', reportsRouter)
 app.use('/api/settings', settingsRouter)
@@ -480,7 +482,7 @@ app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'
     })
     if (changed.count !== 1) return null
     const created = await tx.payment.create({ data: { businessId, ...parsed.data, repairId: repair.id, clientId: repair.clientId } })
-    await tx.cashMovement.create({ data: { businessId, type: 'INCOME', description: `Pago reparación #${repair.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: repair.id, clientName: repair.client.name } })
+    await tx.cashMovement.create({ data: { businessId, type: 'INCOME', origin: 'REPAIR', description: `Pago reparación #${repair.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: repair.id, clientName: repair.client.name } })
     return created
   })
   return payment
@@ -517,14 +519,19 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
   const parsed = z.object({
     page: z.coerce.number().int().positive().default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(10),
+    origin: z.nativeEnum(CashMovementOrigin).optional(),
   }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Parámetros de paginación inválidos' })
 
   const { page, pageSize } = parsed.data
   const businessId = authOf(req).businessId
+  if (parsed.data.origin === 'COMMERCE') {
+    try { await assertFeatureAccess(businessId, 'commerce') }
+    catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos validar Comercio.' }) }
+  }
   const { start, end } = getArgentinaDayBounds(new Date())
-  const where = { businessId }
-  const todayWhere = { businessId, createdAt: { gte: start, lt: end } }
+  const where = { businessId, ...(parsed.data.origin ? { origin: parsed.data.origin } : {}) }
+  const todayWhere = { ...where, createdAt: { gte: start, lt: end } }
   const [items, total, grouped] = await prisma.$transaction([
     prisma.cashMovement.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
     prisma.cashMovement.count({ where }),
@@ -542,8 +549,13 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
   })
 })
 app.post('/api/cash/movements', requirePermission('cash.create'), async (req, res) => {
-  const parsed = z.object({ type: z.nativeEnum(CashMovementType), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
+  const parsed = z.object({ type: z.nativeEnum(CashMovementType), origin: z.nativeEnum(CashMovementOrigin).default('GENERAL'), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })
+  if (parsed.data.origin === 'COMMERCE') {
+    try { await assertFeatureAccess(authOf(req).businessId, 'commerce') }
+    catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos validar Comercio.' }) }
+    return res.status(400).json({ success: false, message: 'Registrá ventas y egresos desde el módulo Comercio.' })
+  }
   return res.status(201).json(await prisma.cashMovement.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
 })
 

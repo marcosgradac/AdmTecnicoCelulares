@@ -27,7 +27,7 @@ const emptyCreate: CreateTeamMemberInput & { repeatPassword: string } = {
 }
 const permissionOptions = [
   ['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes'],
-  ['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['cash.view','Ver caja'],['cash.create','Registrar caja'],['reports.view','Ver reportes'],['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio'],
+  ['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio'],['cash.view','Ver caja'],['cash.create','Registrar caja'],['reports.view','Ver reportes'],['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio'],
 ] as const
 function PermissionFields({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) { return <Box><Typography fontWeight={800} mb={1}>Permisos del técnico</Typography><Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={.5}>{permissionOptions.map(([permission,label]) => <FormControlLabel key={permission} control={<Checkbox checked={value.includes(permission)} disabled={disabled} onChange={e => onChange(e.target.checked ? [...value, permission] : value.filter(item => item !== permission))} />} label={label} />)}</Box></Box> }
 

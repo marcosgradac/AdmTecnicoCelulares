@@ -7,6 +7,7 @@ export const PERMISSIONS = [
   'reports.view', 'reports.viewSensitive',
   'settings.access', 'settings.business.update', 'settings.repairs.update',
   'team.view', 'team.create', 'team.update', 'team.permissions.update', 'team.deactivate',
+  'commerce.view', 'commerce.sell', 'commerce.manage',
 ] as const
 
 export type Permission = typeof PERMISSIONS[number]

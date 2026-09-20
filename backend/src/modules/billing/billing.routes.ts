@@ -2,9 +2,11 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireRole } from '../../middlewares/auth'
-import { assertWithinLimit, ensureSubscription, serializeSubscription, subscriptionUsage } from './billing.service'
+import { assertWithinLimit, ensureSubscription, getFeatureEntitlements, serializeSubscription, subscriptionUsage } from './billing.service'
 
 export const billingRouter = Router()
+// Authenticated staff need feature availability, without access to billing details.
+billingRouter.get('/entitlements', async (req, res) => res.json(await getFeatureEntitlements(authOf(req).businessId)))
 billingRouter.use(requireRole('OWNER'))
 
 billingRouter.get('/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))

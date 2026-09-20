@@ -86,9 +86,9 @@ export const addBillingMonth = (date: Date) => {
 }
 
 export const PLAN_ENTITLEMENTS = {
-  INITIAL: { repairLimitPerPeriod: 40, trackingLimitPerPeriod: 10, dashboardComplete: false, advancedReports: false },
-  PROFESSIONAL: { repairLimitPerPeriod: 150, trackingLimitPerPeriod: null, dashboardComplete: true, advancedReports: true },
-  COMPLETE: { repairLimitPerPeriod: null, trackingLimitPerPeriod: null, dashboardComplete: true, advancedReports: true },
+  INITIAL: { repairLimitPerPeriod: 40, trackingLimitPerPeriod: 10, dashboardComplete: false, advancedReports: false, commerce: false },
+  PROFESSIONAL: { repairLimitPerPeriod: 150, trackingLimitPerPeriod: null, dashboardComplete: true, advancedReports: true, commerce: false },
+  COMPLETE: { repairLimitPerPeriod: null, trackingLimitPerPeriod: null, dashboardComplete: true, advancedReports: true, commerce: true },
 } as const satisfies Record<PlanCode, object>
 
 export async function ensureSubscription(businessId: string, now = new Date()) {
@@ -143,9 +143,20 @@ export async function assertWithinLimit(businessId: string, resource: 'repairs' 
   return usage
 }
 
-export async function assertFeatureAccess(businessId: string, feature: 'dashboardComplete' | 'advancedReports') {
-  const { entitlements } = await subscriptionUsage(businessId)
+export async function assertFeatureAccess(businessId: string, feature: 'dashboardComplete' | 'advancedReports' | 'commerce') {
+  let entitlements
+  if (feature === 'commerce') {
+    entitlements = await getFeatureEntitlements(businessId)
+  } else {
+    entitlements = (await subscriptionUsage(businessId)).entitlements
+  }
   if (!entitlements[feature]) throw Object.assign(new Error('Esta función no está incluida en tu plan.'), { statusCode: 403 })
+}
+
+export async function getFeatureEntitlements(businessId: string) {
+  const subscription = await refreshSubscriptionStatus(businessId)
+  const retainsTrialAccess = subscription.trialEndsAt > new Date() && (!subscription.currentPeriodStart || subscription.currentPeriodStart >= subscription.trialEndsAt)
+  return PLAN_ENTITLEMENTS[subscription.status === 'TRIALING' || retainsTrialAccess ? 'COMPLETE' : subscription.planCode]
 }
 
 export async function approvePayment(paymentId: string, actorUserId: string, now = new Date()) {

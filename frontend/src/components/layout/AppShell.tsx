@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { alpha, AppBar, Avatar, Box, Drawer, Fab, IconButton, InputAdornment, List, ListItemButton, ListItemIcon, ListItemText, TextField, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, LogoutRounded, MenuRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
+import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, Inventory2Rounded, LockRounded, LogoutRounded, MenuRounded, PeopleRounded, PointOfSaleRounded, SearchRounded, SettingsRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
 import { canAccess, type Permission } from '../../auth/permissions'
 import styles from './AppShell.module.scss'
 import { BrandLogo } from '../brand/BrandLogo'
-import { SubscriptionProvider } from '../../features/billing/SubscriptionContext'
+import { SubscriptionProvider, useSubscription } from '../../features/billing/SubscriptionContext'
 import { SubscriptionBanner } from '../../features/billing/SubscriptionBanner'
 import { TrialStartedDialog } from '../../features/billing/TrialStartedDialog'
 import { GuidedTutorial } from '../onboarding/GuidedTutorial'
@@ -16,6 +16,7 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
   { label: 'Inicio', path: '/admin', icon: DashboardRounded, ownerOnly: true },
   { label: 'Reparaciones', path: '/admin/reparaciones', icon: BuildRounded, permission: 'repairs.view' },
   { label: 'Clientes', path: '/admin/clientes', icon: PeopleRounded, permission: 'clients.view' },
+  { label: 'Comercio', path: '/admin/comercio', icon: Inventory2Rounded, permission: 'commerce.view' },
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash.view' },
   { label: 'Empleados', path: '/admin/empleados', icon: GroupsRounded, permission: 'team.view' },
   { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded, ownerOnly: true },
@@ -25,6 +26,7 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
 
 function AppShellContent() {
   const { user, logout } = useAuth()
+  const { commerceEnabled } = useSubscription()
   const [open, setOpen] = useState(false)
   const theme = useTheme()
   const mobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -35,12 +37,13 @@ function AppShellContent() {
   const initials = user?.fullName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U'
   const businessInitials = user?.business.name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'TD'
   const roleLabel = user?.role === 'OWNER' ? 'Propietario' : 'Técnico'
+
   const visibleNavItems = navItems.filter(item => (!item.ownerOnly || user?.role === 'OWNER') && (!item.permission || canAccess(user, item.permission)))
 
   const drawer = <Box className={styles.drawer}>
     <Box className={styles.brand}><BrandLogo compact className={styles.logoMark} /><BrandLogo className={styles.logoFull} /></Box>
     <Typography className={styles.navLabel}>MENÚ PRINCIPAL</Typography>
-    <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => <Tooltip key={path} title={!mobile ? label : ''} placement="right"><ListItemButton data-tutorial={path === '/admin/clientes' ? 'clients' : path === '/admin/reparaciones' ? 'repairs' : path === '/admin/caja' ? 'cash' : undefined} selected={selected(path)} onClick={() => go(path)}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={label} /></ListItemButton></Tooltip>)}</List>
+    <List className={styles.nav}>{visibleNavItems.map(({ label, path, icon: Icon }) => { const locked = path === '/admin/comercio' && !commerceEnabled; const NavIcon = locked ? LockRounded : Icon; return <Tooltip key={path} title={!mobile ? locked ? `${label} · Plan Completo` : label : ''} placement="right"><ListItemButton data-tutorial={path === '/admin/clientes' ? 'clients' : path === '/admin/reparaciones' ? 'repairs' : path === '/admin/caja' ? 'cash' : undefined} selected={selected(path)} onClick={() => go(path)}><ListItemIcon><NavIcon /></ListItemIcon><ListItemText primary={locked ? `${label} · Bloqueado` : label} /></ListItemButton></Tooltip> })}</List>
     <Box className={styles.bottom}>
       <ListItemButton onClick={logout}><ListItemIcon><LogoutRounded /></ListItemIcon><ListItemText primary="Cerrar sesión" /></ListItemButton>
       <Box className={styles.account}><Avatar src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'contain' } }}>{initials}</Avatar><Box><Typography fontSize={13} fontWeight={700}>{user?.fullName}</Typography><Typography variant="caption" color="text.secondary">{user?.business.name} · {roleLabel}</Typography></Box></Box>
