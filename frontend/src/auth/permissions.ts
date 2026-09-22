@@ -17,12 +17,22 @@ export const canAccess = (user: AuthUser | null, permission: Permission) => {
   return Boolean(user && (user.role === 'OWNER' || user.permissions.includes(normalized)))
 }
 
+export const noModulesPath = '/admin/sin-modulos'
+
+// Cada entrada de esta tabla debe ser una pantalla que el usuario pueda abrir realmente con ese permiso.
+// Quedan fuera a propósito, para no crear ciclos de redirección:
+// - `reports.view`: la interfaz de Reportes se retiró y /admin/reportes sólo redirige. Usarlo como
+//   destino rebotaba entre /admin/reportes y /admin/caja cuando el usuario no tenía `cash.view`.
+// - `team.view`: /admin/empleados está restringido a OWNER, así que un técnico rebotaría entre
+//   /admin/empleados, /inicio y /admin.
+// Volver a agregar una entrada sólo cuando exista la pantalla y su guard coincida con el permiso.
+const technicianStartRoutes: Array<[Permission, string]> = [
+  ['repairs.view', '/admin/reparaciones'], ['clients.view', '/admin/clientes'], ['cash.view', '/admin/caja'], ['commerce.view', '/admin/comercio'], ['equipmentSales.view', '/admin/venta-equipos'],
+  ['settings.access', '/admin/configuracion'],
+]
+
 export const firstAllowedPath = (user: AuthUser | null) => {
   if (!user) return '/login'
   if (user.role === 'OWNER') return '/admin'
-  const candidates: Array<[Permission, string]> = [
-    ['repairs.view', '/admin/reparaciones'], ['clients.view', '/admin/clientes'], ['cash.view', '/admin/caja'], ['commerce.view', '/admin/comercio'], ['equipmentSales.view', '/admin/venta-equipos'],
-    ['reports.view', '/admin/reportes'], ['team.view', '/admin/empleados'], ['settings.access', '/admin/configuracion'],
-  ]
-  return candidates.find(([permission]) => canAccess(user, permission))?.[1] ?? '/admin/sin-modulos'
+  return technicianStartRoutes.find(([permission]) => canAccess(user, permission))?.[1] ?? noModulesPath
 }

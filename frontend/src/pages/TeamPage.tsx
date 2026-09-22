@@ -26,10 +26,14 @@ const apiMessage = (error: unknown, fallback: string) =>
 const emptyCreate: CreateTeamMemberInput & { repeatPassword: string } = {
   firstName: '', lastName: '', email: '', phone: '', password: '', repeatPassword: '', role: 'TECHNICIAN', permissions: ['repairs.view','repairs.create','repairs.update','repairs.changeStatus','repairs.shareTracking','clients.view','clients.create','clients.update','settings.access'],
 }
+// `reports.view` se retiró temporalmente de esta lista: la pantalla de Reportes ya no existe, así que
+// otorgarlo no habilitaba ninguna ruta y podía dejar al técnico en un ciclo de redirecciones.
+// El permiso sigue existiendo en el backend y los valores ya guardados no se tocan: el formulario de
+// edición parte de `member.permissions`, por lo que un acceso existente se conserva tal cual.
 const permissionOptions = [
   ['equipmentSales.view','Ver Venta de equipos'],['equipmentSales.manage','Administrar equipos para reventa'],['equipmentSales.sell','Vender equipos'],
   ['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes'],
-  ['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio'],['cash.view','Ver caja'],['cash.create','Registrar caja'],['reports.view','Ver reportes'],['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio'],
+  ['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio'],['cash.view','Ver caja'],['cash.create','Registrar caja'],['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio'],
 ] as const
 function PermissionFields({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) { return <FormSection title="Permisos del técnico" description="Accesos asignados a esta persona."><Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={.5}>{permissionOptions.map(([permission,label]) => <FormControlLabel key={permission} control={<Checkbox checked={value.includes(permission)} disabled={disabled} onChange={e => onChange(e.target.checked ? [...value, permission] : value.filter(item => item !== permission))} />} label={label} />)}</Box></FormSection> }
 

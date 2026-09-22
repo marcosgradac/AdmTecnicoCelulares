@@ -4,6 +4,8 @@ import { Box, CircularProgress } from '@mui/material'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { RoleGuard } from './auth/RoleGuard'
 import { PermissionGuard } from './auth/PermissionGuard'
+import { useAuth } from './auth/AuthContext'
+import { canAccess, firstAllowedPath } from './auth/permissions'
 import { AppShell } from './components/layout/AppShell'
 import { ScrollToTop } from './components/routing/ScrollToTop'
 import { LandingPage } from './features/landing/pages/LandingPage'
@@ -32,6 +34,10 @@ import { CommercePageV2 as CommercePage } from './pages/CommercePageV2'
 import { EquipmentSalesPage } from './features/equipmentSales/EquipmentSalesPage'
 
 const PublicLandingLayout=()=> <Outlet/>
+// /admin/reportes queda sólo como alias: la pantalla de Reportes se retiró, así que Caja es el destino
+// más cercano para quien puede verla. Sin `cash.view` se envía al primer módulo realmente navegable
+// (o a la pantalla de "sin módulos"), nunca de nuevo a /admin/reportes, para que no haya ciclos.
+const ReportsAliasRedirect=()=>{const {user}=useAuth();return <Navigate to={canAccess(user,'cash.view')?'/admin/caja':firstAllowedPath(user)} replace/>}
 const ParamRedirect=({base}:{base:string})=>{const {id}=useParams();return <Navigate to={`${base}/${id}`} replace/>}
 const DashboardPage=lazy(()=>import('./pages/dashboard/DashboardPage').then(module=>({default:module.DashboardPage})))
 const DashboardRoute=()=> <Suspense fallback={<Box minHeight={240} display="grid" sx={{placeItems:'center'}}><CircularProgress size={28}/></Box>}><DashboardPage/></Suspense>
@@ -47,7 +53,7 @@ export default function App(){return <><ScrollToTop/><Routes>
       <Route path="clientes" element={<PermissionGuard permission="clients.view"><ClientsPage/></PermissionGuard>}/><Route path="clientes/:id" element={<PermissionGuard permission="clients.view"><ClientDetailPage/></PermissionGuard>}/>
       <Route path="comercio" element={<PermissionGuard permission="commerce.view"><CommercePage/></PermissionGuard>}/>
       <Route path="venta-equipos" element={<PermissionGuard permission="equipmentSales.view"><EquipmentSalesPage/></PermissionGuard>}/>
-      <Route path="caja" element={<PermissionGuard permission="cash.view"><CashPage/></PermissionGuard>}/><Route path="reportes" element={<PermissionGuard permission="reports.view"><Navigate to="/admin/caja" replace/></PermissionGuard>}/>
+      <Route path="caja" element={<PermissionGuard permission="cash.view"><CashPage/></PermissionGuard>}/><Route path="reportes" element={<ReportsAliasRedirect/>}/>
       <Route path="perfil" element={<ProfilePage/>}/><Route path="empleados" element={<RoleGuard roles={['OWNER']}><TeamPage/></RoleGuard>}/>
       <Route path="suscripcion" element={<PermissionGuard ownerOnly><SubscriptionPage/></PermissionGuard>}/>
       <Route path="equipo" element={<Navigate to="/admin/empleados" replace/>}/><Route path="equipos/*" element={<Navigate to="/admin/reparaciones" replace/>}/><Route path="estadisticas" element={<Navigate to="/admin" replace/>}/><Route path="garantias" element={<PermissionGuard ownerOnly><WarrantiesPage/></PermissionGuard>}/><Route path="configuracion" element={<PermissionGuard permission="settings.access"><SettingsPage/></PermissionGuard>}/><Route path="configuracion/soporte" element={<PermissionGuard permission="settings.access"><SupportPage/></PermissionGuard>}/><Route path="sin-modulos" element={<NoModulesPage/>}/>
