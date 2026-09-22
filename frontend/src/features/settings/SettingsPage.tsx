@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Alert, Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material'
-import { BusinessRounded, ChevronRightRounded, ContactSupportRounded, DeleteOutlineRounded, GroupsRounded, ImageRounded, InfoOutlineRounded, NotificationsRounded, PaymentsRounded, SchoolRounded, SecurityRounded, SettingsRounded, UploadRounded, WorkspacePremiumRounded } from '@mui/icons-material'
+import { BusinessRounded, ChevronRightRounded, ContactSupportRounded, DeleteOutlineRounded, GroupsRounded, ImageRounded, SchoolRounded, SecurityRounded, UploadRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { PageHeader } from '../../components/common/PageHeader'
@@ -20,9 +20,6 @@ const entries = [
   ['equipo', 'Equipo', 'Miembros y permisos', GroupsRounded],
   ['suscripcion', 'Suscripción', 'Plan y estado de tu cuenta', WorkspacePremiumRounded],
   ['seguridad', 'Seguridad', 'Contraseña y sesiones', SecurityRounded],
-  ['reparaciones', 'Reparaciones', 'Preferencias operativas', SettingsRounded],
-  ['caja', 'Caja y pagos', 'Medios de pago registrados', PaymentsRounded],
-  ['notificaciones', 'Notificaciones', 'Avisos del sistema', NotificationsRounded],
   ['tutorial', 'Tutorial', 'Guía rápida de TecnoDesk', SchoolRounded],
   ['soporte', 'Soporte', 'Ayuda y canales de contacto', ContactSupportRounded],
 ] as const
@@ -30,9 +27,6 @@ const emptyBusiness: BusinessSettings = { name: '', phone: null, address: null, 
 const sameBusiness = (a: BusinessSettings, b: BusinessSettings) => a.name.trim() === b.name.trim() && (a.phone?.trim() || null) === (b.phone?.trim() || null) && (a.address?.trim() || null) === (b.address?.trim() || null)
 function ConfirmDialog({ open, title, text, confirmLabel, onClose, onConfirm }: { open: boolean; title: string; text: string; confirmLabel: string; onClose: () => void; onConfirm: () => void }) {
   return <Dialog open={open} onClose={onClose}><DialogTitle>{title}</DialogTitle><DialogContent><Typography>{text}</Typography></DialogContent><DialogActions><Button onClick={onClose}>Cancelar</Button><Button color="error" variant="contained" onClick={onConfirm}>{confirmLabel}</Button></DialogActions></Dialog>
-}
-function InfoNote({ children }: { children: string }) {
-  return <Stack direction="row" spacing={1.5} alignItems="flex-start" sx={{ p: 1.75, borderRadius: 2, bgcolor: 'action.hover' }}><InfoOutlineRounded color="primary" fontSize="small" /><Typography variant="body2" color="text.secondary">{children}</Typography></Stack>
 }
 export function SettingsPage() {
   const { user, logout, refreshUser } = useAuth(), navigate = useNavigate(), location = useLocation()
@@ -135,15 +129,6 @@ export function SettingsPage() {
           <PasswordChangeFlow onCompleted={() => { logout(); navigate('/login', { replace: true }) }} />
           <Box><Typography variant="h6" mb={1}>Otras sesiones</Typography><Button color="warning" variant="outlined" onClick={() => setConfirm('sessions')}>Cerrar otras sesiones</Button></Box>
         </Stack>
-      </SettingsSection>
-      <SettingsSection id="reparaciones" title="Reparaciones" description="Preferencias operativas de reparaciones.">
-        <InfoNote>Las garantías, el seguimiento público y el estado de cada reparación se configuran al crear o editar la reparación. Todavía no hay preferencias globales para este módulo.</InfoNote>
-      </SettingsSection>
-      <SettingsSection id="caja" title="Caja y pagos" description="Medios de pago usados en los movimientos.">
-        <InfoNote>TecnoDesk registra pagos en efectivo, transferencia, tarjeta u otro medio al momento de cada movimiento o venta. Todavía no se pueden configurar medios de pago personalizados ni pasarelas automáticas.</InfoNote>
-      </SettingsSection>
-      <SettingsSection id="notificaciones" title="Notificaciones" description="Avisos que envía TecnoDesk.">
-        <InfoNote>Hoy TecnoDesk envía correos para validar cambios de contraseña y verificar pagos de suscripción. Las preferencias de notificación personalizadas estarán disponibles más adelante.</InfoNote>
       </SettingsSection>
       <SettingsSection id="tutorial" title="Tutorial de TecnoDesk" description="Volvé a recorrer las funciones principales del sistema."><Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={1.5}><Button variant="outlined" startIcon={<SchoolRounded />} onClick={openGuidedTutorial}>Ver tutorial</Button>{user?.tutorialSeen && <Typography variant="body2" color="success.main" fontWeight={750}>Completado ✓</Typography>}</Stack></SettingsSection>
     </Stack></Box>
