@@ -38,7 +38,7 @@ export function SettingsPage() {
   const { user, logout, refreshUser } = useAuth(), navigate = useNavigate(), location = useLocation()
   const logoInput = useRef<HTMLInputElement>(null)
   const [business, setBusiness] = useState(emptyBusiness), [savedBusiness, setSavedBusiness] = useState(emptyBusiness), [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [logoSaving, setLogoSaving] = useState(false), [notice, setNotice] = useState(''), [error, setError] = useState('')
-  const [teamCount, setTeamCount] = useState<number | null>(null), [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [teamCount, setTeamCount] = useState<number | null>(null), [teamError, setTeamError] = useState(false), [subscription, setSubscription] = useState<Subscription | null>(null), [subscriptionError, setSubscriptionError] = useState(false)
   const [confirm, setConfirm] = useState<'logo' | 'sessions' | null>(null)
   const owner = user?.role === 'OWNER'
   const dirty = !sameBusiness(business, savedBusiness)
@@ -46,8 +46,8 @@ export function SettingsPage() {
   useEffect(() => { void getSettings().then(data => { setBusiness(data.business); setSavedBusiness(data.business) }).catch(() => setError('No pudimos cargar la configuración.')).finally(() => setLoading(false)) }, [])
   useEffect(() => {
     if (!owner) return
-    void getTeam().then(team => setTeamCount(team.filter(member => member.isActive).length)).catch(() => setTeamCount(null))
-    void getSubscription().then(setSubscription).catch(() => setSubscription(null))
+    void getTeam().then(team => setTeamCount(team.filter(member => member.isActive).length)).catch(() => setTeamError(true))
+    void getSubscription().then(setSubscription).catch(() => setSubscriptionError(true))
   }, [owner])
   useEffect(() => {
     if (!loading && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -120,14 +120,14 @@ export function SettingsPage() {
         </Stack>
       </SettingsSection>
       <SettingsSection id="equipo" title="Equipo" description="Resumen de tus usuarios. La gestión completa se hace en Empleados.">
-        {owner ? <Stack spacing={2}><Chip icon={<GroupsRounded />} label={teamCount === null ? 'Cargando…' : `${teamCount} miembro${teamCount === 1 ? '' : 's'} activo${teamCount === 1 ? '' : 's'}`} color="primary" variant="outlined" sx={{ alignSelf: 'flex-start' }} /><Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}><Button variant="contained" onClick={() => navigate('/admin/empleados')}>Gestionar equipo</Button><Button variant="outlined" onClick={() => navigate('/admin/empleados#permisos')}>Permisos</Button></Stack></Stack> : <Typography color="text.secondary">Esta sección está reservada al propietario.</Typography>}
+        {owner ? <Stack spacing={2}>{teamError ? <Typography color="text.secondary">No pudimos cargar el resumen del equipo.</Typography> : <Chip icon={<GroupsRounded />} label={teamCount === null ? 'Cargando…' : `${teamCount} miembro${teamCount === 1 ? '' : 's'} activo${teamCount === 1 ? '' : 's'}`} color="primary" variant="outlined" sx={{ alignSelf: 'flex-start' }} />}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}><Button variant="contained" onClick={() => navigate('/admin/empleados')}>Gestionar equipo</Button><Button variant="outlined" onClick={() => navigate('/admin/empleados')}>Gestionar permisos</Button></Stack></Stack> : <Typography color="text.secondary">Esta sección está reservada al propietario.</Typography>}
       </SettingsSection>
       <SettingsSection id="suscripcion" title="Suscripción" description="Resumen de tu plan. Para cambiar de plan o pagar, ingresá a Suscripción.">
-        {owner ? (subscription ? <Stack spacing={2}>
+        {owner ? (subscriptionError ? <Typography color="text.secondary">No pudimos cargar los datos de suscripción.</Typography> : subscription ? <Stack spacing={2}>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"><Chip label={planName[subscription.effectivePlanCode]} color="primary" /><Chip label={statusLabels[subscription.status]} color={subscription.status === 'ACTIVE' ? 'success' : subscription.status === 'TRIALING' ? 'info' : 'warning'} variant="outlined" /></Stack>
           <Typography variant="body2" color="text.secondary">{subscription.status === 'TRIALING' ? `Te quedan ${subscription.daysRemaining} día${subscription.daysRemaining === 1 ? '' : 's'} de prueba.` : subscription.access.expiresAt ? `Vigencia hasta ${new Date(subscription.access.expiresAt).toLocaleDateString('es-AR')}.` : 'Sin vencimiento registrado.'}</Typography>
           <Button variant="contained" sx={{ alignSelf: 'flex-start' }} onClick={() => navigate('/admin/suscripcion')}>Ver planes / Gestionar suscripción</Button>
-        </Stack> : <Typography color="text.secondary">No pudimos cargar los datos de suscripción.</Typography>) : <Typography color="text.secondary">Esta sección está reservada al propietario.</Typography>}
+        </Stack> : <Typography color="text.secondary">Cargando…</Typography>) : <Typography color="text.secondary">Esta sección está reservada al propietario.</Typography>}
       </SettingsSection>
       <SettingsSection id="seguridad" title="Seguridad" description="Contraseña y sesiones de tu usuario.">
         <Stack spacing={3}>
