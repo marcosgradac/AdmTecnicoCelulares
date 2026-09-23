@@ -91,6 +91,27 @@ export const PLAN_ENTITLEMENTS = {
   COMPLETE: { repairLimitPerPeriod: null, trackingLimitPerPeriod: null, dashboardComplete: true, advancedReports: true, commerce: true },
 } as const satisfies Record<PlanCode, object>
 
+/** Suspende el acceso real del negocio con un bloqueo manual coherente con calculateAccountAccessStatus. */
+export function buildSuspendSubscriptionUpdate(now = new Date()): Prisma.SubscriptionUpdateInput {
+  return { status: 'SUSPENDED', manuallyBlockedAt: now, manualBlockReason: 'ADMINISTRATIVE', manualBlockNote: null }
+}
+
+/** Restaura el acceso con un período nuevo desde hoy, limpiando gracia y bloqueos manuales. */
+export function buildReactivateSubscriptionUpdate(now = new Date(), days = 30): Prisma.SubscriptionUpdateInput {
+  const currentPeriodEnd = addDays(now, days)
+  return { status: 'ACTIVE', currentPeriodStart: now, currentPeriodEnd, accessExpiresAt: currentPeriodEnd, graceEndsAt: null, manuallyBlockedAt: null, manualBlockReason: null, manualBlockNote: null }
+}
+
+/** Extiende el acceso real: sobre el trial si la cuenta sigue en prueba, o desde el vencimiento vigente (o desde hoy si ya venció). */
+export function buildCourtesyDaysUpdate(subscription: Subscription, days: number, now = new Date()): Prisma.SubscriptionUpdateInput {
+  const base = subscription.accessExpiresAt && subscription.accessExpiresAt > now ? subscription.accessExpiresAt : now
+  const next = addDays(base, days)
+  const shared = { accessExpiresAt: next, graceEndsAt: null, manuallyBlockedAt: null, manualBlockReason: null, manualBlockNote: null }
+  return subscription.status === 'TRIALING'
+    ? { ...shared, trialEndsAt: next }
+    : { ...shared, status: 'ACTIVE', currentPeriodEnd: next }
+}
+
 export async function ensureSubscription(businessId: string, now = new Date()) {
   const existing = await prisma.subscription.findUnique({ where: { businessId }, include: { plan: true } })
   if (existing) return existing

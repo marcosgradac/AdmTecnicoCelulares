@@ -58,7 +58,7 @@ export function RenewDialog({ open, target, saving, error, initialDays = 30, onC
 export function ExpiryDialog({ open, target, saving, error, onClose, onConfirm }: { open: boolean; target: Target | null; saving: boolean; error?: string; onClose: () => void; onConfirm: (date: string, graceDaysOverride: number | null) => void }) {
   const [date, setDate] = useState('')
   const [grace, setGrace] = useState('')
-  useEffect(() => { if (open && target) { setDate(toDateInput(target.access.expiresAt)); setGrace(target.graceDaysOverride ? String(target.graceDaysOverride) : '') } }, [open, target])
+  useEffect(() => { if (open && target) { setDate(toDateInput(target.access.expiresAt)); setGrace(target.graceDaysOverride !== null && target.graceDaysOverride !== undefined ? String(target.graceDaysOverride) : '') } }, [open, target])
   const parsedGrace = grace.trim() === '' ? null : Number(grace)
   const graceValid = parsedGrace === null || (Number.isInteger(parsedGrace) && parsedGrace >= 0 && parsedGrace <= 60)
   return <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">

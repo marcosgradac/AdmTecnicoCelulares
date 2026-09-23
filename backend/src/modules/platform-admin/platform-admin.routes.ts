@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireSuperAdmin } from '../../middlewares/auth'
-import { addDays, approvePayment, calculateAccountAccessStatus, getBillingLifecycleSettings, invalidateBillingLifecycleSettingsCache, subscriptionUsage } from '../billing/billing.service'
+import { addDays, approvePayment, buildCourtesyDaysUpdate, buildReactivateSubscriptionUpdate, buildSuspendSubscriptionUpdate, calculateAccountAccessStatus, getBillingLifecycleSettings, invalidateBillingLifecycleSettingsCache, subscriptionUsage } from '../billing/billing.service'
 import { limitSuperAdminWrites } from '../../middlewares/security'
 
 export const platformAdminRouter = Router()
@@ -126,15 +126,18 @@ platformAdminRouter.patch('/subscriptions/:id', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Acción inválida' })
   const current = await prisma.subscription.findUnique({ where: { id: req.params.id } })
   if (!current) return res.status(404).json({ success: false, message: 'Suscripción no encontrada' })
+  if (parsed.data.action === 'SUSPEND' && current.businessId === authOf(req).businessId) return res.status(409).json({ success: false, message: 'No podés suspender la cuenta desde la que administrás la plataforma' })
+  const now = new Date()
   const data = parsed.data.action === 'CHANGE_PLAN' && parsed.data.planCode ? { planCode: parsed.data.planCode }
-    : parsed.data.action === 'ADD_COURTESY_DAYS' && parsed.data.days ? { currentPeriodEnd: addDays(current.currentPeriodEnd ?? current.trialEndsAt, parsed.data.days), ...(current.status === 'SUSPENDED' ? { status: 'ACTIVE' as const } : {}) }
-    : parsed.data.action === 'SUSPEND' ? { status: 'SUSPENDED' as const }
-    : parsed.data.action === 'REACTIVATE' ? { status: 'ACTIVE' as const, currentPeriodStart: new Date(), currentPeriodEnd: addDays(new Date(), 30), graceEndsAt: null }
+    : parsed.data.action === 'ADD_COURTESY_DAYS' && parsed.data.days ? buildCourtesyDaysUpdate(current, parsed.data.days, now)
+    : parsed.data.action === 'SUSPEND' ? buildSuspendSubscriptionUpdate(now)
+    : parsed.data.action === 'REACTIVATE' ? buildReactivateSubscriptionUpdate(now)
     : null
   if (!data) return res.status(400).json({ success: false, message: 'Faltan datos para la acción' })
   const updated = await prisma.$transaction(async tx => {
     const subscription = await tx.subscription.update({ where: { id: current.id }, data })
-    await tx.subscriptionAuditLog.create({ data: { actorUserId: authOf(req).userId, businessId: current.businessId, action: parsed.data.action, metadata: parsed.data } })
+    if (parsed.data.action === 'SUSPEND' || parsed.data.action === 'REACTIVATE') await tx.user.updateMany({ where: { businessId: current.businessId }, data: { tokenVersion: { increment: 1 } } })
+    await tx.subscriptionAuditLog.create({ data: { actorUserId: authOf(req).userId, businessId: current.businessId, action: parsed.data.action, metadata: { ...parsed.data, previousExpiresAt: current.accessExpiresAt, newExpiresAt: subscription.accessExpiresAt } } })
     return subscription
   })
   return res.json(updated)

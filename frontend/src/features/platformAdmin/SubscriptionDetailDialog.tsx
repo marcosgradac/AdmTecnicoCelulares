@@ -70,7 +70,8 @@ export function SubscriptionDetailDialog({ subscriptionId, onClose, onChanged }:
               <RecordField label="Plan">{subscription.plan.name} · {formatARS(subscription.plan.priceARS)}</RecordField>
               <RecordField label="Vigencia">{subscriptionPeriodLabel(subscription)}</RecordField>
               <RecordField label="Vencimiento de acceso">{formatLong(subscription.accessExpiresAt)}</RecordField>
-              <RecordField label="Inicio del período">{formatLong(subscription.trialStartedAt)}</RecordField>
+              <RecordField label="Inicio de prueba">{formatLong(subscription.trialStartedAt)}</RecordField>
+              {subscription.currentPeriodStart && <RecordField label="Inicio del período pago">{formatLong(subscription.currentPeriodStart)}</RecordField>}
               <RecordField label="Fin de prueba">{formatLong(subscription.trialEndsAt)}</RecordField>
               <RecordField label="Fin del período pago">{formatLong(subscription.currentPeriodEnd)}</RecordField>
               <RecordField label="Fin de gracia">{formatLong(subscription.graceEndsAt)}</RecordField>
@@ -129,13 +130,13 @@ export function SubscriptionDetailDialog({ subscriptionId, onClose, onChanged }:
     <Dialog open={dialog === 'ADD_COURTESY_DAYS'} onClose={closeDialog} fullWidth maxWidth="xs">
       <DialogTitle>Agregar días de cortesía</DialogTitle>
       <DialogContent><Stack spacing={2} mt={.5}>
-        <Typography variant="body2" color="text.secondary">Se suman días al vencimiento actual ({formatLong(subscription?.accessExpiresAt)}). Si la cuenta estaba suspendida, vuelve a activa.</Typography>
+        <Typography variant="body2" color="text.secondary">Se suman días al acceso actual ({formatLong(subscription?.accessExpiresAt)}); si ya venció, cuentan desde hoy. Si la cuenta estaba suspendida o bloqueada, vuelve a activa.</Typography>
         <TextField type="number" label="Días a agregar" value={days} onChange={event => setDays(Math.max(1, Math.min(365, Number(event.target.value) || 0)))} inputProps={{ min: 1, max: 365 }} />
         <Stack direction="row" gap={1} flexWrap="wrap">{[7, 15, 30].map(value => <Chip key={value} label={`+${value} días`} clickable onClick={() => setDays(value)} color={days === value ? 'primary' : 'default'} variant={days === value ? 'filled' : 'outlined'} />)}</Stack>
       </Stack></DialogContent>
       <DialogActions><Button onClick={closeDialog}>Cancelar</Button><Button variant="contained" disabled={action.saving || days < 1} onClick={() => void runAction({ action: 'ADD_COURTESY_DAYS', days }, `${days} días de cortesía agregados.`)}>{action.saving ? 'Guardando…' : 'Agregar días'}</Button></DialogActions>
     </Dialog>
-    <ConfirmDialog open={dialog === 'SUSPEND'} title="Suspender suscripción" description="El negocio pierde el acceso hasta que la reactives. Sus datos quedan guardados." confirmLabel="Suspender" destructive saving={action.saving} onClose={closeDialog} onConfirm={() => void runAction({ action: 'SUSPEND' }, 'Suscripción suspendida.')} />
-    <ConfirmDialog open={dialog === 'REACTIVATE'} title="Reactivar suscripción" description="La suscripción vuelve a estado activo con 30 días de vigencia desde hoy." confirmLabel="Reactivar" saving={action.saving} onClose={closeDialog} onConfirm={() => void runAction({ action: 'REACTIVATE' }, 'Suscripción reactivada.')} />
+    <ConfirmDialog open={dialog === 'SUSPEND'} title="Suspender suscripción" description="El negocio pierde el acceso de inmediato y sus sesiones activas se cierran. Sus datos quedan guardados y el acceso se restablece al reactivar." confirmLabel="Suspender" destructive saving={action.saving} onClose={closeDialog} onConfirm={() => void runAction({ action: 'SUSPEND' }, 'Suscripción suspendida.')} />
+    <ConfirmDialog open={dialog === 'REACTIVATE'} title="Reactivar suscripción" description="La suscripción vuelve a estado activo con 30 días de vigencia desde hoy, se limpia cualquier bloqueo y se restablece el acceso del negocio." confirmLabel="Reactivar" saving={action.saving} onClose={closeDialog} onConfirm={() => void runAction({ action: 'REACTIVATE' }, 'Suscripción reactivada.')} />
   </Dialog>
 }

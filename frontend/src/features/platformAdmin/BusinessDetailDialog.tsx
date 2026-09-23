@@ -28,11 +28,12 @@ function ResumenTab({ business }: { business: AdminBusinessDetail }) {
       <Field label="Clientes">{business._count.clients}</Field>
       <Field label="Movimientos de caja">{business._count.cashMovements}</Field>
       <Field label="Vencimiento">{formatLong(business.access?.expiresAt)}</Field>
-      <Field label="Días de gracia">{business.access ? `${business.access.graceDays} días${business.subscription?.graceDaysOverride ? ' (personalizado)' : ''}` : '—'}</Field>
+      <Field label="Días de gracia">{business.access ? `${business.access.graceDays} días${(business.subscription?.graceDaysOverride ?? null) !== null ? ' (personalizado)' : ''}` : '—'}</Field>
       <Field label="Bloqueo estimado">{formatLong(business.access?.graceEndsAt)}</Field>
       <Field label="Alta en la plataforma">{formatDate(business.createdAt)}</Field>
-      <Field label="Inicio del período">{formatLong(business.subscription?.trialStartedAt)}</Field>
-      <Field label="Renovación">{formatDate(business.subscription?.updatedAt)}</Field>
+      <Field label="Inicio de prueba">{formatLong(business.subscription?.trialStartedAt)}</Field>
+      {business.subscription?.currentPeriodStart && <Field label="Inicio del período pago">{formatLong(business.subscription.currentPeriodStart)}</Field>}
+      <Field label="Última actualización">{formatDate(business.subscription?.updatedAt)}</Field>
     </Box>
     <Divider />
     <Box>

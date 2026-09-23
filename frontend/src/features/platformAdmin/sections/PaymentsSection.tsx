@@ -86,7 +86,7 @@ export function PaymentsSection({ refreshToken, onDataChanged }: { refreshToken:
               : <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.paper', overflow: 'hidden' }}><PaymentTable rows={rows} loading={list.loading} onApprove={setApproving} onReject={setRejecting} /></Box>}
         </Stack>}
     <ConfirmDialog open={Boolean(approving)} title="Aprobar pago" confirmLabel="Aprobar pago" saving={action.saving} error={action.error} onClose={() => { setApproving(null); action.clear() }} onConfirm={() => void runApprove()}
-      description={approving ? <>Se activa el plan <b>{approving.plan?.name ?? approving.planCode}</b> del negocio <b>{approving.business?.name ?? ''}</b> con el pago informado de <b>{formatARS(approving.reportedAmount)}</b>. La vigencia se extiende un mes desde el vencimiento actual.</> : ''} />
+      description={approving ? <>Se activa el plan <b>{approving.plan?.name ?? approving.planCode}</b> del negocio <b>{approving.business?.name ?? ''}</b> con el pago informado de <b>{formatARS(approving.reportedAmount)}</b>. Si la cuenta está vigente, el período se extiende un mes desde el vencimiento actual; si está vencida, el nuevo período comienza hoy.</> : ''} />
     <RejectPaymentDialog open={Boolean(rejecting)} businessName={rejecting?.business?.name} saving={action.saving} error={action.error} onClose={() => { setRejecting(null); action.clear() }} onConfirm={reason => void runReject(reason)} />
   </Stack>
 }

@@ -8,16 +8,20 @@ export const apiErrorMessage = (error: unknown, fallback = 'No pudimos cargar la
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-/** Carga un recurso del panel manteniendo separados los estados de carga, error y datos. */
+/** Carga un recurso del panel manteniendo separados los estados de carga, error y datos.
+ *  Al cambiar de key se descartan los datos anteriores; al recargar la misma key se conservan mientras refresca. */
 export function usePlatformResource<T>(load: () => Promise<T>, key: string, enabled = true) {
   const [state, setState] = useState<ResourceState<T>>({ data: null, loading: enabled, error: '' })
   const [tick, setTick] = useState(0)
   const loadRef = useRef(load)
   loadRef.current = load
+  const keyRef = useRef(key)
   useEffect(() => {
     if (!enabled) return
     let active = true
-    setState(current => ({ data: current.data, loading: true, error: '' }))
+    const keyChanged = keyRef.current !== key
+    keyRef.current = key
+    setState(current => ({ data: keyChanged ? null : current.data, loading: true, error: '' }))
     loadRef.current()
       .then(data => { if (active) setState({ data, loading: false, error: '' }) })
       .catch(error => { if (active) setState({ data: null, loading: false, error: apiErrorMessage(error) }) })
