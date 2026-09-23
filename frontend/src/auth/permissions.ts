@@ -18,6 +18,7 @@ export const canAccess = (user: AuthUser | null, permission: Permission) => {
 }
 
 export const noModulesPath = '/admin/sin-modulos'
+export const platformAdminPath = '/platform-admin'
 
 // Cada entrada de esta tabla debe ser una pantalla que el usuario pueda abrir realmente con ese permiso.
 // Quedan fuera a propósito, para no crear ciclos de redirección:
@@ -31,8 +32,13 @@ const technicianStartRoutes: Array<[Permission, string]> = [
   ['settings.access', '/admin/configuracion'],
 ]
 
+// El Super Admin administra la plataforma completa, así que su destino posterior al login es /platform-admin.
+// Esto no crea ciclos: /platform-admin sólo exige `platformRole === 'SUPER_ADMIN'`, y `/admin` sigue siendo
+// accesible de forma manual (su negocio asociado) porque este helper no se usa para resolver `/admin`.
+// Un usuario normal (platformRole `USER`) conserva exactamente el comportamiento anterior.
 export const firstAllowedPath = (user: AuthUser | null) => {
   if (!user) return '/login'
+  if (user.platformRole === 'SUPER_ADMIN') return platformAdminPath
   if (user.role === 'OWNER') return '/admin'
   return technicianStartRoutes.find(([permission]) => canAccess(user, permission))?.[1] ?? noModulesPath
 }
