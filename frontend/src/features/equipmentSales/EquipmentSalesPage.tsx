@@ -1,7 +1,7 @@
-import { FilterBar } from '../../components/admin/AdminPatterns'
+import { FilterBar, ListPagination } from '../../components/admin/AdminPatterns'
 import { useEffect, useState } from 'react'
 import { AddRounded, ArrowForwardRounded, BuildRounded, CheckCircleRounded, PaymentsRounded, PhoneIphoneRounded, SearchRounded, TrendingUpRounded } from '@mui/icons-material'
-import { Alert, Box, Button, Card, CardContent, Chip, Grid, InputAdornment, MenuItem, Stack, TablePagination, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, Chip, Grid, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { canAccess } from '../../auth/permissions'
@@ -67,7 +67,7 @@ export function EquipmentSalesPage() {
         <TextField select size="small" label="Estado" value={filters.status} onChange={event => setFilters(current => ({ ...current, page: 0, status: event.target.value as '' | EquipmentStatus }))} sx={{ minWidth: { sm: 210 } }}><MenuItem value="">Todos los estados</MenuItem>{Object.entries(statusLabels).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>
       </FilterBar>
       {loading ? <UiState loading /> : error ? <UiState title="No pudimos cargar los equipos" description={error} action={() => setListRetry(value => value + 1)} actionLabel="Reintentar" /> : devices.length ? <EquipmentDeviceList devices={devices} canManage={canManage} canSell={canSell} onEdit={setEditor} onSell={setSelling} /> : <UiState title={filters.search || filters.status ? 'No encontramos equipos' : 'Tu próximo equipo empieza acá'} description={filters.search || filters.status ? 'Probá otra búsqueda o cambiá el estado.' : 'Registrá una compra y acompañá el equipo hasta su venta.'} action={canManage && !filters.search && !filters.status ? () => setEditor(null) : undefined} actionLabel="Nuevo equipo" />}
-      {!error && total > 0 && <TablePagination component="div" count={total} page={filters.page} rowsPerPage={20} rowsPerPageOptions={[20]} onPageChange={(_, page) => setFilters(current => ({ ...current, page }))} labelRowsPerPage="Equipos por página" labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`} getItemAriaLabel={type => ({ first: 'Primera página', last: 'Última página', next: 'Página siguiente', previous: 'Página anterior' })[type]} />}
+      {!error && <ListPagination count={total} page={filters.page} rowsPerPage={20} onPageChange={next => setFilters(current => ({ ...current, page: next }))} />}
     </CardContent></Card>
     {editor !== undefined && <EquipmentEditor key={editor?.id ?? 'new'} device={editor} onClose={() => setEditor(undefined)} onSaved={refresh} onRefresh={refresh} />}
     {selling && <EquipmentSaleDrawer key={selling.id} device={selling} onClose={() => setSelling(null)} onSaved={refresh} onRefresh={refresh} />}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AutorenewRounded, BlockRounded, CalendarMonthRounded, LockOpenRounded, SearchRounded, StorefrontRounded } from '@mui/icons-material'
-import { Alert, Box, Button, FormControl, InputAdornment, InputLabel, MenuItem, Pagination, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { FilterBar, RecordCard, RecordField } from '../../../components/admin/AdminPatterns'
+import { Alert, Box, Button, FormControl, InputAdornment, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { FilterBar, ListPagination, RecordCard, RecordField } from '../../../components/admin/AdminPatterns'
 import { RowActionsMenu, type RowAction } from '../../../components/common/RowActionsMenu'
 import { TableSkeleton } from '../../../components/common/TableSkeleton'
 import { formatDate } from '../../billing/billing.utils'
@@ -115,10 +115,7 @@ export function BusinessesSection({ refreshToken, onDataChanged }: { refreshToke
               ? <Stack spacing={1.5}>{rows.map(row => <BusinessCard key={row.id} row={row} onOpen={() => setDetailId(row.id)} actions={actions} />)}</Stack>
               : <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.paper', overflow: 'hidden' }}><BusinessTable rows={rows} loading={list.loading} onOpen={setDetailId} actions={actions} /></Box>}
         </Stack>}
-    {data && data.pages > 1 && <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-      <Typography variant="caption" color="text.secondary">Página {data.page} de {data.pages}</Typography>
-      <Pagination count={data.pages} page={data.page} onChange={(_, value) => setPage(value)} shape="rounded" />
-    </Stack>}
+    {data && <ListPagination count={data.total} page={data.page - 1} rowsPerPage={pageSize} onPageChange={next => setPage(next + 1)} />}
     <BusinessDetailDialog businessId={detailId} onClose={() => setDetailId(null)} onChanged={onDataChanged} />
     {actions.element}
   </Stack>

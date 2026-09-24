@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { SearchRounded, WorkspacePremiumRounded } from '@mui/icons-material'
-import { Alert, Box, Button, FormControl, InputAdornment, InputLabel, MenuItem, Pagination, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { FilterBar, RecordCard, RecordField } from '../../../components/admin/AdminPatterns'
+import { Alert, Box, Button, FormControl, InputAdornment, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { FilterBar, ListPagination, RecordCard, RecordField } from '../../../components/admin/AdminPatterns'
 import { TableSkeleton } from '../../../components/common/TableSkeleton'
 import { formatARS, formatDate } from '../../billing/billing.utils'
 import { getAdminSubscriptions, type AdminSubscriptionRow, type SubscriptionStatus } from '../platformAdmin.api'
@@ -94,10 +94,7 @@ export function SubscriptionsSection({ refreshToken, onDataChanged }: { refreshT
               ? <Stack spacing={1.5}>{visible.map(row => <SubscriptionCard key={row.id} row={row} onOpen={() => setDetailId(row.id)} />)}</Stack>
               : <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.paper', overflow: 'hidden' }}><SubscriptionTable rows={visible} loading={list.loading} onOpen={setDetailId} /></Box>}
         </Stack>}
-    {pages > 1 && <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
-      <Typography variant="caption" color="text.secondary">Página {current} de {pages}</Typography>
-      <Pagination count={pages} page={current} onChange={(_, value) => setPage(value)} shape="rounded" />
-    </Stack>}
+    <ListPagination count={rows.length} page={current - 1} rowsPerPage={pageSize} onPageChange={next => setPage(next + 1)} />
     <SubscriptionDetailDialog subscriptionId={detailId} onClose={() => setDetailId(null)} onChanged={() => { setNotice('Suscripción actualizada.'); onDataChanged() }} />
   </Stack>
 }

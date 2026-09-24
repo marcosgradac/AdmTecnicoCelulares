@@ -48,7 +48,6 @@ function DashboardContent() {
       {summary.charts && <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', xl: summary.charts.incomeByArea.length > 1 ? 'repeat(2, minmax(0, 1fr))' : '1fr' }, gap: 2 }}><Card><CardContent><Typography variant="h2">Estados de reparación</Typography><Typography variant="body2" color="text.secondary" mt={.5} mb={2}>Todos los registros, según su estado actual.</Typography><RepairStatusChart data={summary.charts.byStatus} /></CardContent></Card>{summary.charts.incomeByArea.length > 1 && <Card><CardContent><Typography variant="h2">Ingresos por área</Typography><Typography variant="body2" color="text.secondary" mt={.5} mb={2}>{periodLabels[period]} · origen de los ingresos.</Typography><IncomeAreaChart data={summary.charts.incomeByArea} /></CardContent></Card>}</Box>}
       <ModuleSummaries modules={summary.modules} />
       <RecentActivity items={summary.activity} />
-      <Typography variant="caption" color="text.secondary">Actualizado {new Date(summary.generatedAt).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}</Typography>
     </>}
   </Box>
 }

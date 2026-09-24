@@ -1,7 +1,19 @@
 import type { ReactNode } from 'react'
 import { Box, Button, Divider, Stack, Typography } from '@mui/material'
-import { CloseRounded } from '@mui/icons-material'
+import { alpha } from '@mui/material/styles'
+import { ChevronLeftRounded, ChevronRightRounded, CloseRounded } from '@mui/icons-material'
 import { useAdminVisual } from './AdminVisualScope'
+
+export function ListPagination({ page, count, rowsPerPage, onPageChange, disabled }: { page: number; count: number; rowsPerPage: number; onPageChange: (page: number) => void; disabled?: boolean }) {
+  const pages = Math.max(1, Math.ceil(count / rowsPerPage))
+  if (count <= 0 || pages <= 1) return null
+  const current = Math.min(Math.max(page, 0), pages - 1)
+  return <Stack component="nav" aria-label="Paginación del listado" direction="row" alignItems="center" justifyContent="center" spacing={{ xs: 0.75, sm: 1 }} sx={{ mt: 2.5, pt: 2, borderTop: '1px solid', borderColor: 'divider', flexWrap: 'wrap', rowGap: 1 }}>
+    <Button size="small" variant="outlined" startIcon={<ChevronLeftRounded />} disabled={disabled || current === 0} onClick={() => onPageChange(current - 1)} aria-label="Página anterior" sx={{ '& .MuiButton-startIcon': { display: { xs: 'none', sm: 'inherit' } } }}>Anterior</Button>
+    <Typography component="span" variant="body2" fontWeight={700} color="primary.main" sx={{ px: { xs: 1.25, sm: 1.75 }, py: 0.6, borderRadius: 2.5, bgcolor: theme => alpha(theme.palette.primary.main, 0.09), fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>Página {current + 1} de {pages}</Typography>
+    <Button size="small" variant="outlined" endIcon={<ChevronRightRounded />} disabled={disabled || current >= pages - 1} onClick={() => onPageChange(current + 1)} aria-label="Página siguiente" sx={{ '& .MuiButton-endIcon': { display: { xs: 'none', sm: 'inherit' } } }}>Siguiente</Button>
+  </Stack>
+}
 
 export function FilterBar({ children, onClear }: { children: ReactNode; onClear?: () => void }) {
   return <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5} alignItems={{ md: 'center' }} sx={{ mb: 2.5, p: 1.5, bgcolor: '#F7F8FC', borderRadius: 3, '& > *': { minWidth: 0 }, '& .MuiTextField-root': { flex: 1 } }}>

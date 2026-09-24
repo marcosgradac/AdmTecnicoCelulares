@@ -14,3 +14,14 @@ export const formatDate = (value: string) => {
     year: 'numeric',
   }).format(date)
 }
+
+export const formatTime = (value: string) => {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) return ''
+
+  return new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}

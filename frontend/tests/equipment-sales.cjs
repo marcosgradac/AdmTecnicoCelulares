@@ -92,7 +92,7 @@ async function main() {
   await page.settle()
   assert.equal(calls.length, 1)
   assert.equal(summaries, 1)
-  page.find(n => n.type === 'TablePagination').props.onPageChange(null, 1)
+  page.find(n => n.type === 'ListPagination').props.onPageChange(1)
   await page.settle()
   field('Buscar por marca o modelo').onChange({ target: { value: 's' } })
   await page.settle(false)
