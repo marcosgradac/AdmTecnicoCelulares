@@ -4,7 +4,6 @@ import axios from 'axios'
 import { useAuth } from '../auth/AuthContext'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { LoginForm } from '../components/auth/LoginForm'
-import { SecurityHighlights } from '../components/auth/SecurityHighlights'
 import { checkApiHealth } from '../services/api'
 import { firstAllowedPath } from '../auth/permissions'
 import { Alert, Button } from '@mui/material'
@@ -51,10 +50,9 @@ export function LoginPage() {
   }
 
   if (blockedAudience) return <AuthLayout variant="reset-password" title={blockedAudience==='OWNER'?'Tu cuenta está temporalmente bloqueada':'Acceso temporalmente suspendido'} description={blockedAudience==='OWNER'?'El período de acceso de TecnoDesk finalizó. Tus datos siguen guardados.':'El acceso de este negocio está temporalmente suspendido.'}><Alert severity="warning">{blockedAudience==='OWNER'?'Contactá con TecnoDesk para reactivar tu cuenta.':'Contactá al propietario del negocio.'}</Alert><Button onClick={()=>{setBlockedAudience(null);setForm({email:'',password:''})}}>Ingresar con otra cuenta</Button></AuthLayout>
-  return <AuthLayout title="Bienvenido de nuevo" description="Ingresá a tu espacio de trabajo de TecnoDesk.">
+  return <AuthLayout title="Bienvenido de nuevo" description="Ingresá a tu espacio de trabajo y seguí gestionando reparaciones, clientes y pagos en un solo lugar.">
     <LoginForm email={form.email} password={form.password} saving={saving} error={error} captchaRequired={captchaRequired} captchaToken={captchaToken} captchaResetKey={captchaResetKey} onCaptchaToken={setCaptchaToken} onSubmit={submit}
       onEmailChange={email => setForm(value => ({ ...value, email }))}
       onPasswordChange={password => setForm(value => ({ ...value, password }))} />
-    <SecurityHighlights />
   </AuthLayout>
 }

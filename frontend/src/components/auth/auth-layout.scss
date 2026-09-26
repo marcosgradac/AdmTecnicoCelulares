@@ -1,0 +1,225 @@
+.auth-shell {
+  --auth-ink: #20223c;
+  --auth-muted: #72758a;
+  display: grid;
+  grid-template-columns: minmax(0, 44%) minmax(0, 56%);
+  min-height: 100dvh;
+  background: #fafbfe;
+  color: var(--auth-ink);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  *, *::before, *::after { box-sizing: border-box; }
+  a { color: #6352d4; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible { outline: 3px solid #a99bf2; outline-offset: 4px; }
+}
+.auth-workspace {
+  min-width: 0;
+  min-height: 100dvh;
+  padding: 38px clamp(28px, 4vw, 64px) 28px;
+  display: flex;
+  flex-direction: column;
+}
+.auth-brand { width: 100%; max-width: 500px; margin: 0 auto; }
+.auth-logo { display: block; width: 190px; max-width: 70%; height: auto; }
+.auth-workspace-body { width: 100%; max-width: 500px; margin: auto; padding: 48px 0; }
+.auth-intro { margin-bottom: 28px; }
+.auth-eyebrow { display: block; margin-bottom: 14px; color: #7c6cc2; font-size: 10px; font-weight: 750; letter-spacing: .17em; }
+.auth-intro h1 { margin: 0 0 14px; font-size: clamp(30px, 2.7vw, 42px); line-height: 1.14; font-weight: 750; letter-spacing: -.045em; }
+.auth-intro p { margin: 0; max-width: 435px; color: var(--auth-muted); font-size: 15px; line-height: 1.7; }
+.auth-card { padding: 26px; border: 1px solid #e9eaf2; border-radius: 16px; background: #fff; box-shadow: 0 8px 36px #303b6410; }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; margin-bottom: 28px; background: #f3f3f9; border-radius: 9px; }
+.auth-tabs a { display: flex; align-items: center; justify-content: center; min-height: 42px; padding: 8px; color: #77798d; font-size: 13px; font-weight: 650; border-radius: 6px; text-decoration: none; }
+.auth-tabs a.active { background: #fff; color: #5340bf; box-shadow: 0 2px 7px #2520420c; }
+.auth-card-content { display: grid; gap: 16px; min-width: 0; }
+.auth-shell {
+  .login-form, .auth-password-form, .register-form { display: grid; gap: 18px; min-width: 0; }
+  .register-name-row, .register-name-row > .MuiFormControl-root { min-width: 0; }
+  .auth-card .MuiOutlinedInput-root { min-height: 52px; height: auto; border-radius: 9px; background: #fff; color: var(--auth-ink); font-size: 14px; }
+  .MuiOutlinedInput-notchedOutline { border-color: #dfe1eb; }
+  .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline { border-color: #a6a0cc; }
+  .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline { border-color: #7562dc; border-width: 1.5px; }
+  .MuiOutlinedInput-root.Mui-focused { box-shadow: 0 0 0 3px #7562dc0b; }
+  .MuiInputLabel-root { color: #7a7b8e; font-size: 14px; }
+  .MuiInputLabel-root.Mui-focused { color: #6753cd; }
+  .MuiInputAdornment-root { color: #9b99ae; }
+  .MuiInputAdornment-root svg { font-size: 19px; }
+  /* El botón de mostrar/ocultar contraseña usa edge="end", que en MUI aplica un
+     margen negativo que hace medir al campo 4px más que su contenedor: era el
+     único elemento que desbordaba el ancho y provocaba la barra horizontal
+     dentro de la tarjeta. Se neutraliza el margen (queda alineado igual, con el
+     padding que ya aporta el propio campo). */
+  .MuiInputAdornment-positionEnd { margin-right: 0; }
+  .MuiInputAdornment-positionEnd .MuiIconButton-root { margin-right: 0; }
+  /* El widget de Cloudflare mide 300px como mínimo: nunca debe empujar el layout. */
+  .turnstile-field, .turnstile-field iframe { max-width: 100%; min-width: 0; }
+  .MuiIconButton-root { min-width: 44px; min-height: 44px; color: #8d8b9f; }
+  .MuiFormHelperText-root { font-size: 12px; margin-inline: 0; line-height: 1.5; }
+  .MuiAlert-root { border-radius: 8px; font-size: 13px; }
+  .login-forgot { justify-self: end; margin-top: -7px; font-size: 12px; font-weight: 600; padding-block: 4px; }
+  .login-submit.MuiButton-root { min-height: 50px; width: 100%; border-radius: 9px; background: linear-gradient(110deg, #8050de, #4b65e3 70%, #3982e9); color: #fff; box-shadow: 0 5px 14px #6857d52a; text-transform: none; font-size: 14px; font-weight: 650; }
+  .login-submit.MuiButton-root:hover { background: linear-gradient(110deg, #7442cf, #4057d4 70%, #3275d4); box-shadow: 0 6px 18px #6857d53b; }
+  .login-submit.Mui-disabled { opacity: .55; box-shadow: none; }
+  .login-legal-note { color: #9595a6; font-size: 11px; line-height: 1.7; }
+  .login-legal-note a { color: #78738f; text-decoration: underline; text-underline-offset: 2px; }
+  .login-register { display: none; }
+  .auth-return-link { text-align: center; min-height: 44px; display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+  .register-time { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--auth-muted); }
+  .register-time svg { font-size: 16px; color: #8d81c6; }
+  .register-section-title { font-size: 11px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase; color: #827c9a; margin-top: 4px; }
+  /* El margen negativo de MUI sacaba la fila de términos 8px fuera de la caja de
+     contenido (era el único elemento que desbordaba y generaba los 2px de scroll
+     horizontal). Se anula el margen y el checkbox queda alineado con el resto de
+     los campos. */
+  .register-form .MuiFormControlLabel-root { align-items: flex-start; margin: 0; }
+  .register-form .MuiFormControlLabel-label { font-size: 12px; line-height: 1.6; padding-top: 8px; }
+  .register-form .MuiLinearProgress-root { height: 3px; }
+  .turnstile-field { max-width: 100%; min-width: 0; }
+  input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #fff inset; -webkit-text-fill-color: var(--auth-ink); }
+}
+.auth-trust { width: 100%; max-width: 500px; margin: 0 auto; }
+.auth-trust .login-highlights { display: flex; justify-content: space-between; gap: 14px; padding-top: 20px; border-top: 1px solid #e9eaf2; }
+.auth-trust .login-highlights span { display: flex; flex: 1; align-items: flex-start; gap: 7px; color: #8a8a9d; }
+.auth-trust .login-highlights svg { flex-shrink: 0; font-size: 16px; color: #8f82bb; }
+.auth-trust .login-highlights small { font-size: 10px; line-height: 1.5; }
+.auth-photograph { position: sticky; top: 0; align-self: start; height: 100dvh; min-width: 0; overflow: hidden; background: #6661bf; }
+.auth-photograph img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 53% center; }
+.auth-shell--register .auth-workspace-body { padding-block: 36px; }
+.auth-shell--register .auth-intro { margin-bottom: 22px; }
+.auth-shell--register .auth-intro h1 { font-size: 34px; }
+.auth-shell--register .auth-card { padding: 24px; }
+.auth-shell--register .auth-tabs { margin-bottom: 20px; }
+/* Login y recuperación comparten una tarjeta compacta: menos aire entre campos
+   para que el bloque se sienta equilibrado y no queden zonas vacías. */
+.auth-shell--login .auth-card-content, .auth-shell--forgot-password .auth-card-content { gap: 12px; }
+.auth-shell--login .login-form, .auth-shell--forgot-password .auth-password-form { gap: 14px; }
+.auth-shell--forgot-password .auth-return-link { margin-top: 14px; }
+@media (min-width: 900px) {
+  body:has(.auth-shell) { overflow-y: hidden; }
+  .auth-shell { height: 100dvh; min-height: 0; grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+  .auth-workspace { height: 100%; min-height: 0; overflow: hidden; }
+  .auth-brand, .auth-intro, .auth-tabs, .auth-trust { flex-shrink: 0; }
+  .auth-workspace-body { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
+  .auth-shell--register .auth-workspace-body { flex: 1; margin-block: 0; }
+  .auth-card { display: flex; flex-direction: column; min-height: 0; }
+  /* Tarjeta desplazable sólo en vertical: la holgura superior (padding compensado
+     con margen negativo) da aire para que el label elevado del primer campo no
+     se recorte al estar el contenido en el tope, sin mover el layout. */
+  .auth-card-content {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-top: 10px;
+    margin-top: -10px;
+    grid-auto-rows: max-content;
+    overscroll-behavior-y: contain;
+    /* La barra de scroll se dibujaba encima del borde derecho del último campo
+       (Apellido), que parecía cortado. El gutter reserva su ancho para que los
+       campos nunca queden pegados a ella. */
+    scrollbar-gutter: stable;
+  }
+  .auth-card-content::-webkit-scrollbar { width: 10px; }
+  .auth-card-content::-webkit-scrollbar-track { background: transparent; }
+  .auth-card-content::-webkit-scrollbar-thumb { background: #d6d8e6; border-radius: 6px; border: 3px solid #fff; }
+  .auth-card-content::-webkit-scrollbar-thumb:hover { background: #b9bcd2; }
+  .auth-photograph { position: relative; height: 100%; min-height: 0; }
+  /* Login y recuperación: la tarjeta crece con su contenido (sin scroll interno ni
+     labels recortados) y el bloque logo + título + tarjeta + footer se centra en
+     la columna. Si la ventana no alcanza, el scroll lo toma la columna izquierda
+     (logo incluido) y la foto sigue fija. */
+  .auth-shell--login .auth-workspace, .auth-shell--forgot-password .auth-workspace { overflow-y: auto; overflow-x: hidden; }
+  .auth-shell--login .auth-brand, .auth-shell--forgot-password .auth-brand { margin-top: auto; }
+  .auth-shell--login .auth-trust, .auth-shell--forgot-password .auth-trust { margin-bottom: auto; }
+  .auth-shell--login .auth-workspace-body, .auth-shell--forgot-password .auth-workspace-body { flex: 0 0 auto; margin-block: 0; padding-block: clamp(18px, 3.2vh, 32px); }
+  .auth-shell--login .auth-card, .auth-shell--forgot-password .auth-card { flex: 0 0 auto; }
+  .auth-shell--login .auth-card-content, .auth-shell--forgot-password .auth-card-content { flex: 0 0 auto; overflow: visible; padding-top: 0; margin-top: 0; }
+}
+@media (min-width: 900px) and (max-width: 1199px) {
+  .auth-workspace { padding-inline: 28px; }
+  .auth-card { padding: 22px; }
+  /* Conserva al menos 300px para Turnstile en la columna del 44%. */
+  .auth-shell .auth-workspace .auth-card { padding-inline: 14px; }
+}
+/* Escritorio con poca altura (portátiles ~720-860px útiles): el shell sigue fijo en
+   100dvh y se comprime la columna izquierda para que la tarjeta conserve altura útil. */
+@media (min-width: 900px) and (max-height: 860px) {
+  .auth-workspace { padding-block: 24px 18px; }
+  .auth-workspace-body { padding-block: 26px; }
+  .auth-eyebrow { margin-bottom: 10px; }
+  .auth-intro { margin-bottom: 18px; }
+  .auth-intro h1 { margin-bottom: 10px; font-size: clamp(26px, 2.2vw, 33px); }
+  .auth-intro p { font-size: 14px; line-height: 1.55; }
+  .auth-tabs { margin-bottom: 16px; }
+  .auth-card { padding: 20px; }
+  .auth-trust .login-highlights { padding-top: 14px; }
+  .auth-shell--register .auth-workspace-body { padding-block: 22px; }
+  .auth-shell--register .auth-intro { margin-bottom: 16px; }
+  .auth-shell--register .auth-card { padding: 20px; }
+  .auth-shell--register .auth-tabs { margin-bottom: 14px; }
+}
+/* Escritorio bajo (620-800px útiles): segunda compresión para que el formulario
+   nunca quede reducido a una franja inutilizable. El umbral en 800px evita el
+   salto brusco entre el tier de 860px y este (a 768px de alto se veía menos
+   formulario que a 700px). */
+@media (min-width: 900px) and (max-height: 800px) {
+  .auth-workspace { padding-block: 18px 14px; }
+  .auth-workspace-body { padding-block: 18px; }
+  .auth-eyebrow { display: none; }
+  .auth-intro { margin-bottom: 14px; }
+  .auth-intro h1 { margin-bottom: 8px; font-size: 26px; }
+  .auth-intro p { font-size: 13px; line-height: 1.5; }
+  .auth-tabs { margin-bottom: 12px; }
+  .auth-tabs a { min-height: 38px; }
+  .auth-card { padding: 18px; }
+  .auth-trust .login-highlights { padding-top: 10px; }
+  .auth-trust .login-highlights small { font-size: 9.5px; }
+  .auth-shell--register .auth-workspace-body { padding-block: 16px; }
+  .auth-shell--register .auth-intro h1 { font-size: 26px; }
+  .auth-shell--register .auth-card { padding: 18px; }
+  .auth-shell--register .auth-tabs { margin-bottom: 12px; }
+  .auth-shell .auth-card .MuiOutlinedInput-root { min-height: 46px; }
+  .auth-shell .login-submit.MuiButton-root { min-height: 46px; }
+}
+/* En ventanas bajas, sólo los flujos cortos desplazan la columna si hace falta.
+   Registro conserva el scroll del formulario, con tabs, footer y foto fijos. */
+@media (min-width: 900px) and (max-height: 620px) {
+  .auth-workspace { padding-block: 16px 12px; }
+  .auth-shell:not(.auth-shell--register) {
+    .auth-workspace { overflow-y: auto; }
+    .auth-workspace-body { flex: 0 0 auto; padding-block: 16px; }
+    .auth-card { flex: 0 0 auto; }
+    .auth-card-content { overflow: visible; }
+  }
+}
+@media (max-width: 899px) {
+  .auth-shell { display: block; background: linear-gradient(150deg, #f2f0ff 0, #fafbfe 250px, #fff 650px); }
+  .auth-photograph { display: none; }
+  .auth-workspace { padding: 28px 24px; overflow: visible; }
+  /* Flujo normal de documento: la tarjeta crece con su contenido (sin altura
+     máxima ni scroll interno) y el scroll vertical lo hace la página. */
+  .auth-workspace-body { padding-block: 42px; margin-block: 0; flex: 0 0 auto; }
+  .auth-brand, .auth-workspace-body, .auth-trust { max-width: 480px; }
+  .auth-logo { width: 172px; }
+  .auth-intro h1 { font-size: 35px; }
+  .auth-card { padding: 24px; max-height: none; height: auto; overflow: visible; }
+  .auth-card-content { max-height: none; height: auto; overflow: visible; padding-top: 0; margin-top: 0; }
+  .auth-shell .auth-card .MuiOutlinedInput-root, .auth-shell .MuiInputLabel-root { font-size: 16px; }
+  .auth-trust .login-highlights { flex-direction: column; gap: 12px; }
+  .auth-trust .login-highlights small { font-size: 12px; }
+  .auth-shell--register .auth-workspace-body { padding-block: 32px; }
+}
+@media (max-width: 480px) {
+  .auth-workspace { padding: 24px 15px; }
+  .auth-intro h1 { font-size: 33px; }
+  .auth-intro p { font-size: 14px; }
+  /* Paddings laterales algo más ajustados: dejan los 300px que necesita el
+     widget de verificación en móviles angostos sin empujar el ancho. */
+  .auth-card { padding: 22px 14px; border-radius: 12px; }
+  .auth-shell--register .auth-card { padding: 22px 14px; }
+  .auth-shell .login-legal-note { font-size: 12px; }
+  .auth-shell .register-form .MuiFormControlLabel-label { font-size: 13px; }
+}
+@media (max-width: 359px) {
+  /* 320px - 8px de workspace - 10px de card - 2px de borde = 300px. */
+  .auth-workspace { padding-inline: 4px; }
+  .auth-card, .auth-shell--register .auth-card { padding-inline: 5px; }
+}

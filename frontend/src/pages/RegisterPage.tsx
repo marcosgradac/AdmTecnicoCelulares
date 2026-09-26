@@ -1,7 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import axios from 'axios'
-import { Typography } from '@mui/material'
 import { useAuth } from '../auth/AuthContext'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { RegisterForm, type RegisterFormState } from '../components/auth/RegisterForm'
@@ -63,6 +62,5 @@ export function RegisterPage() {
 
   return <AuthLayout variant="register" title="Creá tu cuenta" description="Empezá a gestionar tu servicio técnico de forma simple y profesional.">
     <RegisterForm form={form} invalid={invalid} submitted={submitted} saving={saving} error={error} strength={strength} turnstileToken={turnstileToken} turnstileResetKey={turnstileResetKey} onTurnstileToken={setTurnstileToken} onChange={change} onSubmit={submit} />
-    <Typography variant="body2" textAlign="center">¿Ya tenés cuenta? <Link to="/login"><b>Iniciar sesión</b></Link></Typography>
   </AuthLayout>
 }
