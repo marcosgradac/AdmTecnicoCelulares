@@ -33,6 +33,7 @@
     "test:subscription-lifecycle": "node --env-file=.env ./node_modules/tsx/dist/cli.mjs tests/subscription-lifecycle.ts",
     "test:platform-admin-actions": "tsx tests/platform-admin-subscription-actions.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
+    "test:business-demo": "tsx tests/business-demo.ts",
     "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
