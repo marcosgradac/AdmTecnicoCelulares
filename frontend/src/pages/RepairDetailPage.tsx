@@ -63,7 +63,11 @@ export function RepairDetailPage() {
     if (form.total == null) return setError('Ingresá un monto')
     setSaving(true); setError(''); setSuccess('')
     try {
-      const updated = await updateRepair(repair.id, { ...form, total: form.total })
+      const updated = await updateRepair(repair.id, {
+        ...form,
+        clientId: form.clientId === repair.clientId ? undefined : form.clientId,
+        total: form.total,
+      })
       setRepair(updated); setEditing(false); setForm(null); setSuccess('Los cambios se guardaron correctamente.')
     } catch (saveError) { setError(messageFrom(saveError, 'No pudimos guardar los cambios.')) }
     finally { setSaving(false) }
@@ -112,7 +116,7 @@ export function RepairDetailPage() {
     {editing && form ? <Card sx={{ mb: 2.2 }}><CardContent>
       <Typography variant="h2" mb={2}>Editar datos generales</Typography>
       <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}><TextField select fullWidth label="Cliente asociado" value={form.clientId ?? ''} onChange={event => setField('clientId', event.target.value)}>{clients.map(client => <MenuItem key={client.id} value={client.id}>{client.name} · {client.phone || 'Sin teléfono'}</MenuItem>)}</TextField></Grid>
+        <Grid size={{ xs: 12, md: 6 }}><TextField select fullWidth label="Cliente asociado" value={form.clientId ?? ''} onChange={event => setField('clientId', event.target.value)}>{repair && form.clientId === repair.clientId && !clients.some(client => client.id === repair.clientId) && <MenuItem disabled value={repair.clientId}>{repair.clientName} · Cliente histórico</MenuItem>}{clients.map(client => <MenuItem key={client.id} value={client.id}>{client.name} · {client.phone || 'Sin teléfono'}</MenuItem>)}</TextField></Grid>
         <Grid size={{ xs: 12, md: 3 }}><TextField required fullWidth label="Marca" value={form.deviceBrand} onChange={event => setField('deviceBrand', event.target.value)}/></Grid>
         <Grid size={{ xs: 12, md: 3 }}><TextField required fullWidth label="Modelo" value={form.deviceModel} onChange={event => setField('deviceModel', event.target.value)}/></Grid>
         <Grid size={{ xs: 12, md: 4 }}><TextField fullWidth label="IMEI / serie" value={form.imei ?? ''} onChange={event => setField('imei', event.target.value)}/></Grid>

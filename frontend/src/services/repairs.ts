@@ -179,7 +179,7 @@ export async function disableTrackingLink(id: string) {
   return (await api.patch<{ trackingToken: string; trackingEnabled: boolean }>(`/repairs/${id}/tracking-link`)).data
 }
 
-export type UpdateRepairInput = Pick<CreateRepairInput, 'clientId' | 'deviceBrand' | 'deviceModel' | 'imei' | 'color' | 'issue' | 'diagnosis' | 'notes' | 'total'>
+export type UpdateRepairInput = Pick<CreateRepairInput, 'deviceBrand' | 'deviceModel' | 'imei' | 'color' | 'issue' | 'diagnosis' | 'notes' | 'total'> & { clientId?: string }
 
 export async function updateRepair(id: string, input: UpdateRepairInput) {
   const response = await api.patch<ApiRepair>(`/repairs/${id}`, input)

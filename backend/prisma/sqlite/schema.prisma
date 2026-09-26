@@ -85,6 +85,7 @@ model Client {
   businessId String
   name       String
   phone      String?
+  deletedAt  DateTime?
   createdAt  DateTime @default(now())
   repairs    Repair[]
   payments   Payment[]

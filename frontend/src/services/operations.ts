@@ -16,6 +16,7 @@ export interface ClientListRecord extends ClientOption {
 
 export interface ClientRecord extends ClientOption {
   createdAt: string
+  deletedAt: string | null
   repairs: Array<{ id: string; number: number; total: number; paid: number; createdAt: string; updatedAt: string; deviceBrand: string; deviceModel: string; issue: string; status: string }>
 }
 
@@ -70,6 +71,7 @@ export const getClientOptions = async () => (await api.get<ClientOption[]>('/cli
 export const getClient = async (id: string) => (await api.get<ClientRecord>(`/clients/${id}`)).data
 export const createClient = async (input: { name: string; phone?: string }) => (await api.post<ClientRecord>('/clients', input)).data
 export const updateClient = async (id: string, input: { name: string; phone?: string | null }) => (await api.patch<ClientRecord>(`/clients/${id}`, input)).data
+export const deleteClient = async (id: string) => { await api.delete(`/clients/${id}`) }
 export const getCashMovements = async (params: { page: number; pageSize: number; origin?: CashMovement['origin'] }) => (await api.get<CashMovementsPage>('/cash/movements', { params })).data
 export const createCashMovement = async (input: { origin?: CashMovement['origin']; type: 'INCOME' | 'EXPENSE'; description: string; amount: number; method?: CashMovement['method'] }) => (await api.post<CashMovement>('/cash/movements', input)).data
 export const getDashboardSummary = async () => (await api.get<DashboardSummary>('/dashboard/summary')).data

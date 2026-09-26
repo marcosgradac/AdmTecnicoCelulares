@@ -35,7 +35,7 @@ const emptyCreate: CreateTeamMemberInput & { repeatPassword: string } = {
 // edición parte de `member.permissions`, por lo que un acceso existente se conserva tal cual.
 const permissionGroups = [
   { module: 'Reparaciones', options: [['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.delete','Eliminar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes']] },
-  { module: 'Clientes', options: [['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes']] },
+  { module: 'Clientes', options: [['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['clients.delete','Eliminar clientes']] },
   { module: 'Caja', options: [['cash.view','Ver caja'],['cash.create','Registrar caja']] },
   { module: 'Comercio', options: [['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio']] },
   { module: 'Venta de equipos', options: [['equipmentSales.view','Ver Venta de equipos'],['equipmentSales.manage','Administrar equipos para reventa'],['equipmentSales.sell','Vender equipos']] },

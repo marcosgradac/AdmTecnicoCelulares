@@ -385,8 +385,8 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
     let trackingAllowed = true
     try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch { trackingAllowed = false }
     const data = parsed.data
-    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } })
-    if (!client) return res.status(404).json({ success: false, message: 'El cliente seleccionado no existe' })
+    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId, deletedAt: null } })
+    if (!client) return res.status(404).json({ success: false, message: 'El cliente seleccionado fue eliminado o no está disponible.' })
     const repair = await prisma.$transaction(async tx => {
       const number = await allocateRepairNumber(tx, businessId)
       const deliveredAt = data.status === RepairStatus.DELIVERED ? new Date() : null
@@ -413,7 +413,7 @@ app.patch('/api/repairs/:id', requirePermission('repairs.update'), async (req, r
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId } })
   if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   if (parsed.data.total < current.paid) return res.status(400).json({ success: false, message: 'El total no puede ser menor que el importe pagado' })
-  if (parsed.data.clientId && !await prisma.client.findFirst({ where: { id: parsed.data.clientId, businessId } })) return res.status(400).json({ success: false, message: 'El cliente seleccionado no existe' })
+  if (parsed.data.clientId && !await prisma.client.findFirst({ where: { id: parsed.data.clientId, businessId, deletedAt: null } })) return res.status(400).json({ success: false, message: 'El cliente seleccionado fue eliminado o no está disponible.' })
   const repair = await prisma.repair.update({ where: { id: current.id }, data: { ...parsed.data, imei: parsed.data.imei || null, color: parsed.data.color || null, diagnosis: parsed.data.diagnosis || null, notes: parsed.data.notes || null }, include: includeRepair })
   return res.json(repair)
 })
@@ -553,16 +553,16 @@ app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), s
 
 app.get('/api/clients', requirePermission('clients.view'), async (req, res) => {
   const businessId = authOf(req).businessId
-  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId }, orderBy: { createdAt: 'desc' } }))
+  if (req.query.paginated !== 'true') return res.json(await prisma.client.findMany({ where: { businessId, deletedAt: null }, orderBy: { createdAt: 'desc' } }))
   const parsed = z.object({ page:z.coerce.number().int().positive().default(1), pageSize:z.coerce.number().int().min(1).max(100).default(10), search:z.string().trim().optional() }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success:false, message:'Filtros inválidos' })
   const {page,pageSize,search}=parsed.data
-  const where={businessId,...(search?{OR:[{name:{contains:search,mode:'insensitive' as const}},{phone:{contains:search}}]}:{})}
+  const where={businessId,deletedAt:null,...(search?{OR:[{name:{contains:search,mode:'insensitive' as const}},{phone:{contains:search}}]}:{})}
   const [items,total]=await prisma.$transaction([prisma.client.findMany({where,select:{id:true,name:true,phone:true,createdAt:true,_count:{select:{repairs:true}},repairs:{select:{deviceBrand:true,deviceModel:true},orderBy:[{createdAt:'desc'},{id:'desc'}],take:1}},orderBy:{createdAt:'desc'},skip:(page-1)*pageSize,take:pageSize}),prisma.client.count({where})])
   return res.json({items:items.map(({_count,repairs,...client})=>({...client,repairCount:_count.repairs,lastRepair:repairs[0]??null})),total,page,pageSize,totalPages:Math.max(1,Math.ceil(total/pageSize))})
 })
 app.get('/api/clients/options', requirePermission('clients.view'), async (req, res) => {
-  return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId }, select: { id: true, name: true, phone: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] }))
+  return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId, deletedAt: null }, select: { id: true, name: true, phone: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] }))
 })
 app.get('/api/clients/:id', requirePermission('clients.view'), async (req, res) => {
   const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } } })
@@ -573,18 +573,28 @@ app.post('/api/clients', requirePermission('clients.create'), async (req, res) =
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
   const businessId = authOf(req).businessId
   const phone = parsed.data.phone?.replace(/\D/g, '')
-  if (phone && await prisma.client.findFirst({ where: { businessId, phone } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
+  if (phone && await prisma.client.findFirst({ where: { businessId, phone, deletedAt: null } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
   return res.status(201).json(await prisma.client.create({ data: { businessId, name: parsed.data.name, phone } }))
 })
 app.patch('/api/clients/:id', requirePermission('clients.update'), async (req, res) => {
   const parsed = z.object({ name: z.string().trim().min(2).max(120), phone: z.string().min(6).optional().nullable() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
   const businessId = authOf(req).businessId
-  const current = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId } })
+  const current = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId, deletedAt: null } })
   if (!current) return res.status(404).json({ success: false, message: 'Cliente no encontrado' })
   const phone = parsed.data.phone?.replace(/\D/g, '') || null
-  if (phone && await prisma.client.findFirst({ where: { businessId, phone, NOT: { id: current.id } } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
-  return res.json(await prisma.client.update({ where: { id: current.id }, data: { name: parsed.data.name, phone } }))
+  if (phone && await prisma.client.findFirst({ where: { businessId, phone, deletedAt: null, NOT: { id: current.id } } })) return res.status(409).json({ success: false, message: 'Ya existe un cliente con ese teléfono' })
+  const updated = await prisma.client.updateMany({ where: { id: current.id, businessId, deletedAt: null }, data: { name: parsed.data.name, phone } })
+  if (!updated.count) return res.status(404).json({ success: false, message: 'Cliente no encontrado' })
+  return res.json(await prisma.client.findFirst({ where: { id: current.id, businessId } }))
+})
+app.delete('/api/clients/:id', requirePermission('clients.delete'), async (req, res) => {
+  const id = String(req.params.id), businessId = authOf(req).businessId
+  const client = await prisma.client.findFirst({ where: { id, businessId }, select: { id: true, deletedAt: true } })
+  if (!client) return res.status(404).json({ success: false, message: 'Cliente no encontrado' })
+  // Guard the write too: repeated/concurrent DELETEs preserve the original timestamp.
+  if (!client.deletedAt) await prisma.client.updateMany({ where: { id, businessId, deletedAt: null }, data: { deletedAt: new Date() } })
+  return res.json({ success: true })
 })
 
 app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'), async (req, res) => {
@@ -730,7 +740,7 @@ app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
   const [repairs, clients, movements] = await Promise.all([
     prisma.repair.findMany({ where: { businessId }, include: { client: true }, orderBy: { createdAt: 'desc' } }),
-    prisma.client.count({ where: { businessId } }),
+    prisma.client.count({ where: { businessId, deletedAt: null } }),
     canViewFinancials ? prisma.cashMovement.findMany({ where: { businessId, createdAt: { gte: month } }, orderBy: { createdAt: 'asc' } }) : Promise.resolve([]),
   ])
   const income = movements.filter(m => m.type === 'INCOME').reduce((sum, m) => sum + m.amount, 0)

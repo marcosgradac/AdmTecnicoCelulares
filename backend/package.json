@@ -25,6 +25,7 @@
     "test:repair-cancellation": "tsx tests/repair-cancellation.ts",
     "test:warranties": "tsx tests/warranties.ts",
     "test:pagination": "tsx tests/pagination.ts",
+    "test:client-soft-delete": "tsx tests/client-soft-delete.ts",
     "test:cash-pagination": "tsx tests/cash-pagination.ts",
     "test:billing": "tsx tests/billing.ts",
     "test:commerce": "tsx tests/commerce.ts && tsx tests/commerce-sqlite.ts",
