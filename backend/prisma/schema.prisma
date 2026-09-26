@@ -60,6 +60,7 @@ enum WarrantyClaimStatus {
 }
 
 model Business {
+  lastRepairNumber   Int                 @default(1000)
   id                 String              @id @default(cuid())
   isActive           Boolean             @default(true)
   name               String
@@ -206,6 +207,13 @@ model Repair {
   status                RepairStatus          @default(RECEIVED)
   total                 Int                   @default(0)
   paid                  Int                   @default(0)
+  cancelledAt               DateTime?
+  cancellationPaidAmount    Int?
+  cancellationReviewFee     Int?
+  cancellationReviewPaid    Int                   @default(0)
+  cancellationRefundAmount  Int?
+  cancellationRefundMethod  PaymentMethod?
+  cancellationRefundMovementId String?
   trackingToken         String?               @unique
   trackingEnabled       Boolean               @default(false)
   trackingCreatedAt     DateTime?
@@ -301,6 +309,7 @@ model Payment {
   amount     Int
   method     PaymentMethod
   note       String?
+  cancellationReview Boolean  @default(false)
   createdAt  DateTime      @default(now())
   repair     Repair        @relation(fields: [repairId], references: [id])
   client     Client        @relation(fields: [clientId], references: [id])

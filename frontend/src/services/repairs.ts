@@ -24,6 +24,13 @@ interface ApiRepair {
   status: ApiRepairStatus
   total: number
   paid: number
+  cancelledAt?: string | null
+  cancellationPaidAmount?: number | null
+  cancellationReviewFee?: number | null
+  cancellationReviewPaid?: number | null
+  cancellationRefundAmount?: number | null
+  cancellationRefundMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' | null
+  cancellationRefundMovementId?: string | null
   trackingToken: string | null
   trackingEnabled: boolean
   estimatedDeliveryDate: string | null
@@ -32,6 +39,7 @@ interface ApiRepair {
   warrantyStartedAt: string | null
   warrantyExpiresAt: string | null
   statusHistory?: Array<{ id?: string; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
+  payments?: Array<{ id: string; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string | null; cancellationReview?: boolean; createdAt: string }>
   createdAt: string
   updatedAt: string
   client: ApiClient
@@ -99,6 +107,13 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   status: statusFromApi[repair.status],
   total: repair.total,
   paid: repair.paid,
+  cancelledAt: repair.cancelledAt ?? undefined,
+  cancellationPaidAmount: repair.cancellationPaidAmount ?? undefined,
+  cancellationReviewFee: repair.cancellationReviewFee ?? undefined,
+  cancellationReviewPaid: repair.cancellationReviewPaid ?? undefined,
+  cancellationRefundAmount: repair.cancellationRefundAmount ?? undefined,
+  cancellationRefundMethod: repair.cancellationRefundMethod ?? undefined,
+  cancellationRefundMovementId: repair.cancellationRefundMovementId ?? undefined,
   createdAt: repair.createdAt,
   updatedAt: repair.updatedAt,
   trackingToken: repair.trackingToken ?? undefined,
@@ -109,6 +124,7 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   warrantyStartedAt: repair.warrantyStartedAt ?? undefined,
   warrantyExpiresAt: repair.warrantyExpiresAt ?? undefined,
   history: (repair.statusHistory ?? []).map(item => ({ ...item, newStatus: statusFromApi[item.newStatus] })),
+  payments: repair.payments,
   business: repair.business ? { ...repair.business, logoUrl: apiAssetUrl(repair.business.logoUrl) ?? null } : undefined,
 })
 
@@ -136,6 +152,23 @@ export async function createRepair(input: CreateRepairInput) {
 export async function updateRepairStatus(id: string, status: RepairStatus, messages?: { publicMessage?: string; internalNote?: string }) {
   const response = await api.patch<ApiRepair>(`/repairs/${id}/status`, { status: statusToApi[status], ...messages })
   return mapRepair(response.data)
+}
+
+export type CancelRepairInput = { reviewFee: number; refundMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }
+
+export async function cancelRepair(id: string, input: CancelRepairInput) {
+  const response = await api.post<ApiRepair>(`/repairs/${id}/cancel`, input)
+  return mapRepair(response.data)
+}
+
+/** Cobra parte del saldo de revisión de una reparación ya cancelada. */
+export async function registerCancellationPayment(id: string, input: { amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }) {
+  const response = await api.post<ApiRepair>(`/repairs/${id}/cancellation-payment`, input)
+  return mapRepair(response.data)
+}
+
+export async function deleteRepair(id: string) {
+  await api.delete(`/repairs/${id}`)
 }
 
 export async function generateTrackingLink(id: string) {

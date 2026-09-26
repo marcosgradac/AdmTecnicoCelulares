@@ -1,17 +1,19 @@
 import { FormSection } from '../admin/AdminPatterns'
 import { useAdminVisual } from '../admin/AdminVisualScope'
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Autocomplete, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Box, Button, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { createRepair } from '../../services/repairs'
 import { getClientOptions, type ClientOption } from '../../services/operations'
 import type { Repair, RepairStatus } from '../../types'
 import { FormDrawer } from '../common/FormDrawer'
 import { CurrencyField } from '../common/CurrencyField'
+import { DeviceBrandAvatar, DeviceBrandOption } from '../common/DeviceBrandAvatar'
 import { IntegerField } from '../common/IntegerField'
+import { deviceBrandOptions, normalizeDeviceBrand, OTHER_DEVICE_BRAND } from '../../config/deviceBrands'
 import { NewClientDrawer } from '../clients/NewClientDrawer'
 
 const today = () => { const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}` }
-const initial = { brand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, estimatedDeliveryDate: today(), notes: '', status: 'received' as RepairStatus }
+const initial = { brand: '', customBrand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, estimatedDeliveryDate: today(), notes: '', status: 'received' as RepairStatus }
 
 export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: { open: boolean; initialClientId?: string; onClose: () => void; onCreated: (repair: Repair) => void }) {
   const modern = useAdminVisual()
@@ -28,9 +30,10 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   const change = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [key]: key === 'total' ? Number(event.target.value) : event.target.value }))
   const close = () => { if (!saving) { setError(''); setForm({ ...initial, estimatedDeliveryDate: today() }); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }
   const save = async () => {
-    const brand = form.brand.trim(), model = form.model.trim(), issue = form.issue.trim()
+    const brand = normalizeDeviceBrand(form.brand === OTHER_DEVICE_BRAND ? form.customBrand : form.brand), model = form.model.trim(), issue = form.issue.trim()
     if (!clientId) return setError('Seleccioná un cliente existente.')
-    if (!brand || !model || !issue) return setError('Completá marca, modelo y falla informada.')
+    if (!brand) return setError('Elegí una marca de la lista o tocá «Otra» para escribirla.')
+    if (!model || !issue) return setError('Completá el modelo y la falla informada.')
     if (form.total == null) return setError('Ingresá un monto')
     setSaving(true); setError('')
     try {
@@ -45,7 +48,8 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
         <Autocomplete options={clients} value={client} onChange={(_, value) => setClientId(value?.id ?? '')} getOptionLabel={option => `${option.name}${option.phone ? ` · ${option.phone}` : ''}`} filterOptions={(options, state) => options.filter(option => `${option.name} ${option.phone ?? ''}`.toLowerCase().includes(state.inputValue.toLowerCase()))} noOptionsText="No encontramos ese cliente. Crealo primero desde Clientes." renderInput={params => <TextField {...params} required label="Buscar cliente..." placeholder="Nombre, apellido o teléfono"/>}/>
         <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button></Box></FormSection>
         <FormSection legacyHeading legacyDivider title="Dispositivo" description="Datos para identificar el equipo que ingresa.">
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth required label="Marca" value={form.brand} onChange={change('brand')} inputProps={{ maxLength: 60 }}/><TextField fullWidth required label="Modelo" value={form.model} onChange={change('model')} inputProps={{ maxLength: 100 }}/></Stack>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><Autocomplete fullWidth options={deviceBrandOptions} value={form.brand || null} onChange={(_, value) => setForm(current => ({ ...current, brand: value ?? '', customBrand: value === OTHER_DEVICE_BRAND ? current.customBrand : '' }))} noOptionsText="Elegí «Otra» para escribir una marca distinta." renderOption={(props, option) => <DeviceBrandOption option={option} optionProps={props} />} renderInput={params => <TextField {...params} required label="Marca" placeholder="Samsung, Apple, Motorola…" InputProps={{ ...params.InputProps, startAdornment: form.brand ? <InputAdornment position="start"><DeviceBrandAvatar brand={form.brand} size={20} /></InputAdornment> : params.InputProps.startAdornment }}/>}/><TextField fullWidth required label="Modelo" value={form.model} onChange={change('model')} inputProps={{ maxLength: 100 }}/></Stack>
+        {form.brand === OTHER_DEVICE_BRAND && <TextField fullWidth required autoFocus label="Otra marca" value={form.customBrand} onChange={change('customBrand')} inputProps={{ maxLength: 60 }} helperText="Escribí el nombre de la marca tal como querés guardarlo."/>}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="IMEI (opcional)" value={form.imei} onChange={change('imei')} inputProps={{ maxLength: 32 }}/><TextField fullWidth label="Color (opcional)" value={form.color} onChange={change('color')} inputProps={{ maxLength: 60 }}/></Stack>
         </FormSection><FormSection legacyHeading legacyDivider title={modern ? 'Reparación y presupuesto' : 'Reparación'}>
         <TextField required multiline minRows={3} label="Falla informada" value={form.issue} onChange={change('issue')}/><TextField multiline minRows={2} label="Diagnóstico (opcional)" value={form.diagnosis} onChange={change('diagnosis')}/>

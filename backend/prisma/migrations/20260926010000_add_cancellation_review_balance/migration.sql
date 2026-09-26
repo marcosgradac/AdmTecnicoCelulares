@@ -1,0 +1,2 @@
+ALTER TABLE "Repair" ADD COLUMN "cancellationReviewPaid" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Payment" ADD COLUMN "cancellationReview" BOOLEAN NOT NULL DEFAULT false;

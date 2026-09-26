@@ -34,7 +34,7 @@ const emptyCreate: CreateTeamMemberInput & { repeatPassword: string } = {
 // El permiso sigue existiendo en el backend y los valores ya guardados no se tocan: el formulario de
 // edición parte de `member.permissions`, por lo que un acceso existente se conserva tal cual.
 const permissionGroups = [
-  { module: 'Reparaciones', options: [['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes']] },
+  { module: 'Reparaciones', options: [['repairs.view','Ver reparaciones'],['repairs.create','Crear reparaciones'],['repairs.update','Editar reparaciones'],['repairs.delete','Eliminar reparaciones'],['repairs.changeStatus','Cambiar estados'],['repairs.shareTracking','Compartir seguimiento'],['repairs.viewFinancials','Ver importes']] },
   { module: 'Clientes', options: [['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes']] },
   { module: 'Caja', options: [['cash.view','Ver caja'],['cash.create','Registrar caja']] },
   { module: 'Comercio', options: [['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio']] },

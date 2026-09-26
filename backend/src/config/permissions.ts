@@ -1,7 +1,7 @@
 import type { UserRole } from '@prisma/client'
 
 export const PERMISSIONS = [
-  'repairs.view', 'repairs.create', 'repairs.update', 'repairs.changeStatus', 'repairs.shareTracking', 'repairs.viewFinancials',
+  'repairs.view', 'repairs.create', 'repairs.update', 'repairs.delete', 'repairs.changeStatus', 'repairs.shareTracking', 'repairs.viewFinancials',
   'clients.view', 'clients.create', 'clients.update',
   'cash.view', 'cash.create',
   'reports.view', 'reports.viewSensitive',

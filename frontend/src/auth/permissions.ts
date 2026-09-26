@@ -1,7 +1,7 @@
 import type { AuthUser } from '../services/auth'
 
 export type Permission =
-  | 'repairs.view' | 'repairs.create' | 'repairs.update' | 'repairs.changeStatus' | 'repairs.shareTracking' | 'repairs.viewFinancials'
+  | 'repairs.view' | 'repairs.create' | 'repairs.update' | 'repairs.delete' | 'repairs.changeStatus' | 'repairs.shareTracking' | 'repairs.viewFinancials'
   | 'clients.view' | 'clients.create' | 'clients.update' | 'cash.view' | 'cash.create'
   | 'reports.view' | 'reports.viewSensitive' | 'settings.access' | 'settings.business.update' | 'settings.repairs.update'
   | 'team.view' | 'team.create' | 'team.update' | 'team.permissions.update' | 'team.deactivate'

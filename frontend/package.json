@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "verify:brands": "node scripts/verify-device-brands.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,7 +18,8 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.7.0",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "simple-icons": "^16.32.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.8",

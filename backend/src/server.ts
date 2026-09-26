@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { randomBytes } from 'node:crypto'
 import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
+import { allocateRepairNumber } from './lib/repair-number'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
@@ -326,6 +327,8 @@ const includeRepair = { client: true, device: true, payments: true, statusHistor
 const repairListSelect = {
   id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, imei: true, color: true, issue: true,
   diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
+  cancelledAt: true, cancellationPaidAmount: true, cancellationReviewFee: true, cancellationReviewPaid: true, cancellationRefundAmount: true,
+  cancellationRefundMethod: true, cancellationRefundMovementId: true,
   estimatedDeliveryDate: true, warrantyEnabled: true, warrantyDurationDays: true, warrantyStartedAt: true,
   warrantyExpiresAt: true, createdAt: true, updatedAt: true,
   client: { select: { id: true, name: true, phone: true, createdAt: true } },
@@ -385,12 +388,11 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
     const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId } })
     if (!client) return res.status(404).json({ success: false, message: 'El cliente seleccionado no existe' })
     const repair = await prisma.$transaction(async tx => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${businessId}))`
-      const last = await tx.repair.findFirst({ where: { businessId }, orderBy: { number: 'desc' } })
+      const number = await allocateRepairNumber(tx, businessId)
       const deliveredAt = data.status === RepairStatus.DELIVERED ? new Date() : null
       const warrantyStartedAt = data.warrantyEnabled && deliveredAt ? deliveredAt : null
       const warrantyExpiresAt = warrantyStartedAt && data.warrantyDurationDays ? new Date(warrantyStartedAt.getTime() + data.warrantyDurationDays * 86_400_000) : null
-      return tx.repair.create({ data: { businessId, number: (last?.number ?? 1000) + 1, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? randomBytes(32).toString('hex') : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
+      return tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? randomBytes(32).toString('hex') : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.status(201).json(repair)
   } catch (error) {
@@ -418,6 +420,7 @@ app.patch('/api/repairs/:id', requirePermission('repairs.update'), async (req, r
 app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), async (req, res) => {
   const parsed = z.object({ status: z.nativeEnum(RepairStatus), publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Estado inválido' })
+  if (parsed.data.status === RepairStatus.CANCELLED) return res.status(409).json({ success: false, message: 'Para cancelar una reparación con liquidación financiera usá el flujo específico: POST /api/repairs/:id/cancel' })
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
   if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   const auth = authOf(req)
@@ -429,6 +432,116 @@ app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), 
     return tx.repair.update({ where: { id: current.id }, data: { status: parsed.data.status, deliveredAt, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
   })
   return res.json(repair)
+})
+const cancellationError = (statusCode: number, message: string) => Object.assign(new Error(message), { statusCode })
+const cancelRepairSchema = z.object({
+  reviewFee: z.number().int().nonnegative().default(0),
+  refundMethod: z.nativeEnum(PaymentMethod).optional(),
+})
+app.post('/api/repairs/:id/cancel', requirePermission('repairs.changeStatus'), async (req, res) => {
+  const parsed = cancelRepairSchema.safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de cancelación inválidos' })
+  const auth = authOf(req)
+  const repairId = String(req.params.id)
+  try {
+    const repair = await prisma.$transaction(async tx => {
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
+      if (!current) throw cancellationError(404, 'Reparación no encontrada')
+      if (current.status === RepairStatus.CANCELLED) throw cancellationError(409, 'La reparación ya fue cancelada')
+      const reviewFee = parsed.data.reviewFee
+      // El saldo por revisión y la devolución nunca coexisten: el segundo depende de cuál de los dos montos es mayor.
+      const refundAmount = Math.max(0, current.paid - reviewFee)
+      const reviewBalance = Math.max(0, reviewFee - current.paid)
+      if (refundAmount > 0 && !parsed.data.refundMethod) throw cancellationError(400, 'Indicá el medio de devolución')
+      const cancelledAt = new Date()
+      let refundMovementId: string | null = null
+      if (refundAmount > 0) {
+        const movement = await tx.cashMovement.create({ data: { businessId: current.businessId, type: CashMovementType.EXPENSE, origin: CashMovementOrigin.REPAIR, description: `Devolución por cancelación reparación #${current.number}`, amount: refundAmount, method: parsed.data.refundMethod, repairId: current.id, clientName: current.client.name } })
+        refundMovementId = movement.id
+      }
+      const claimed = await tx.repair.updateMany({
+        where: { id: current.id, businessId: auth.businessId, status: { not: RepairStatus.CANCELLED } },
+        data: {
+          status: RepairStatus.CANCELLED, cancelledAt,
+          cancellationPaidAmount: current.paid, cancellationReviewFee: reviewFee, cancellationReviewPaid: 0, cancellationRefundAmount: refundAmount,
+          cancellationRefundMethod: refundAmount > 0 ? parsed.data.refundMethod ?? null : null,
+          cancellationRefundMovementId: refundMovementId, trackingEnabled: false,
+        },
+      })
+      if (claimed.count !== 1) throw cancellationError(409, 'La reparación ya fue cancelada por otra operación')
+      const settlement = reviewBalance > 0
+        ? `Cancelación con saldo de revisión: abonado ${current.paid}, revisión ${reviewFee}, a cobrar ${reviewBalance}`
+        : refundAmount > 0
+          ? `Cancelación con devolución: abonado ${current.paid}, revisión ${reviewFee}, devuelto ${refundAmount}`
+          : `Cancelación sin devolución: abonado ${current.paid}, revisión ${reviewFee}`
+      await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: RepairStatus.CANCELLED, internalNote: settlement, changedByUserId: auth.userId } })
+      return tx.repair.findFirst({ where: { id: current.id }, include: includeRepair })
+    }, { timeout: 15_000 })
+    return res.json(repair)
+  } catch (error) {
+    const statusCode = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
+    return res.status(statusCode).json({ success: false, message: error instanceof Error && statusCode !== 500 ? error.message : 'No pudimos cancelar la reparación' })
+  }
+})
+const cancellationPaymentSchema = z.object({ amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod) })
+app.post('/api/repairs/:id/cancellation-payment', requirePermission('repairs.viewFinancials'), async (req, res) => {
+  const parsed = cancellationPaymentSchema.safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de cobro de revisión inválidos' })
+  const auth = authOf(req)
+  const repairId = String(req.params.id)
+  try {
+    const repair = await prisma.$transaction(async tx => {
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
+      if (!current) throw cancellationError(404, 'Reparación no encontrada')
+      if (current.status !== RepairStatus.CANCELLED) throw cancellationError(409, 'La reparación no está cancelada: usá el registro de pagos habitual')
+      const reviewFee = current.cancellationReviewFee ?? 0
+      const covered = current.cancellationReviewPaid ?? 0
+      // El saldo descuenta el adelanto que el cliente ya entregó: lo que falta es sólo la diferencia.
+      const balance = reviewFee - covered - (current.cancellationPaidAmount ?? 0)
+      if (balance <= 0) throw cancellationError(409, 'La revisión ya está cobrada por completo')
+      if (parsed.data.amount > balance) throw cancellationError(400, `El monto supera el saldo de revisión pendiente (${balance})`)
+      await tx.cashMovement.create({ data: { businessId: current.businessId, type: CashMovementType.INCOME, origin: CashMovementOrigin.REPAIR, description: `Cobro revisión reparación #${current.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: current.id, clientName: current.client.name } })
+      // Compare-and-swap sobre el saldo ya cubierto: dos cobros simultáneos del mismo saldo no pueden ocurrir.
+      const claimed = await tx.repair.updateMany({
+        where: { id: current.id, businessId: auth.businessId, status: RepairStatus.CANCELLED, cancellationReviewFee: reviewFee, cancellationReviewPaid: covered },
+        data: { cancellationReviewPaid: { increment: parsed.data.amount } },
+      })
+      if (claimed.count !== 1) throw cancellationError(409, 'El cobro de revisión ya fue registrado por otra operación')
+      await tx.payment.create({ data: { businessId: current.businessId, repairId: current.id, clientId: current.clientId, amount: parsed.data.amount, method: parsed.data.method, note: `Cobro revisión reparación #${current.number}`, cancellationReview: true } })
+      return tx.repair.findFirst({ where: { id: current.id }, include: includeRepair })
+    }, { timeout: 15_000 })
+    return res.json(repair)
+  } catch (error) {
+    const statusCode = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
+    return res.status(statusCode).json({ success: false, message: error instanceof Error && statusCode !== 500 ? error.message : 'No pudimos registrar el cobro de revisión' })
+  }
+})
+app.delete('/api/repairs/:id', requirePermission('repairs.delete'), async (req, res) => {
+  const auth = authOf(req)
+  const repair = await prisma.repair.findFirst({
+    where: { id: String(req.params.id), businessId: auth.businessId },
+    select: { id: true, paid: true, status: true, cancellationPaidAmount: true, _count: { select: { payments: true, parts: true, inventoryMovements: true, warrantyClaims: true, photos: true } } },
+  })
+  if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+  const cashMovements = await prisma.cashMovement.count({ where: { repairId: repair.id, businessId: auth.businessId } })
+  const counts = repair._count
+  // Sólo se borra una orden que nunca generó actividad real: nada de dinero, stock ni garantía.
+  const blockers: string[] = []
+  if (repair.paid !== 0 || counts.payments > 0) blockers.push('pagos')
+  if (cashMovements > 0) blockers.push('movimientos de caja')
+  if (counts.parts > 0) blockers.push('repuestos usados')
+  if (counts.inventoryMovements > 0) blockers.push('movimientos de stock')
+  if (counts.warrantyClaims > 0) blockers.push('reclamos de garantía')
+  if (counts.photos > 0) blockers.push('fotos')
+  if (repair.status === RepairStatus.DELIVERED) blockers.push('fue entregada')
+  if (repair.status === RepairStatus.CANCELLED && repair.cancellationPaidAmount != null) blockers.push('tiene una liquidación de cancelación')
+  if (blockers.length) return res.status(409).json({ success: false, message: 'Esta reparación tiene actividad registrada. Cancelala en lugar de eliminarla para conservar el historial.', details: blockers })
+  try {
+    await prisma.repair.delete({ where: { id: repair.id } })
+    return res.json({ success: true })
+  } catch {
+    return res.status(409).json({ success: false, message: 'No pudimos eliminar la reparación porque tiene registros relacionados.' })
+  }
 })
 const setRepairStatus = (status: RepairStatus) => async (req: Request, res: Response) => {
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
@@ -480,9 +593,10 @@ app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'
   const businessId = authOf(req).businessId
   const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId }, include: { client: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+  if (repair.status === RepairStatus.CANCELLED) return res.status(409).json({ success: false, message: 'La reparación está cancelada y no admite nuevos pagos' })
   const payment = await prisma.$transaction(async tx => {
     const changed = await tx.repair.updateMany({
-      where: { id: repair.id, businessId, paid: { lte: repair.total - parsed.data.amount } },
+      where: { id: repair.id, businessId, status: { not: RepairStatus.CANCELLED }, paid: { lte: repair.total - parsed.data.amount } },
       data: { paid: { increment: parsed.data.amount } },
     })
     if (changed.count !== 1) return null
