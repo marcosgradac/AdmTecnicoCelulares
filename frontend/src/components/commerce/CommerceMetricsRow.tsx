@@ -58,7 +58,7 @@ export function CommerceMetricsRow({ metrics }: Props) {
   const { containerRef, useCarousel } = useAdaptiveRow(metrics.length, { minCardWidth: MIN_CARD_WIDTH, carouselFrom: Number.POSITIVE_INFINITY, columns: metrics.length })
 
   return (
-    <Box ref={containerRef} sx={{ minWidth: 0, mb: 2.5 }}>
+    <Box ref={containerRef} sx={{ minWidth: 0, mb: 3 }}>
       {useCarousel ? (
         <CardCarousel cardWidth={CARD_WIDTH} label="métricas">
           {metrics.map(metric => <MetricCard key={metric.label} metric={metric} width={CARD_WIDTH} />)}

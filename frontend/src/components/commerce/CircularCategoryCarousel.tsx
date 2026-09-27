@@ -154,7 +154,7 @@ export function CircularCategoryCarousel({ categories, canManage, onSelectCatego
               // stopPropagation: abrir el menú ⋮ NO debe abrir la categoría.
               <Box onClick={event => event.stopPropagation()} sx={{ flexShrink: 0, mr: -0.75, mt: -0.75, opacity: { xs: 1, md: 0.55 }, transition: 'opacity .15s ease', '&:hover, &:focus-within': { opacity: 1 } }}>
                 <RowActionsMenu label={`Acciones de categoría ${category.name}`} actions={[
-                  { label: 'Editar nombre', icon: <EditRounded />, onClick: () => onEditCategory(category) },
+                  { label: 'Editar categoría', icon: <EditRounded />, onClick: () => onEditCategory(category) },
                   { label: 'Eliminar', icon: <DeleteOutlineRounded />, destructive: true, onClick: () => onDeleteCategory(category) },
                 ]} />
               </Box>

@@ -1,7 +1,7 @@
-import { Box, Button, Card, CardContent, IconButton, InputAdornment, Stack, TextField, Typography } from '@mui/material'
+import { Box, Card, CardContent, IconButton, InputAdornment, Stack, TextField, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import {
-  AddRounded, ClearRounded, DeleteOutlineRounded,
+  ClearRounded, DeleteOutlineRounded,
   EditRounded, Inventory2Rounded, SearchRounded,
 } from '@mui/icons-material'
 import type { CommerceCategory } from '../../services/commerce'
@@ -15,7 +15,6 @@ interface Props {
   canManage: boolean
   searchQuery: string
   onSearchChange: (value: string) => void
-  onNewCategory: () => void
   onSelectCategory: (category: CommerceCategory) => void
   onEditCategory: (category: CommerceCategory) => void
   onDeleteCategory: (category: CommerceCategory) => void
@@ -25,7 +24,7 @@ interface Props {
 const MIN_CARD_WIDTH = 208
 
 export function CommerceCategoryCarousel({
-  categories, canManage, searchQuery, onSearchChange, onNewCategory,
+  categories, canManage, searchQuery, onSearchChange,
   onSelectCategory, onEditCategory, onDeleteCategory,
 }: Props) {
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase()
@@ -62,7 +61,7 @@ export function CommerceCategoryCarousel({
           {canManage && (
             <Box onClick={event => event.stopPropagation()} sx={{ flexShrink: 0, mr: -0.75, mt: -0.75, opacity: { xs: 1, md: 0.55 }, transition: 'opacity .15s ease', '&:hover, &:focus-within': { opacity: 1 } }}>
               <RowActionsMenu label={`Acciones de categoría ${cat.name}`} actions={[
-                { label: 'Editar nombre', icon: <EditRounded />, onClick: () => onEditCategory(cat) },
+                { label: 'Editar categoría', icon: <EditRounded />, onClick: () => onEditCategory(cat) },
                 { label: 'Eliminar', icon: <DeleteOutlineRounded />, destructive: true, onClick: () => onDeleteCategory(cat) },
               ]} />
             </Box>
@@ -81,13 +80,13 @@ export function CommerceCategoryCarousel({
   }
 
   return (
-    <Card sx={{ mb: 2.5 }}>
+    <Card sx={{ mb: 3 }}>
       <CardContent>
         <Box minWidth={0} sx={{ mb: 2 }}>
           <Typography variant="h2">Categorías</Typography>
           <Typography variant="body2" color="text.secondary">Organizá tus productos y administrá su inventario.</Typography>
         </Box>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mb: 2 }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mb: 2.5 }}>
           <TextField
             size="small"
             label="Buscar categoría"
@@ -101,7 +100,6 @@ export function CommerceCategoryCarousel({
             }}
             sx={{ flex: 1, minWidth: 0 }}
           />
-          {canManage && <Button variant="contained" startIcon={<AddRounded />} onClick={onNewCategory} sx={{ flexShrink: 0 }}>Nueva categoría</Button>}
         </Stack>
         <Box ref={containerRef} sx={{ minWidth: 0 }}>
           {filteredCategories.length === 0 ? (

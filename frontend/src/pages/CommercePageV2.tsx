@@ -2,19 +2,20 @@ import { FormSection } from '../components/admin/AdminPatterns'
 import { AdminVisualScope } from '../components/admin/AdminVisualScope'
 import { CommerceCategoryCarousel } from '../components/commerce/CommerceCategoryCarousel'
 import { CommerceCategoryWorkspace } from '../components/commerce/CommerceCategoryWorkspace'
-import { CommercePointOfSale } from '../components/commerce/CommercePointOfSale'
+import { CommerceProductsSection } from '../components/commerce/CommerceProductsSection'
+import { LockedCommerce } from '../components/commerce/LockedCommerce'
 import { CommerceMetricsRow } from '../components/commerce/CommerceMetricsRow'
 import { CATEGORY_ICON_GROUPS, CATEGORY_ICONS, categoryIcon } from '../components/commerce/categoryIcons'
 import { isAxiosError } from 'axios'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AccountBalanceWalletRounded, ClearRounded, LockRounded, PaidRounded, PriceChangeRounded, ReceiptLongRounded, SearchRounded, TrendingUpRounded } from '@mui/icons-material'
+import { useEffect, useMemo, useState } from 'react'
+import { AccountBalanceWalletRounded, AddRounded, ClearRounded, LockRounded, PaidRounded, PriceChangeRounded, ReceiptLongRounded, SearchRounded, TrendingUpRounded } from '@mui/icons-material'
 import { alpha } from '@mui/material/styles'
-import { Alert, Box, Button, Card, CardContent, Chip, IconButton, InputAdornment, MenuItem, Snackbar, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, Chip, IconButton, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { canAccess } from '../auth/permissions'
 import { useSubscription } from '../features/billing/SubscriptionContext'
-import { createCommerceCategory, createCommerceProduct, createCommerceSale, deleteCommerceCategory, deleteCommerceProduct, getCommerceCategories, getCommerceSummary, updateCommerceProduct, updateCommerceCategory, type CommerceCategory, type CommercePaymentMethod, type CommerceProduct, type CommerceSummary } from '../services/commerce'
+import { createCommerceCategory, createCommerceProduct, deleteCommerceCategory, deleteCommerceProduct, getCommerceCategories, getCommerceSummary, updateCommerceProduct, updateCommerceCategory, type CommerceCategory, type CommerceProduct, type CommerceSummary } from '../services/commerce'
 import { formatMoney } from '../utils/format'
 import { PageHeader } from '../components/common/PageHeader'
 import { FormDrawer } from '../components/common/FormDrawer'
@@ -32,23 +33,20 @@ export function CommercePageV2() {
   const [error, setError] = useState(''), [saving, setSaving] = useState(false)
   const [productOpen, setProductOpen] = useState(false), [categoryOpen, setCategoryOpen] = useState(false)
   const [editing, setEditing] = useState<CommerceProduct | null>(null), [productForm, setProductForm] = useState(emptyProduct), [categoryName, setCategoryName] = useState('')
-  const [cart, setCart] = useState<Cart>({}), [paymentMethod, setPaymentMethod] = useState<CommercePaymentMethod>('CASH')
   const [revision, setRevision] = useState(0)
+  // El workspace contextual abre el drawer con la categoría fija; la tabla general lo abre
+  // libre para poder elegirla. Al editar siempre se puede cambiar de categoría.
+  const [productCategoryLocked, setProductCategoryLocked] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<CommerceCategory | null>(null)
   const [categorySearch, setCategorySearch] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'product'; item: CommerceProduct } | { kind: 'category'; item: CommerceCategory } | null>(null)
   const [deleteError, setDeleteError] = useState('')
-  const [saleError, setSaleError] = useState('')
-  const [saleSuccess, setSaleSuccess] = useState(false)
   const [editingCategory, setEditingCategory] = useState<CommerceCategory | null>(null)
   const [categoryIconKey, setCategoryIconKey] = useState<string | null>(null)
   const [categoryError, setCategoryError] = useState('')
-  const submitting = useRef(false)
-  const saleAttempt = useRef<{ fingerprint: string; key: string } | null>(null)
 
   const canView = canAccess(user, 'commerce.view')
   const canManage = canAccess(user, 'commerce.manage')
-  const canSell = canAccess(user, 'commerce.sell')
 
   const load = async () => { setRevision(value => value + 1) }
 
@@ -69,16 +67,13 @@ export function CommercePageV2() {
   if (subscriptionLoading) return <UiState loading />
   if (!commerceEnabled) return <LockedCommerce onUpgrade={() => navigate('/admin/suscripcion')} />
 
-  const cartLines = Object.values(cart)
-  const cartTotal = cartLines.reduce((sum, line) => sum + line.product.salePrice * line.quantity, 0)
-
-  const openNewProduct = () => { if (!canManage || !selectedCategory) return; setError(''); setEditing(null); setProductForm({ ...emptyProduct, category: selectedCategory.name }); setProductOpen(true) }
+  const openNewProduct = (categoryName?: string) => { if (!canManage) return; setError(''); setEditing(null); setProductForm({ ...emptyProduct, category: categoryName ?? '' }); setProductCategoryLocked(Boolean(categoryName)); setProductOpen(true) }
   const openEditProduct = (product: CommerceProduct) => { if (!canManage) return; setError(''); setEditing(product); setProductForm({ name: product.name, category: product.category, purchaseCost: String(product.purchaseCost), salePrice: String(product.salePrice), currentStock: String(product.currentStock) }); setProductOpen(true) }
   const closeProduct = () => { if (!saving) setProductOpen(false) }
 
   const saveProduct = async () => {
-    if (!canManage || saving || (!editing && !selectedCategory)) return
-    const values = { name: productForm.name.trim(), category: editing ? productForm.category.trim() : selectedCategory!.name, purchaseCost: Number(productForm.purchaseCost), salePrice: Number(productForm.salePrice), currentStock: Number(productForm.currentStock) }
+    if (!canManage || saving) return
+    const values = { name: productForm.name.trim(), category: productForm.category.trim(), purchaseCost: Number(productForm.purchaseCost), salePrice: Number(productForm.salePrice), currentStock: Number(productForm.currentStock) }
     if (![values.purchaseCost, values.salePrice, values.currentStock].every(Number.isInteger) || !values.name || !values.category || values.purchaseCost < 0 || values.salePrice <= 0 || values.currentStock < 0 || values.salePrice < values.purchaseCost) return setError('Completá datos válidos. El precio debe cubrir el costo.')
     setSaving(true); setError('')
     try {
@@ -123,39 +118,17 @@ export function CommercePageV2() {
     } catch { setDeleteError('No pudimos eliminar el registro.') } finally { setSaving(false) }
   }
 
-  const changeCart = (product: CommerceProduct, delta: number) => {
-    if (!canSell || saving || submitting.current) return
-    setCart(current => {
-      const line = current[product.id]
-      const quantity = Math.max(0, Math.min(product.currentStock, (line?.quantity ?? 0) + delta))
-      if (quantity === 0) { const { [product.id]: _removed, ...rest } = current; return rest }
-      return { ...current, [product.id]: { product, quantity } }
-    })
-  }
-
-  const confirmSale = async () => {
-    if (!canSell || saving || !cartLines.length) return
-    const input = {
-      lines: cartLines.map(line => ({ productId: line.product.id, quantity: line.quantity, expectedUnitPrice: line.product.salePrice })),
-      paymentMethod,
-      expectedTotal: cartTotal,
-    }
-    const fingerprint = JSON.stringify(input)
-    if (saleAttempt.current?.fingerprint !== fingerprint) saleAttempt.current = { fingerprint, key: crypto.randomUUID() }
-    submitting.current = true; setSaving(true); setSaleError('')
-    try {
-      await createCommerceSale({ ...input, idempotencyKey: saleAttempt.current.key })
-      saleAttempt.current = null
-      setCart({}); setSaleSuccess(true); await load()
-    } catch (failure) {
-      // Se conserva la clave: perder la respuesta no significa que el servidor haya revertido.
-      setSaleError(isAxiosError(failure) && typeof failure.response?.data?.message === 'string' ? failure.response.data.message : 'No pudimos confirmar la venta. Podés reintentar sin duplicarla.')
-      await load()
-    } finally { submitting.current = false; setSaving(false) }
-  }
-
   return <Box sx={{ minWidth: 0 }}>
-    <PageHeader title="Comercio" description="Administrá las categorías, productos, stock y precios de tu comercio." />
+    <PageHeader
+      title="Comercio"
+      description="Administrá las categorías, productos, stock y precios de tu comercio."
+      action={canManage && !saving && !selectedCategory ? (
+        <Stack direction="row" gap={1} flexWrap="wrap">
+          <Button variant="outlined" startIcon={<AddRounded />} onClick={() => openCategory()}>Nueva categoría</Button>
+          <Button variant="contained" startIcon={<AddRounded />} onClick={() => openNewProduct()}>Nuevo producto</Button>
+        </Stack>
+      ) : undefined}
+    />
     {error && <Alert severity="error" sx={{ mb: 2.5 }}>{error}</Alert>}
     {summary && <CommerceMetricsRow metrics={[
       { label: 'Ventas', value: String(summary.sales), tone: 'primary', icon: ReceiptLongRounded },
@@ -170,7 +143,7 @@ export function CommercePageV2() {
           category={selectedCategory}
           canManage={canManage && !saving}
           onBack={() => setSelectedCategory(null)}
-          onNewProduct={openNewProduct}
+          onNewProduct={() => openNewProduct(selectedCategory.name)}
           onEditCategory={() => openCategory(selectedCategory)}
           onDeleteCategory={() => removeCategory(selectedCategory)}
           onEditProduct={openEditProduct}
@@ -178,50 +151,43 @@ export function CommercePageV2() {
           revision={revision}
         />
       : <>
-          <CommercePointOfSale
-            canSell={canSell}
-            cart={cart}
-            paymentMethod={paymentMethod}
-            saving={saving}
-            error={saleError}
-            onCartChange={changeCart}
-            onRemoveCartLine={id => { if (canSell && !saving && !submitting.current) setCart(current => { const { [id]: _removed, ...rest } = current; return rest }) }}
-            onPaymentMethodChange={method => { if (canSell && !saving && !submitting.current) setPaymentMethod(method) }}
-            onConfirmSale={() => void confirmSale()}
+          <CommerceCategoryCarousel
+            categories={categories}
+            canManage={canManage && !saving}
+            searchQuery={categorySearch}
+            onSearchChange={setCategorySearch}
+            onSelectCategory={setSelectedCategory}
+            onEditCategory={openCategory}
+            onDeleteCategory={removeCategory}
+          />
+          <CommerceProductsSection
+            canManage={canManage && !saving}
+            onNewProduct={() => openNewProduct()}
+            onEditProduct={openEditProduct}
+            onDeleteProduct={removeProduct}
             revision={revision}
           />
-          <Box sx={{ mt: 2.5 }}>
-            <CommerceCategoryCarousel
-              categories={categories}
-              canManage={canManage && !saving}
-              searchQuery={categorySearch}
-              onSearchChange={setCategorySearch}
-              onNewCategory={() => openCategory()}
-              onSelectCategory={setSelectedCategory}
-              onEditCategory={openCategory}
-              onDeleteCategory={removeCategory}
-            />
-          </Box>
         </>}
-    <ProductDrawer error={error} open={productOpen} editing={editing} form={productForm} categories={categories} saving={saving} onChange={setProductForm} onClose={closeProduct} onSave={() => void saveProduct()} />
+    <ProductDrawer error={error} open={productOpen} editing={editing} form={productForm} categories={categories} categoryLocked={productCategoryLocked} saving={saving} onChange={setProductForm} onClose={closeProduct} onSave={() => void saveProduct()} />
     <AdminVisualScope enabled>
       <CategoryDrawer editing={!!editingCategory} error={categoryError} open={categoryOpen} name={categoryName} iconKey={categoryIconKey} saving={saving} onName={setCategoryName} onIcon={setCategoryIconKey} onClose={() => { if (!saving) setCategoryOpen(false) }} onSave={() => void saveCategory()} />
     </AdminVisualScope>
     <DeleteCategoryDialog category={deleteTarget?.kind === 'category' ? deleteTarget.item : null} deleting={saving} error={deleteError} onClose={() => { if (!saving) setDeleteTarget(null) }} onConfirm={() => void confirmDelete()} />
     <DeleteProductDialog product={deleteTarget?.kind === 'product' ? deleteTarget.item : null} deleting={saving} error={deleteError} onClose={() => { if (!saving) setDeleteTarget(null) }} onConfirm={() => void confirmDelete()} />
-    <Snackbar open={saleSuccess} autoHideDuration={6000} onClose={() => setSaleSuccess(false)}><Alert severity="success" onClose={() => setSaleSuccess(false)}>Venta registrada correctamente.</Alert></Snackbar>
   </Box>
 }
 
-function ProductDrawer({ open, error, editing, form, categories, saving, onChange, onClose, onSave }: { open: boolean; error: string; editing: CommerceProduct | null; form: typeof emptyProduct; categories: CommerceCategory[]; saving: boolean; onChange: (value: typeof emptyProduct) => void; onClose: () => void; onSave: () => void }) {
+function ProductDrawer({ open, error, editing, form, categories, categoryLocked, saving, onChange, onClose, onSave }: { open: boolean; error: string; editing: CommerceProduct | null; form: typeof emptyProduct; categories: CommerceCategory[]; categoryLocked: boolean; saving: boolean; onChange: (value: typeof emptyProduct) => void; onClose: () => void; onSave: () => void }) {
   const field = (key: keyof typeof emptyProduct) => (event: React.ChangeEvent<HTMLInputElement>) => onChange({ ...form, [key]: event.target.value })
   return (
     <FormDrawer open={open} context="COMERCIO" title={editing ? 'Editar producto' : 'Nuevo producto'} saving={saving} submitLabel={editing ? 'Guardar cambios' : 'Crear producto'} submitDisabled={!form.name.trim() || !form.category || !form.purchaseCost || !form.salePrice} onClose={onClose} onSubmit={onSave}>
       {error && <Alert severity="error">{error}</Alert>}
       <FormSection title="Información del producto" description="Nombre y categoría para identificarlo en el catálogo.">
         <TextField required autoFocus fullWidth label="Nombre" placeholder="Ej.: Cable USB-C 1 m" value={form.name} onChange={field('name')} helperText="Se muestra en el catálogo y en el punto de venta." />
-        {editing
-          ? <TextField required select fullWidth label="Categoría" value={form.category} onChange={field('category')}>{categories.map(category => <MenuItem key={category.id} value={category.name}>{category.name}</MenuItem>)}</TextField>
+        {editing || !categoryLocked
+          ? categories.length > 0
+            ? <TextField required select fullWidth label="Categoría" value={form.category} onChange={field('category')}>{categories.map(category => <MenuItem key={category.id} value={category.name}>{category.name}</MenuItem>)}</TextField>
+            : <Alert severity="warning">Primero creá una categoría: todo producto necesita una para organizarse.</Alert>
           : <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}><Typography variant="caption" color="text.secondary">Se creará en la categoría</Typography><Chip size="small" color="primary" variant="outlined" label={form.category} /></Stack>}
       </FormSection>
       <FormSection title="Precios y stock" description="Completá el costo, el precio de venta y las unidades disponibles.">
@@ -331,8 +297,4 @@ function CategoryDrawer({ editing, error, open, name, iconKey, saving, onName, o
       <CategoryIconPicker value={iconKey} onChange={onIcon} />
     </Stack>
   </FormDrawer>
-}
-
-function LockedCommerce({ onUpgrade }: { onUpgrade: () => void }) {
-  return <Card><CardContent><Stack alignItems="center" textAlign="center" spacing={2} py={8}><LockRounded color="primary" sx={{ fontSize: 52 }} /><Typography variant="h1">Comercio está incluido en el Plan Completo</Typography><Typography color="text.secondary" maxWidth={560}>Vendé cargadores, cables, fundas y otros accesorios con stock, caja y ganancia por producto.</Typography><Button variant="contained" onClick={onUpgrade}>Mejorar plan</Button></Stack></CardContent></Card>
 }

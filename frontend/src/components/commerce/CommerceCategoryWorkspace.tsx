@@ -66,11 +66,19 @@ export function CommerceCategoryWorkspace({
 
   return (
     <Box>
-      <Box sx={{ mb: 2.5 }}>
-        <Button startIcon={<ArrowBackRounded />} onClick={onBack} sx={{ mb: 1.5, color: 'text.secondary', fontWeight: 600 }}>
-          Volver al punto de venta
+      <Box sx={{ mb: 3 }}>
+        <Button
+          startIcon={<ArrowBackRounded />}
+          onClick={onBack}
+          sx={{
+            alignSelf: 'flex-start', ml: -1, mb: 2.5,
+            color: 'primary.main', fontWeight: 700,
+            '&:hover': { bgcolor: theme => alpha(theme.palette.primary.main, 0.08) },
+          }}
+        >
+          Volver al comercio
         </Button>
-        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={2}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={{ xs: 2, sm: 3 }}>
           <Box sx={{ minWidth: 0 }}>
             <Stack direction="row" alignItems="center" gap={1.5} flexWrap="wrap">
               <Box sx={{ width: 44, height: 44, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 2.5, bgcolor: theme => alpha(theme.palette.primary.main, 0.1), color: 'primary.main' }}>
@@ -81,14 +89,12 @@ export function CommerceCategoryWorkspace({
                   <Typography variant="h1" sx={{ overflowWrap: 'anywhere', maxWidth: '100%' }}>{category.name}</Typography>
                   <Chip size="small" label={`${category.productCount} ${category.productCount === 1 ? 'producto activo' : 'productos activos'}`} color="primary" variant="outlined" sx={{ fontWeight: 650 }} />
                 </Stack>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Administrá los productos y el stock correspondientes a esta categoría.
-                </Typography>
               </Box>
             </Stack>
           </Box>
           <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
             <Button variant="outlined" startIcon={<EditRounded />} onClick={onEditCategory} disabled={!canManage}>Editar categoría</Button>
+            {canManage && <Button variant="contained" startIcon={<AddRounded />} onClick={onNewProduct}>Nuevo producto</Button>}
             {canManage && (
               <RowActionsMenu label={`Acciones para ${category.name}`} actions={[
                 { label: 'Eliminar categoría', icon: <DeleteOutlineRounded />, destructive: true, onClick: onDeleteCategory },
@@ -96,20 +102,20 @@ export function CommerceCategoryWorkspace({
             )}
           </Stack>
         </Stack>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, maxWidth: 640 }}>
+          Administrá los productos y el stock correspondientes a esta categoría.
+        </Typography>
       </Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} action={<Button onClick={() => setRetry(value => value + 1)}>Reintentar</Button>}>{error}</Alert>}
 
       <Card>
         <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
-            <Box minWidth={0}>
-              <Typography variant="h2">Productos</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {debouncedSearch.trim() ? `Resultados para «${debouncedSearch.trim()}»` : 'Listado completo con stock, costos y márgenes por unidad.'}
-              </Typography>
-            </Box>
-            {canManage && <Button variant="contained" startIcon={<AddRounded />} onClick={onNewProduct} sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' }, flexShrink: 0 }}>Nuevo producto</Button>}
-          </Stack>
+          <Box sx={{ mb: 2.5 }}>
+            <Typography variant="h2">Productos</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {debouncedSearch.trim() ? `Resultados para «${debouncedSearch.trim()}»` : 'Listado completo con stock, costos y márgenes por unidad.'}
+            </Typography>
+          </Box>
           <TextField
             fullWidth
             size="small"
@@ -117,7 +123,7 @@ export function CommerceCategoryWorkspace({
             placeholder="Buscar por nombre"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2.5 }}
             slotProps={{
               input: {
                 startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" color="action" /></InputAdornment>,
