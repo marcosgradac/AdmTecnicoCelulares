@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Box, Card, CardContent, IconButton, Stack, Typography } from '@mui/material'
-import { alpha } from '@mui/material/styles'
+import { Box, IconButton, Stack } from '@mui/material'
+import { alpha, type SxProps, type Theme } from '@mui/material/styles'
 import { keyframes } from '@emotion/react'
-import {
-  ChevronLeftRounded, ChevronRightRounded, DeleteOutlineRounded,
-  EditRounded, Inventory2Rounded,
-} from '@mui/icons-material'
+import { ChevronLeftRounded, ChevronRightRounded } from '@mui/icons-material'
 import type { CommerceCategory } from '../../services/commerce'
-import { RowActionsMenu } from '../common/RowActionsMenu'
-import { categoryIcon } from './categoryIcons'
+import { CategoryCard } from './CategoryCard'
 
 interface Props {
   categories: CommerceCategory[]
@@ -35,14 +31,36 @@ const SWIPE_THRESHOLD = 48
 const HOVER_SPACE_TOP = 8
 const HOVER_SPACE_BOTTOM = 28
 
+/**
+ * Estilo compartido de las flechas. Es SOLO presentación: los handlers
+ * (`previous` / `next`) y toda la lógica circular quedan intactos.
+ */
+const ARROW_SX: SxProps<Theme> = {
+  alignSelf: 'center',
+  flexShrink: 0,
+  width: 40,
+  height: 40,
+  borderRadius: '50%',
+  border: '1px solid #E7E8F0',
+  bgcolor: 'background.paper',
+  color: 'primary.main',
+  boxShadow: '0 1px 2px rgba(23,26,35,.04), 0 6px 16px rgba(32,25,74,.06)',
+  transition: 'background-color .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease',
+  '&:hover': {
+    bgcolor: theme => alpha(theme.palette.primary.main, 0.07),
+    borderColor: theme => alpha(theme.palette.primary.main, 0.3),
+    boxShadow: '0 2px 6px rgba(23,26,35,.05), 0 10px 22px rgba(91,63,214,.14)',
+  },
+}
+
 // El desplazamiento horizontal del entrance se mantiene dentro del ancho de la card
 // (12px < la mitad de cualquier card) para no depender de padding lateral.
 const enterFromRight = keyframes`
-  from { opacity: 0; transform: translateX(12px); }
+  from { opacity: 0.65; transform: translateX(12px); }
   to   { opacity: 1; transform: translateX(0); }
 `
 const enterFromLeft = keyframes`
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0.65; transform: translateX(-12px); }
   to   { opacity: 1; transform: translateX(0); }
 `
 
@@ -124,71 +142,22 @@ export function CircularCategoryCarousel({ categories, canManage, onSelectCatego
     (_, offset) => categories[(startIndex + offset) % total],
   ).filter((category): category is CommerceCategory => Boolean(category))
 
-  const card = (category: CommerceCategory) => {
-    const Icon = categoryIcon(category.iconKey)
-    return (
-      <Card
-        key={category.id}
-        variant="outlined"
-        onClick={() => onSelectCategory(category)}
-        sx={{
-          width: '100%',
-          minWidth: 0,
-          height: '100%',
-          cursor: 'pointer',
-          borderRadius: 2,
-          transition: 'border-color .18s ease, box-shadow .18s ease, transform .18s ease',
-          '&:hover': {
-            borderColor: 'primary.main',
-            boxShadow: theme => `0 6px 18px ${alpha(theme.palette.primary.main, 0.12)}`,
-            transform: 'translateY(-2px)',
-          },
-        }}
-      >
-        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, height: '100%' }}>
-          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
-            <Box sx={{ width: 38, height: 38, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 2, bgcolor: theme => alpha(theme.palette.primary.main, 0.1), color: 'primary.main' }}>
-              <Icon sx={{ fontSize: 20 }} />
-            </Box>
-            {canManage && (
-              // stopPropagation: abrir el menú ⋮ NO debe abrir la categoría.
-              <Box onClick={event => event.stopPropagation()} sx={{ flexShrink: 0, mr: -0.75, mt: -0.75, opacity: { xs: 1, md: 0.55 }, transition: 'opacity .15s ease', '&:hover, &:focus-within': { opacity: 1 } }}>
-                <RowActionsMenu label={`Acciones de categoría ${category.name}`} actions={[
-                  { label: 'Editar categoría', icon: <EditRounded />, onClick: () => onEditCategory(category) },
-                  { label: 'Eliminar', icon: <DeleteOutlineRounded />, destructive: true, onClick: () => onDeleteCategory(category) },
-                ]} />
-              </Box>
-            )}
-          </Stack>
-          <Box sx={{ mt: 1.5, minWidth: 0 }}>
-            <Typography fontWeight={750} title={category.name} sx={{ fontSize: '.95rem', lineHeight: 1.3, overflowWrap: 'anywhere' }}>{category.name}</Typography>
-            <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 0.25, color: 'text.secondary' }}>
-              <Inventory2Rounded sx={{ fontSize: 14 }} />
-              <Typography variant="caption">{category.productCount} {category.productCount === 1 ? 'producto activo' : 'productos activos'}</Typography>
-            </Stack>
-          </Box>
-        </CardContent>
-      </Card>
-    )
-  }
+  const card = (category: CommerceCategory) => (
+    <CategoryCard
+      key={category.id}
+      category={category}
+      canManage={canManage}
+      onSelect={onSelectCategory}
+      onEditCategory={onEditCategory}
+      onDeleteCategory={onDeleteCategory}
+    />
+  )
 
   return (
     <Stack direction="row" alignItems="stretch" spacing={1} sx={{ minWidth: 0 }}>
       {isCircular && (
-        <IconButton
-          aria-label={`Ver la categoría anterior`}
-          onClick={previous}
-          sx={{
-            alignSelf: 'center',
-            flexShrink: 0,
-            border: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            transition: 'border-color .18s ease, background-color .18s ease',
-            '&:hover': { bgcolor: 'background.paper', borderColor: 'primary.main' },
-          }}
-        >
-          <ChevronLeftRounded />
+        <IconButton aria-label="Ver la categoría anterior" onClick={previous} sx={ARROW_SX}>
+          <ChevronLeftRounded fontSize="small" />
         </IconButton>
       )}
 
@@ -219,7 +188,8 @@ export function CircularCategoryCarousel({ categories, canManage, onSelectCatego
             display: 'grid',
             gridTemplateColumns: `repeat(${Math.max(visibleCount, 1)}, minmax(0, 1fr))`,
             gap: `${GAP}px`,
-            animation: `${(direction === 1 ? enterFromRight : enterFromLeft)} 220ms cubic-bezier(0.22, 0.61, 0.36, 1)`,
+            animation: `${(direction === 1 ? enterFromRight : enterFromLeft)} 360ms cubic-bezier(0.22, 1, 0.36, 1) both`,
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
           }}
         >
           {visibleCategories.map(card)}
@@ -227,20 +197,8 @@ export function CircularCategoryCarousel({ categories, canManage, onSelectCatego
       </Box>
 
       {isCircular && (
-        <IconButton
-          aria-label={`Ver la categoría siguiente`}
-          onClick={next}
-          sx={{
-            alignSelf: 'center',
-            flexShrink: 0,
-            border: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            transition: 'border-color .18s ease, background-color .18s ease',
-            '&:hover': { bgcolor: 'background.paper', borderColor: 'primary.main' },
-          }}
-        >
-          <ChevronRightRounded />
+        <IconButton aria-label="Ver la categoría siguiente" onClick={next} sx={ARROW_SX}>
+          <ChevronRightRounded fontSize="small" />
         </IconButton>
       )}
     </Stack>

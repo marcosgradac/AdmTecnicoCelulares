@@ -9,6 +9,14 @@ export const statusColors: Record<EquipmentStatus, ChipProps['color']> = {
   PURCHASED: 'default', REPAIRING: 'warning', READY_FOR_SALE: 'info', SOLD: 'success',
 }
 export const paymentLabels: Record<EquipmentPaymentMethod, string> = { CASH: 'Efectivo', TRANSFER: 'Transferencia', CARD: 'Tarjeta', OTHER: 'Otro' }
+
+/** Estados que se pueden asignar desde el alta y la edición. SOLD queda fuera: sólo se alcanza registrando la venta. */
+export const editableStatuses = ['PURCHASED', 'REPAIRING', 'READY_FOR_SALE'] as const satisfies readonly Exclude<EquipmentStatus, 'SOLD'>[]
+export type EditableEquipmentStatus = (typeof editableStatuses)[number]
+
+/** El equipo se compra roto, así que el flujo arranca en reparación y no en "Comprado". */
+export const initialEquipmentStatus: EditableEquipmentStatus = 'REPAIRING'
+
 export const equipmentError = (error: unknown, fallback: string) => isAxiosError<{ message?: string }>(error) ? error.response?.data?.message ?? fallback : fallback
 export const isEquipmentConflict = (error: unknown) => isAxiosError(error) && error.response?.status === 409
 export const validAmount = (value: string, min = 0) => value.trim() !== '' && Number.isInteger(Number(value)) && Number(value) >= min && Number(value) <= 2147483647

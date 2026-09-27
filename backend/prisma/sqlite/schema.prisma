@@ -200,9 +200,11 @@ model CashMovement {
   repairId    String?
   clientName  String?
   commerceSaleId String? @unique
+  relatedCommerceSaleId String? @unique
   createdAt   DateTime         @default(now())
   business    Business         @relation(fields: [businessId], references: [id])
   commerceSale CommerceSale?   @relation(fields: [commerceSaleId], references: [id])
+  relatedCommerceSale CommerceSale? @relation("CommerceSaleReversal", fields: [relatedCommerceSaleId], references: [id], onDelete: Restrict)
 
   @@index([businessId])
   @@index([businessId, origin, createdAt, id])
@@ -252,13 +254,16 @@ model CommerceSale {
   profit          Int
   paymentMethod   PaymentMethod
   createdAt       DateTime          @default(now())
+  cancelledAt     DateTime?
   business        Business          @relation(fields: [businessId], references: [id])
   lines           CommerceSaleLine[]
   cashMovement    CashMovement?
+  reversalMovement CashMovement?    @relation("CommerceSaleReversal")
 
   @@unique([businessId, idempotencyKey])
 
   @@index([businessId, createdAt])
+  @@index([businessId, cancelledAt])
 }
 
 model CommerceSaleLine {

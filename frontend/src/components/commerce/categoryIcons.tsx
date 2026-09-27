@@ -145,3 +145,40 @@ export function categoryIcon(iconKey: string | null | undefined): SvgIconCompone
 export function categoryIconLabel(iconKey: string | null | undefined): string {
   return CATEGORY_ICONS.find(entry => entry.key === iconKey)?.label ?? 'General'
 }
+
+/**
+ * Tonos pastel por grupo temático. Solo presentación: el mismo grupo siempre
+ * comparte color, así la fila de categorías se lee como una paleta y no como
+ * un arcoíris. Fondo apenas teñido, texto saturado para mantener contraste.
+ */
+export type CategoryTone = 'violet' | 'blue' | 'green' | 'orange' | 'pink'
+
+export const CATEGORY_TONES: Record<CategoryTone, { background: string; color: string; border: string }> = {
+  violet: { background: '#F0ECFF', color: '#5B3FD6', border: '#E2DAFF' },
+  blue: { background: '#E9F2FF', color: '#1F6FEB', border: '#D6E7FF' },
+  green: { background: '#E7F7EE', color: '#1F8E55', border: '#CFEBDB' },
+  orange: { background: '#FEF1E3', color: '#C4740C', border: '#F8E1C6' },
+  pink: { background: '#FDEBF3', color: '#C6488C', border: '#F9D9E7' },
+}
+
+const TONE_BY_GROUP: Record<string, CategoryTone> = {
+  'Celulares y tablets': 'violet',
+  'Audio y sonido': 'pink',
+  'Carga y energía': 'orange',
+  'Cables y conectividad': 'blue',
+  'Fundas y protección': 'green',
+  'Memorias y datos': 'blue',
+  'Computación': 'violet',
+  'Foto y video': 'pink',
+  'Repuestos y taller': 'orange',
+  'Hogar y otros': 'green',
+  General: 'violet',
+}
+
+const GROUP_BY_KEY = new Map(CATEGORY_ICONS.map(entry => [entry.key, entry.group]))
+
+/** Resuelve el tono pastel de una categoría a partir del grupo de su icono. */
+export function categoryTone(iconKey: string | null | undefined): CategoryTone {
+  const group = (iconKey && GROUP_BY_KEY.get(iconKey)) || 'General'
+  return TONE_BY_GROUP[group] || 'violet'
+}

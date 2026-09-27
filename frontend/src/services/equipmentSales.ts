@@ -1,6 +1,7 @@
 import { api } from './api'
 
 export type EquipmentStatus = 'PURCHASED' | 'REPAIRING' | 'READY_FOR_SALE' | 'SOLD'
+export type EditableEquipmentStatus = Exclude<EquipmentStatus, 'SOLD'>
 export type EquipmentPaymentMethod = 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
 export interface EquipmentInput {
   brand: string
@@ -38,6 +39,6 @@ export interface EquipmentSaleInput { expectedVersion: number; actualSalePrice: 
 
 export const getEquipmentPage = async (params: { page: number; pageSize: number; search?: string; status?: EquipmentStatus }) => (await api.get<EquipmentPage>('/equipment-sales', { params })).data
 export const getEquipmentSummary = async () => (await api.get<EquipmentSummary>('/equipment-sales/summary')).data
-export const createEquipment = async (input: EquipmentInput) => (await api.post<ResaleDevice>('/equipment-sales', input)).data
-export const updateEquipment = async (id: string, input: EquipmentInput & { status: Exclude<EquipmentStatus, 'SOLD'>; expectedVersion: number }) => (await api.patch<ResaleDevice>(`/equipment-sales/${id}`, input)).data
+export const createEquipment = async (input: EquipmentInput & { status?: EditableEquipmentStatus }) => (await api.post<ResaleDevice>('/equipment-sales', input)).data
+export const updateEquipment = async (id: string, input: EquipmentInput & { status: EditableEquipmentStatus; expectedVersion: number }) => (await api.patch<ResaleDevice>(`/equipment-sales/${id}`, input)).data
 export const sellEquipment = async (id: string, input: EquipmentSaleInput) => (await api.post<ResaleDevice>(`/equipment-sales/${id}/sell`, input)).data

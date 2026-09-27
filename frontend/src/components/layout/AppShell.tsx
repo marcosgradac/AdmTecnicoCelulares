@@ -19,7 +19,7 @@ const navItems: Array<{ label: string; path: string; icon: typeof DashboardRound
   { label: 'Reparaciones', path: '/admin/reparaciones', icon: BuildRounded, permission: 'repairs.view' },
   { label: 'Clientes', path: '/admin/clientes', icon: PeopleRounded, permission: 'clients.view' },
   { label: 'Comercio', path: '/admin/comercio', icon: Inventory2Rounded, permission: 'commerce.view' },
-  { label: 'Venta de equipos', path: '/admin/venta-equipos', icon: PhoneIphoneRounded, permission: 'equipmentSales.view' },
+  { label: 'Reventa de equipos', path: '/admin/venta-equipos', icon: PhoneIphoneRounded, permission: 'equipmentSales.view' },
   { label: 'Caja', path: '/admin/caja', icon: PointOfSaleRounded, permission: 'cash.view' },
   { label: 'Empleados', path: '/admin/empleados', icon: GroupsRounded, permission: 'team.view' },
   { label: 'Garantías', path: '/admin/garantias', icon: VerifiedRounded, ownerOnly: true },

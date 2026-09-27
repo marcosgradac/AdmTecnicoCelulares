@@ -3,6 +3,7 @@ import { Box, Button, Card, CardContent, Chip, List, ListItemButton, Stack, Typo
 import { Link as RouterLink } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import type { DashboardOverview, DashboardOrigin } from '../../services/dashboard'
+import { TABLE_BORDER } from '../../theme/tokens'
 import { formatMoney } from '../../utils/format'
 import { UiState } from '../common/UiState'
 import { originLabels } from './OverviewCharts'
@@ -51,7 +52,7 @@ export function RecentActivity({ items }: { items: DashboardOverview['activity']
       <Button component={RouterLink} to="/admin/caja" size="small" endIcon={<ArrowForwardRounded sx={{ fontSize: 16 }} />} sx={{ whiteSpace: 'nowrap', px: 1.25 }}>Ver movimientos</Button>
     </Stack>
     {!items.length ? <UiState title="Sin actividad en este período" description="Acá aparecerán los movimientos reales de Caja." /> : <>
-      <Box sx={{ display: { xs: 'none', md: 'grid' }, gridTemplateColumns: activityColumns, gap: 1.5, px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ display: { xs: 'none', md: 'grid' }, gridTemplateColumns: activityColumns, gap: 1.5, px: 2, py: 1, borderBottom: '1px solid', borderColor: TABLE_BORDER }}>
         <Typography variant="caption" sx={activityHeadCell}>Movimiento</Typography>
         <Typography variant="caption" sx={activityHeadCell}>Origen</Typography>
         <Typography variant="caption" sx={activityHeadCell}>Fecha y hora</Typography>
@@ -61,7 +62,7 @@ export function RecentActivity({ items }: { items: DashboardOverview['activity']
       </Box>
       <List disablePadding sx={{ display: 'grid', gap: { xs: 1.5, md: 0 }, py: 0 }}>{items.map(item => {
         const income = item.type === 'INCOME'
-        return <ListItemButton key={item.id} component={RouterLink} to={item.href} sx={{ display: 'grid', gridTemplateColumns: activityColumns, gap: { xs: 1, md: 1.5 }, alignItems: 'center', px: { xs: 1.5, md: 2 }, py: { xs: 1.25, md: 1.5 }, border: { xs: '1px solid', md: 0 }, borderBottom: '1px solid', borderColor: 'divider', borderRadius: { xs: 2, md: 0 }, minWidth: 0, transition: 'background-color .15s ease', '&:last-child': { borderBottomWidth: { md: 0 } }, '&:hover svg': { color: 'primary.main' } }}>
+        return <ListItemButton key={item.id} component={RouterLink} to={item.href} sx={{ display: 'grid', gridTemplateColumns: activityColumns, gap: { xs: 1, md: 1.5 }, alignItems: 'center', px: { xs: 1.5, md: 2 }, py: { xs: 1.25, md: 1.5 }, border: { xs: '1px solid', md: 0 }, borderBottom: '1px solid', borderColor: TABLE_BORDER, borderRadius: { xs: 2, md: 0 }, minWidth: 0, transition: 'background-color .15s ease', '&:last-child': { borderBottomWidth: { md: 0 } }, '&:hover svg': { color: 'primary.main' } }}>
           <Box sx={{ gridArea: { xs: '1 / 1 / 2 / 3', md: '1 / 1 / 2 / 2' }, minWidth: 0 }}><Typography variant="body2" fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{item.description}</Typography></Box>
           <Box sx={{ gridArea: { xs: '2 / 1 / 3 / 2', md: '1 / 2 / 2 / 3' }, minWidth: 0, display: 'flex', alignItems: 'center' }}><Chip size="small" label={originLabels[item.origin]} sx={{ height: 22, fontSize: 11, fontWeight: 700, bgcolor: originTone[item.origin].bgcolor, color: originTone[item.origin].color, '& .MuiChip-label': { px: .9 } }} /></Box>
           <Box sx={{ gridArea: { xs: '2 / 3 / 3 / 4', md: '1 / 3 / 2 / 4' }, minWidth: 0, display: 'flex', flexDirection: { xs: 'row', md: 'column' }, gap: { xs: .5, md: 0 }, alignItems: 'baseline', justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>

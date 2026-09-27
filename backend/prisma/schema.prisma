@@ -422,9 +422,15 @@ model CashMovement {
   repairId    String?
   clientName  String?
   commerceSaleId String? @unique
+  // Venta a la que este movimiento revierte. UNIQUE a proposito: PostgreSQL y SQLite admiten
+  // muchos NULL, asi que los movimientos comunes no se ven afectados, pero cada venta
+  // admite como maximo una reversion. No puede reutilizar commerceSaleId porque ese campo
+  // ya lo ocupa el INCOME original.
+  relatedCommerceSaleId String? @unique
   createdAt   DateTime         @default(now())
   business    Business         @relation(fields: [businessId], references: [id])
   commerceSale CommerceSale?      @relation(fields: [commerceSaleId], references: [id])
+  relatedCommerceSale CommerceSale? @relation("CommerceSaleReversal", fields: [relatedCommerceSaleId], references: [id], onDelete: Restrict)
 
   @@index([businessId])
   @@index([businessId, createdAt])
@@ -476,13 +482,19 @@ model CommerceSale {
   profit          Int
   paymentMethod   PaymentMethod
   createdAt       DateTime          @default(now())
+  // NULL = venta activa/completada. Con valor = cancelada. El historial nunca se borra.
+  cancelledAt     DateTime?
   business        Business          @relation(fields: [businessId], references: [id])
   lines           CommerceSaleLine[]
   cashMovement    CashMovement?
+  // Movimiento de Caja que revierte esta venta, si fue cancelada. Singular: el UNIQUE
+  // de CashMovement.relatedCommerceSaleId garantiza a lo sumo una reversión por venta.
+  reversalMovement CashMovement?    @relation("CommerceSaleReversal")
 
   @@unique([businessId, idempotencyKey])
 
   @@index([businessId, createdAt])
+  @@index([businessId, cancelledAt])
 }
 
 model CommerceSaleLine {

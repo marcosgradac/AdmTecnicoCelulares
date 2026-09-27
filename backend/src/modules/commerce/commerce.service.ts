@@ -1,4 +1,4 @@
-import { PaymentMethod, type Prisma } from '@prisma/client'
+import { PaymentMethod, Prisma, type Prisma as PrismaTypes } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 
 export class CommerceError extends Error {
@@ -39,7 +39,7 @@ export async function createCommerceSale(businessId: string, input: CommerceSale
   const requested = [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([productId, values]) => ({ productId, ...values }))
   if (!requested.length) throw new CommerceError(400, 'Agregá al menos un producto a la venta')
   const findExisting = () => prisma.commerceSale.findUnique({ where: { businessId_idempotencyKey: { businessId, idempotencyKey: input.idempotencyKey } }, include: { lines: true } })
-  const replay = (sale: Prisma.CommerceSaleGetPayload<{ include: { lines: true } }>) => {
+  const replay = (sale: PrismaTypes.CommerceSaleGetPayload<{ include: { lines: true } }>) => {
     const sameLines = sale.lines.length === requested.length && requested.every(line => sale.lines.some(saved => saved.productId === line.productId && saved.quantity === line.quantity && saved.unitPrice === line.expectedUnitPrice))
     if (!sameLines || sale.total !== input.expectedTotal || sale.paymentMethod !== input.paymentMethod) throw new CommerceError(409, 'La clave de confirmación ya fue utilizada para otra venta.')
     return sale
@@ -78,15 +78,89 @@ export async function createCommerceSale(businessId: string, input: CommerceSale
   }
 }
 
+/**
+ * Cancela una venta preservando todo el historial.
+ *
+ * No borra ni la venta, ni sus líneas, ni el movimiento de Caja original. Solo:
+ *  1. marca `cancelledAt` con un claim atómico (updateMany condicional);
+ *  2. devuelve el stock exacto de cada línea;
+ *  3. registra UN movimiento EXPENSE de reversión, vinculado por `relatedCommerceSaleId`.
+ *
+ * La protección contra la doble ejecución es doble: el claim transaccional (si otra
+ * petición ganó la carrera, `claimed.count` es 0 y no se toca nada) y el UNIQUE de
+ * `CashMovement.relatedCommerceSaleId` a nivel de base.
+ */
+export async function cancelCommerceSale(businessId: string, saleId: string) {
+  return prisma.$transaction(async tx => {
+    const sale = await tx.commerceSale.findFirst({
+      where: { id: saleId, businessId },
+      include: { lines: true },
+    })
+    if (!sale) throw new CommerceError(404, 'Venta no encontrada')
+    if (sale.cancelledAt) throw new CommerceError(409, 'La venta ya fue cancelada')
+
+    // Claim atómico: solo una operación puede pasar de cancelledAt NULL a un valor.
+    const claimed = await tx.commerceSale.updateMany({
+      where: { id: sale.id, businessId, cancelledAt: null },
+      data: { cancelledAt: new Date() },
+    })
+    if (claimed.count !== 1) throw new CommerceError(409, 'La venta ya fue cancelada por otra operación')
+
+    // Se devuelve exactamente lo que se descontó, línea por línea.
+    for (const line of sale.lines) {
+      await tx.commerceProduct.updateMany({
+        where: { id: line.productId, businessId },
+        data: { currentStock: { increment: line.quantity } },
+      })
+    }
+
+    // El INCOME original se conserva intacto; la reversión es un movimiento nuevo.
+    await tx.cashMovement.create({
+      data: {
+        businessId,
+        type: 'EXPENSE',
+        origin: 'COMMERCE',
+        description: `Devolución por cancelación venta de comercio #${sale.id.slice(-6)}`,
+        amount: sale.total,
+        method: sale.paymentMethod,
+        relatedCommerceSaleId: sale.id,
+      },
+    })
+
+    return tx.commerceSale.findUniqueOrThrow({ where: { id: sale.id }, include: { lines: true } })
+  }, { timeout: 15_000 })
+}
+
+export async function listCommerceSales(businessId: string, input: { page: number; pageSize: number }) {
+  const where = { businessId }
+  const [items, total] = await prisma.$transaction([
+    prisma.commerceSale.findMany({
+      where,
+      include: { lines: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+    }),
+    prisma.commerceSale.count({ where }),
+  ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+  return { items, total, page: input.page, pageSize: input.pageSize, pages: Math.max(1, Math.ceil(total / input.pageSize)) }
+}
+
 export async function createCommerceExpense(businessId: string, input: { description: string; amount: number; paymentMethod: PaymentMethod }) {
   return prisma.cashMovement.create({ data: { businessId, type: 'EXPENSE', origin: 'COMMERCE', description: input.description, amount: input.amount, method: input.paymentMethod } })
 }
 
 export async function getCommerceSummary(businessId: string, input: { from: Date; to: Date }) {
   const range = { gte: input.from, lt: input.to }
+  // Una venta cancelada sigue existiendo como historial pero deja de computar: ni como
+  // venta, ni como ingreso, ni como costo o ganancia.
+  const activeSales = { businessId, cancelledAt: null, createdAt: range }
   const [sales, expense, products] = await Promise.all([
-    prisma.commerceSale.aggregate({ where: { businessId, createdAt: range }, _sum: { total: true, costOfGoodsSold: true, profit: true }, _count: { _all: true } }),
-    prisma.cashMovement.aggregate({ where: { businessId, origin: 'COMMERCE', type: 'EXPENSE', createdAt: range }, _sum: { amount: true } }),
+    prisma.commerceSale.aggregate({ where: activeSales, _sum: { total: true, costOfGoodsSold: true, profit: true }, _count: { _all: true } }),
+    // Solo egresos reales del comercio. Las reversiones de venta tienen
+    // relatedCommerceSaleId y no son un gasto del negocio:Cancelar una venta ya
+    // descuenta el ingreso, así que contarlas acá las sumaría dos veces.
+    prisma.cashMovement.aggregate({ where: { businessId, origin: 'COMMERCE', type: 'EXPENSE', relatedCommerceSaleId: null, createdAt: range }, _sum: { amount: true } }),
     prisma.commerceProduct.count({ where: { businessId, active: true } }),
   ])
   return { sales: sales._count._all, revenue: sales._sum.total ?? 0, costOfGoodsSold: sales._sum.costOfGoodsSold ?? 0, profit: sales._sum.profit ?? 0, commercialExpenses: expense._sum.amount ?? 0, netProfit: (sales._sum.profit ?? 0) - (expense._sum.amount ?? 0), products }

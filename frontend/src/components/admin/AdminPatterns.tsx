@@ -2,13 +2,14 @@ import type { ReactNode } from 'react'
 import { Box, Button, Divider, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { ChevronLeftRounded, ChevronRightRounded, CloseRounded } from '@mui/icons-material'
+import { TABLE_BORDER } from '../../theme/tokens'
 import { useAdminVisual } from './AdminVisualScope'
 
 export function ListPagination({ page, count, rowsPerPage, onPageChange, disabled }: { page: number; count: number; rowsPerPage: number; onPageChange: (page: number) => void; disabled?: boolean }) {
   const pages = Math.max(1, Math.ceil(count / rowsPerPage))
   if (count <= 0 || pages <= 1) return null
   const current = Math.min(Math.max(page, 0), pages - 1)
-  return <Stack component="nav" aria-label="Paginación del listado" direction="row" alignItems="center" justifyContent="center" spacing={{ xs: 0.75, sm: 1 }} sx={{ mt: 2.5, pt: 2, borderTop: '1px solid', borderColor: 'divider', flexWrap: 'wrap', rowGap: 1 }}>
+  return <Stack component="nav" aria-label="Paginación del listado" direction="row" alignItems="center" justifyContent="center" spacing={{ xs: 0.75, sm: 1 }} sx={{ mt: 2.5, pt: 2, borderTop: '1px solid', borderColor: TABLE_BORDER, flexWrap: 'wrap', rowGap: 1 }}>
     <Button size="small" variant="outlined" startIcon={<ChevronLeftRounded />} disabled={disabled || current === 0} onClick={() => onPageChange(current - 1)} aria-label="Página anterior" sx={{ '& .MuiButton-startIcon': { display: { xs: 'none', sm: 'inherit' } } }}>Anterior</Button>
     <Typography component="span" variant="body2" fontWeight={700} color="primary.main" sx={{ px: { xs: 1.25, sm: 1.75 }, py: 0.6, borderRadius: 2.5, bgcolor: theme => alpha(theme.palette.primary.main, 0.09), fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>Página {current + 1} de {pages}</Typography>
     <Button size="small" variant="outlined" endIcon={<ChevronRightRounded />} disabled={disabled || current >= pages - 1} onClick={() => onPageChange(current + 1)} aria-label="Página siguiente" sx={{ '& .MuiButton-endIcon': { display: { xs: 'none', sm: 'inherit' } } }}>Siguiente</Button>
@@ -27,7 +28,7 @@ export function RecordCard({ leading, title, subtitle, status, actions, children
       {leading && <Box flexShrink={0}>{leading}</Box>}<Box minWidth={0} flex={1}>{status && <Box mb={1.5}>{status}</Box>}{onOpen ? <Button onClick={onOpen} sx={{ p: 0, justifyContent: 'flex-start', textAlign: 'left', color: 'text.primary', fontSize: '1rem', fontWeight: 750, overflowWrap: 'anywhere' }}>{title}</Button> : <Typography fontWeight={750} sx={{ overflowWrap: 'anywhere' }}>{title}</Typography>}{subtitle && <Typography component="div" variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{subtitle}</Typography>}</Box>
       {actions && <Box flexShrink={0}>{actions}</Box>}
     </Stack>
-    {children && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.5, pt: 2, mt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>{children}</Box>}
+    {children && <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 1.5, pt: 2, mt: 1.5, borderTop: '1px solid', borderColor: TABLE_BORDER }}>{children}</Box>}
   </Box>
 }
 

@@ -1,10 +1,12 @@
 import { FormSection } from '../../components/admin/AdminPatterns'
-import { useRef, useState } from 'react'
-import { Alert, Box, Button, Divider, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { useCallback, useRef, useState } from 'react'
+import { Alert, Autocomplete, Box, Button, Divider, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { DeviceBrandAvatar, DeviceBrandOption } from '../../components/common/DeviceBrandAvatar'
 import { FormDrawer } from '../../components/common/FormDrawer'
-import { createEquipment, sellEquipment, updateEquipment, type EquipmentPaymentMethod, type EquipmentStatus, type ResaleDevice } from '../../services/equipmentSales'
+import { deviceBrandOptions, findKnownDeviceBrand, normalizeDeviceBrand, OTHER_DEVICE_BRAND } from '../../config/deviceBrands'
+import { createEquipment, sellEquipment, updateEquipment, type EquipmentPaymentMethod, type ResaleDevice } from '../../services/equipmentSales'
 import { formatMoney } from '../../utils/format'
-import { equipmentError, isEquipmentConflict, localDateTime, paymentLabels, statusLabels, validAmount } from './equipmentPresentation'
+import { editableStatuses, equipmentError, initialEquipmentStatus, isEquipmentConflict, localDateTime, paymentLabels, statusLabels, validAmount, type EditableEquipmentStatus } from './equipmentPresentation'
 
 type DrawerProps = { onClose: () => void; onSaved: () => void; onRefresh: () => void }
 
@@ -12,44 +14,55 @@ function ConflictNotice({ conflict, onRefresh }: { conflict: boolean; onRefresh:
   return conflict ? <Button variant="outlined" onClick={onRefresh}>Cerrar y actualizar listado</Button> : null
 }
 
-export function EquipmentEditor({ device, onClose, onSaved, onRefresh }: DrawerProps & { device: ResaleDevice | null }) {
+export function EquipmentEditor({ device, initialSection, onClose, onSaved, onRefresh }: DrawerProps & { device: ResaleDevice | null; initialSection?: 'status' }) {
+  // El callback corre al montar la sección dentro del portal, antes de pintarla.
+  const statusSectionRef = useCallback((node: HTMLDivElement | null) => {
+    if (node && initialSection === 'status') {
+      node.focus({ preventScroll: true })
+      node.scrollIntoView({ behavior: 'instant', block: 'start' })
+    }
+  }, [initialSection])
   const [form, setForm] = useState({
     brand: device?.brand ?? '', model: device?.model ?? '', purchasePrice: device ? String(device.purchasePrice) : '',
     repairExpenses: device ? String(device.repairExpenses) : '', estimatedSalePrice: device ? String(device.estimatedSalePrice) : '',
-    status: (device?.status ?? 'PURCHASED') as Exclude<EquipmentStatus, 'SOLD'>,
+    status: (device?.status ?? initialEquipmentStatus) as EditableEquipmentStatus,
   })
+  // Marcas ya guardadas fuera del catálogo (histórico) se siguen editando a mano, igual que en Reparaciones.
+  const [customBrand, setCustomBrand] = useState(() => !!device && !findKnownDeviceBrand(device.brand) && !!device.brand.trim())
   const [saving, setSaving] = useState(false), [error, setError] = useState(''), [conflict, setConflict] = useState(false)
   const submitting = useRef(false)
   const totalCost = Number(form.purchasePrice) + Number(form.repairExpenses)
   const validRepairExpenses = !device && form.repairExpenses.trim() === '' || validAmount(form.repairExpenses)
   const valid = !!form.brand.trim() && !!form.model.trim() && [form.purchasePrice, form.estimatedSalePrice].every(value => validAmount(value)) && validRepairExpenses && totalCost <= 2147483647
   const profit = Number(form.estimatedSalePrice) - totalCost
-  const field = (name: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [name]: event.target.value }))
+  const field = (name: 'brand' | 'model' | 'purchasePrice' | 'repairExpenses' | 'estimatedSalePrice') => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [name]: event.target.value }))
   const close = () => { if (!submitting.current) onClose() }
   const save = async () => {
     if (!valid || submitting.current || conflict) return
     submitting.current = true; setSaving(true); setError('')
-    const input = { brand: form.brand.trim(), model: form.model.trim(), purchasePrice: Number(form.purchasePrice), repairExpenses: Number(form.repairExpenses), estimatedSalePrice: Number(form.estimatedSalePrice) }
+    const input = { brand: normalizeDeviceBrand(form.brand), model: form.model.trim(), purchasePrice: Number(form.purchasePrice), repairExpenses: Number(form.repairExpenses), estimatedSalePrice: Number(form.estimatedSalePrice) }
     try {
       if (device) await updateEquipment(device.id, { ...input, status: form.status, expectedVersion: device.version })
-      else await createEquipment(input)
+      else await createEquipment({ ...input, status: form.status })
       onSaved()
     } catch (error) { setError(equipmentError(error, 'No pudimos guardar el equipo.')); setConflict(isEquipmentConflict(error)) }
     finally { submitting.current = false; setSaving(false) }
   }
-  return <FormDrawer open context="VENTA DE EQUIPOS" title={device ? 'Editar equipo' : 'Nuevo equipo'} saving={saving} submitLabel={device ? 'Guardar cambios' : 'Registrar compra'} submitDisabled={!valid || conflict} onClose={close} onSubmit={() => void save()}>
+  return <FormDrawer open context="COMPRA Y REVENTA" title={device ? 'Editar equipo' : 'Nuevo equipo'} saving={saving} submitLabel={device ? 'Guardar cambios' : 'Registrar compra'} submitDisabled={!valid || conflict} onClose={close} onSubmit={() => void save()}>
     {error && <Alert severity="error">{error}</Alert>}<ConflictNotice conflict={conflict} onRefresh={onRefresh} />
-    <FormSection title="Identificación del equipo"><TextField autoFocus required label="Marca" value={form.brand} onChange={field('brand')} disabled={saving} slotProps={{ htmlInput: { maxLength: 80 } }} />
-    <TextField required label="Modelo" value={form.model} onChange={field('model')} disabled={saving} slotProps={{ htmlInput: { maxLength: 120 } }} />
-    </FormSection><FormSection title="Inversión y precio estimado"><Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+    <FormSection title="Identificación" description="El equipo que compraste para reparar y después revender.">
+    <Stack spacing={2}><Autocomplete fullWidth options={deviceBrandOptions} value={customBrand ? OTHER_DEVICE_BRAND : findKnownDeviceBrand(form.brand) ?? null} onChange={(_, value) => { if (value === OTHER_DEVICE_BRAND) setCustomBrand(true); else { setCustomBrand(false); setForm(current => ({ ...current, brand: value ?? '' })) } }} noOptionsText="Elegí «Otra» para escribir una marca distinta." renderOption={(props, option) => <DeviceBrandOption option={option} optionProps={props} />} renderInput={params => <TextField {...params} required label="Marca" placeholder="Samsung, Apple, Motorola…" disabled={saving} InputProps={{ ...params.InputProps, startAdornment: form.brand ? <InputAdornment position="start"><DeviceBrandAvatar brand={form.brand} size={20} /></InputAdornment> : params.InputProps.startAdornment }} />} /><TextField fullWidth required label="Modelo" value={form.model} onChange={field('model')} disabled={saving} slotProps={{ htmlInput: { maxLength: 120 } }} /></Stack>
+    {customBrand && <TextField required label="Otra marca" value={form.brand} onChange={field('brand')} disabled={saving} slotProps={{ htmlInput: { maxLength: 80 } }} helperText="Se guarda tal como la escribas." />}
+    </FormSection><FormSection title="Inversión" description="Cuánto te cuesta el equipo y cuánto esperás cobrar."><Stack spacing={2}>
       <TextField fullWidth required type="number" label="Precio de compra" value={form.purchasePrice} onChange={field('purchasePrice')} disabled={saving} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
       <TextField fullWidth required={Boolean(device)} type="number" label="Gastos de reparación" value={form.repairExpenses} onChange={field('repairExpenses')} disabled={saving} slotProps={{ htmlInput: { min: 0, step: 1 } }} helperText={device ? 'Importe total acumulado' : 'Opcional. Vacío equivale a $0; podés cargarlo después.'} />
     </Stack>
     <TextField required type="number" label="Precio estimado de venta" value={form.estimatedSalePrice} onChange={field('estimatedSalePrice')} disabled={saving} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
-    </FormSection><FormSection title="Estado del equipo">{device ? <TextField select label="Estado" value={form.status} onChange={field('status')} disabled={saving}>{(['PURCHASED', 'REPAIRING', 'READY_FOR_SALE'] as const).map(status => <MenuItem key={status} value={status}>{statusLabels[status]}</MenuItem>)}</TextField> : <Typography variant="body2" color="text.secondary">El equipo se registra como Comprado.</Typography>}</FormSection>
-    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}><Stack direction="row" justifyContent="space-between"><Typography>Costo total</Typography><Typography fontWeight={800}>{valid ? formatMoney(totalCost) : '—'}</Typography></Stack><Stack direction="row" justifyContent="space-between" mt={1}><Typography>Ganancia estimada</Typography><Typography fontWeight={800} color={profit < 0 ? 'error.main' : 'success.main'}>{valid ? formatMoney(profit) : '—'}</Typography></Stack></Box>
+    <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 2 }}><Stack direction="row" justifyContent="space-between"><Typography>Inversión total</Typography><Typography fontWeight={800}>{valid ? formatMoney(totalCost) : '—'}</Typography></Stack><Stack direction="row" justifyContent="space-between" mt={1}><Typography>Ganancia estimada</Typography><Typography fontWeight={800} color={profit < 0 ? 'error.main' : 'success.main'}>{valid ? formatMoney(profit) : '—'}</Typography></Stack></Box>
     {valid && profit < 0 && <Alert severity="warning">El precio estimado no cubre la inversión.</Alert>}
-    <Typography variant="body2" color="text.secondary">{device ? 'Al aumentar compra o gastos, se registra sólo la diferencia en Caja. Una reducción genera un ingreso compensatorio; el historial se conserva.' : 'La compra y los gastos iniciales se registran como egresos en Caja → Venta de equipos.'}</Typography>
+    </FormSection><Box ref={statusSectionRef} tabIndex={-1} role="region" aria-label="Estado"><FormSection title="Estado"><TextField select fullWidth label="Estado" helperText="Marcá el equipo como listo para vender cuando termine la reparación." value={form.status} onChange={event => setForm(current => ({ ...current, status: event.target.value as EditableEquipmentStatus }))} disabled={saving}>{editableStatuses.map(status => <MenuItem key={status} value={status}>{statusLabels[status]}</MenuItem>)}</TextField>
+    </FormSection></Box>
+    <Typography variant="body2" color="text.secondary">{device ? 'Al aumentar compra o gastos, se registra sólo la diferencia en Caja. Una reducción genera un ingreso compensatorio; el historial se conserva.' : 'La compra y los gastos iniciales se registran como egresos en Caja → Compra y reventa de equipos.'}</Typography>
   </FormDrawer>
 }
 
@@ -72,7 +85,7 @@ export function EquipmentSaleDrawer({ device, onClose, onSaved, onRefresh }: Dra
     } catch (error) { setError(equipmentError(error, 'No pudimos confirmar la venta. Si la respuesta se perdió, cerrá y actualizá el listado antes de reintentar.')); setConflict(isEquipmentConflict(error)) }
     finally { submitting.current = false; setSaving(false) }
   }
-  return <FormDrawer open context="VENTA DE EQUIPOS" title="Registrar venta" saving={saving} submitLabel="Confirmar venta" submitDisabled={!valid || conflict} onClose={() => { if (!submitting.current) onClose() }} onSubmit={() => void save()}>
+  return <FormDrawer open context="COMPRA Y REVENTA" title="Registrar venta" saving={saving} submitLabel="Confirmar venta" submitDisabled={!valid || conflict} onClose={() => { if (!submitting.current) onClose() }} onSubmit={() => void save()}>
     {error && <Alert severity="error">{error}</Alert>}<ConflictNotice conflict={conflict} onRefresh={onRefresh} />
     <Box><Typography variant="h2">{device.brand} {device.model}</Typography><Typography variant="body2" color="text.secondary">Listo para vender · costo total {formatMoney(device.totalCost)}</Typography></Box>
     <FormSection title="Condiciones de venta"><TextField autoFocus required type="number" label="Precio real de venta" value={price} onChange={event => setPrice(event.target.value)} disabled={saving} slotProps={{ htmlInput: { min: 1, step: 1 } }} />

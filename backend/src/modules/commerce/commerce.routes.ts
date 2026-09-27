@@ -2,7 +2,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { z } from 'zod'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import { assertFeatureAccess } from '../billing/billing.service'
-import { CommerceError, createCommerceExpense, createCommerceSale, getCommerceSummary, listCommerceProducts } from './commerce.service'
+import { cancelCommerceSale, CommerceError, createCommerceExpense, createCommerceSale, getCommerceSummary, listCommerceProducts, listCommerceSales } from './commerce.service'
 import { prisma } from '../../lib/prisma'
 import { Prisma } from '@prisma/client'
 
@@ -166,14 +166,19 @@ commerceRouter.get('/movements', requirePermission('commerce.view'), async (req,
 })
 
 commerceRouter.get('/sales', requirePermission('commerce.view'), async (req, res) => {
-  const parsed = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(100).default(20) }).safeParse(req.query)
+  const parsed = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(1).max(100).default(10) }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Paginación inválida' })
-  const where = { businessId: authOf(req).businessId }
-  const [items, total] = await prisma.$transaction([
-    prisma.commerceSale.findMany({ where, include: { lines: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (parsed.data.page - 1) * parsed.data.pageSize, take: parsed.data.pageSize }),
-    prisma.commerceSale.count({ where }),
-  ])
-  return res.json({ items, total, page: parsed.data.page, pageSize: parsed.data.pageSize, pages: Math.max(1, Math.ceil(total / parsed.data.pageSize)) })
+  return res.json(await listCommerceSales(authOf(req).businessId, parsed.data))
+})
+
+// Cancelación histórica: conserva venta, líneas y el ingreso original.
+commerceRouter.post('/sales/:id/cancel', requirePermission('commerce.manage'), async (req, res) => {
+  try { return res.json(await cancelCommerceSale(authOf(req).businessId, String(req.params.id))) }
+  catch (error) {
+    if (error instanceof CommerceError) return res.status(error.status).json({ success: false, message: error.message })
+    console.error('Error cancelando venta de Comercio', error)
+    return res.status(500).json({ success: false, message: 'No pudimos cancelar la venta.' })
+  }
 })
 
 commerceRouter.post('/sales', requirePermission('commerce.sell'), async (req, res) => {

@@ -13,7 +13,8 @@ export interface CommerceProduct {
 }
 export interface CommerceCategory { id: string; name: string; productCount: number; iconKey: string | null }
 export interface CommerceSaleLine { id: string; productId: string; productName: string; quantity: number; unitCost: number; unitPrice: number; lineTotal: number; lineCost: number; lineProfit: number }
-export interface CommerceSale { id: string; total: number; costOfGoodsSold: number; profit: number; paymentMethod: CommercePaymentMethod; createdAt: string; lines: CommerceSaleLine[] }
+export interface CommerceSale { id: string; total: number; costOfGoodsSold: number; profit: number; paymentMethod: CommercePaymentMethod; createdAt: string; /** null = venta activa. Con valor = cancelada (el historial se conserva). */
+  cancelledAt: string | null; lines: CommerceSaleLine[] }
 export interface CommerceSummary { sales: number; revenue: number; costOfGoodsSold: number; profit: number; commercialExpenses: number; netProfit: number; products: number }
 
 export const getCommerceProducts = async (params: { page?: number; pageSize?: number; search?: string; category?: string; inStock?: boolean } = {}) => (await api.get<{ items: CommerceProduct[]; total: number; page: number; pageSize: number; pages: number }>('/commerce/products', { params })).data
@@ -25,6 +26,8 @@ export const deleteCommerceProduct = async (id: string) => (await api.delete(`/c
 export const deleteCommerceCategory = async (id: string) => (await api.delete(`/commerce/categories/${id}`)).data
 export const createCommerceSale = async (input: { lines: Array<{ productId: string; quantity: number; expectedUnitPrice: number }>; paymentMethod: CommercePaymentMethod; expectedTotal: number; idempotencyKey: string }) => (await api.post<CommerceSale>('/commerce/sales', input)).data
 export const getCommerceSales = async (params: { page?: number; pageSize?: number } = {}) => (await api.get<{ items: CommerceSale[]; total: number; page: number; pageSize: number; pages: number }>('/commerce/sales', { params })).data
+/** Cancela la venta sin borrarla: restaura stock y registra la reversión en Caja. */
+export const cancelCommerceSale = async (id: string) => (await api.post<CommerceSale>(`/commerce/sales/${encodeURIComponent(id)}/cancel`)).data
 export const getCommerceSummary = async (params: { from?: string; to?: string } = {}) => (await api.get<CommerceSummary>('/commerce/summary', { params })).data
 export const createCommerceExpense = async (input: { description: string; amount: number; paymentMethod: CommercePaymentMethod }) => (await api.post('/commerce/expenses', input)).data
 

@@ -10,6 +10,7 @@ const fields = {
 }
 const version = z.number().int().min(0).max(2147483646)
 const status = z.enum(['PURCHASED', 'REPAIRING', 'READY_FOR_SALE', 'SOLD'])
+const editableStatus = z.enum(['PURCHASED', 'REPAIRING', 'READY_FOR_SALE'])
 export const equipmentSalesRouter = Router()
 
 equipmentSalesRouter.get('/', requirePermission('equipmentSales.view'), async (req, res) => {
@@ -21,13 +22,13 @@ equipmentSalesRouter.get('/', requirePermission('equipmentSales.view'), async (r
 equipmentSalesRouter.get('/summary', requirePermission('equipmentSales.view'), async (req, res) => res.json(await deviceSummary(authOf(req).businessId)))
 
 equipmentSalesRouter.post('/', requirePermission('equipmentSales.manage'), async (req, res) => {
-  const parsed = z.object({ ...fields, repairExpenses: amount.default(0) }).strict().safeParse(req.body)
+  const parsed = z.object({ ...fields, repairExpenses: amount.default(0), status: editableStatus.default('PURCHASED') }).strict().safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ message: 'Completá marca, modelo e importes enteros no negativos válidos.' })
   return res.status(201).json(await createDevice(authOf(req).businessId, parsed.data))
 })
 
 equipmentSalesRouter.patch('/:id', requirePermission('equipmentSales.manage'), async (req, res) => {
-  const parsed = z.object({ ...fields, status: z.enum(['PURCHASED', 'REPAIRING', 'READY_FOR_SALE']), expectedVersion: version }).strict().safeParse(req.body)
+  const parsed = z.object({ ...fields, status: editableStatus, expectedVersion: version }).strict().safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ message: 'Datos de equipo inválidos. No se puede marcar como vendido desde la edición.' })
   return res.json(await editDevice(authOf(req).businessId, String(req.params.id), parsed.data))
 })

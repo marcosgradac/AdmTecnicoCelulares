@@ -1,18 +1,72 @@
-import { ArrowDownwardRounded, ArrowUpwardRounded } from '@mui/icons-material'
-import { Box, Chip, Stack, Typography } from '@mui/material'
+import { ArrowDownwardRounded, ArrowUpwardRounded, CreditCardRounded, HelpOutlineRounded, PaidRounded, PaymentsRounded, SwapHorizRounded } from '@mui/icons-material'
+import { Box, Chip, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { RecordCard, RecordField } from './AdminPatterns'
 import type { CashMovement } from '../../services/operations'
-import { formatMoney } from '../../utils/format'
+import { TABLE_BORDER } from '../../theme/tokens'
+import { formatMoney, formatShortDate, formatShortTime } from '../../utils/format'
 
-const origins = { GENERAL: 'General', REPAIR: 'Reparaciones', EQUIPMENT: 'Venta de equipos', COMMERCE: 'Comercio' }
+const origins = { GENERAL: 'General', REPAIR: 'Reparaciones', EQUIPMENT: 'Reventa de equipos', COMMERCE: 'Comercio' }
 const methods = { CASH: 'Efectivo', TRANSFER: 'Transferencia', CARD: 'Tarjeta', OTHER: 'Otro' }
+const methodIcons = { CASH: PaymentsRounded, TRANSFER: SwapHorizRounded, CARD: CreditCardRounded, OTHER: PaidRounded }
 
-export function CashMovementList({ movements }: { movements: CashMovement[] }) {
-  return <Stack spacing={{ xs: 1.5, md: 0 }}>{movements.map(item => {
+const paymentMethod = (method: CashMovement['method']) => {
+  const Icon = method ? methodIcons[method] ?? PaidRounded : HelpOutlineRounded
+  return <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: .75, minWidth: 0, color: method ? 'text.secondary' : 'text.disabled' }}>
+    <Icon sx={{ fontSize: 18, flexShrink: 0 }} />
+    <Box component="span" sx={{ overflowWrap: 'anywhere' }}>{method ? methods[method] ?? 'Otro' : 'Sin medio informado'}</Box>
+  </Box>
+}
+
+/** Subtítulo del movimiento: aclara de qué trata cuando la descripción es genérica. */
+const movementSubject = (item: CashMovement) =>
+  item.resaleDeviceId ? `Equipo #${item.resaleDeviceId.slice(-6).toUpperCase()}` : item.clientName || null
+
+export function CashMovementList({ movements, showOrigin = true }: { movements: CashMovement[]; showOrigin?: boolean }) {
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
+  const amount = (item: CashMovement) => {
     const income = item.type === 'INCOME'
-    return <Box key={item.id} component="article" sx={{ display: 'grid', gridTemplateColumns: { xs: '36px minmax(0, 1fr)', md: '40px minmax(0, 1fr) auto' }, gap: 1.5, alignItems: 'start', py: 2, px: { xs: 1.5, md: 0 }, border: { xs: '1px solid', md: 0 }, borderBottom: '1px solid', borderColor: 'divider', borderRadius: { xs: 3, md: 0 }, '&:last-child': { borderBottomWidth: { md: 0 } } }}>
-      <Box sx={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 2.5, bgcolor: income ? '#E9F8F0' : '#FFF0F0', color: income ? 'success.main' : 'error.main' }}>{income ? <ArrowUpwardRounded fontSize="small" /> : <ArrowDownwardRounded fontSize="small" />}</Box>
-      <Box minWidth={0}><Typography fontWeight={700} variant="body2" sx={{ overflowWrap: 'anywhere' }}>{item.description}</Typography><Stack direction="row" gap={.75} flexWrap="wrap" my={1}><Chip size="small" variant="outlined" label={origins[item.origin]} /><Chip size="small" label={item.method ? methods[item.method] : 'Sin medio informado'} /></Stack><Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{item.resaleDeviceId ? 'Equipo #' + item.resaleDeviceId.slice(-6) : item.clientName || 'Movimiento de caja'} · {new Date(item.createdAt).toLocaleString('es-AR')}</Typography></Box>
-      <Box sx={{ gridColumn: { xs: 2, md: 3 }, textAlign: { md: 'right' }, minWidth: 0 }}><Typography fontWeight={800} color={income ? 'success.main' : 'error.main'} sx={{ fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{income ? '+' : '−'}{formatMoney(item.amount)}</Typography><Typography variant="caption" color="text.secondary">{income ? 'Ingreso' : 'Egreso'}</Typography></Box>
-    </Box>
-  })}</Stack>
+    return <Typography variant="body2" fontWeight={800} color={income ? 'success.dark' : 'error.dark'} sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{income ? '+' : '−'}{formatMoney(item.amount)}</Typography>
+  }
+  const type = (item: CashMovement) => {
+    const income = item.type === 'INCOME'
+    return <Chip size="small" variant="outlined" label={income ? 'Ingreso' : 'Egreso'} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: income ? 'success.dark' : 'error.dark', fontWeight: 700 }} />
+  }
+  if (mobile) return <Stack spacing={1.5}>{movements.map(item => <RecordCard key={item.id}
+    leading={<Box sx={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 2.5, bgcolor: item.type === 'INCOME' ? '#E9F8F0' : '#FFF0F0', color: item.type === 'INCOME' ? 'success.main' : 'error.main' }}>{item.type === 'INCOME' ? <ArrowUpwardRounded fontSize="small" /> : <ArrowDownwardRounded fontSize="small" />}</Box>}
+    title={item.description}
+    status={<Stack direction="row" gap={.75} flexWrap="wrap">{type(item)}<Chip size="small" variant="outlined" label={origins[item.origin]} /></Stack>}
+    subtitle={movementSubject(item)}>
+    <RecordField label="Importe" color={item.type === 'INCOME' ? 'success.dark' : 'error.dark'}>{`${item.type === 'INCOME' ? '+' : '−'}${formatMoney(item.amount)}`}</RecordField>
+    <RecordField label="Medio de pago">{paymentMethod(item.method)}</RecordField>
+    <RecordField label="Fecha">{formatShortDate(item.createdAt)}</RecordField>
+    <RecordField label="Hora">{formatShortTime(item.createdAt)}</RecordField>
+  </RecordCard>)}</Stack>
+  return <TableContainer>
+    <Table aria-label="Movimientos de caja" sx={{ minWidth: showOrigin ? 860 : 690, '& .MuiTableCell-root': { borderBottom: `1px solid ${TABLE_BORDER}` }, '& .MuiTableCell-head': { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'text.secondary', lineHeight: 1.4, py: 1, background: 'transparent' } }}>
+      <TableHead><TableRow>
+        <TableCell>Movimiento</TableCell>
+        {showOrigin && <TableCell sx={{ width: 170 }}>Origen</TableCell>}
+        <TableCell sx={{ width: 165 }}>Medio de pago</TableCell>
+        <TableCell sx={{ width: 120 }}>Fecha</TableCell>
+        <TableCell sx={{ width: 78 }}>Hora</TableCell>
+        <TableCell sx={{ width: 120 }}>Tipo</TableCell>
+        <TableCell align="right" sx={{ width: 150 }}>Importe</TableCell>
+      </TableRow></TableHead>
+      <TableBody>{movements.map(item => {
+        const subject = movementSubject(item)
+        return <TableRow key={item.id} hover sx={{ '&:last-of-type td': { borderBottom: 0 } }}>
+          <TableCell sx={{ maxWidth: 320 }}>
+            <Typography variant="body2" fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{item.description}</Typography>
+            {subject && <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{subject}</Typography>}
+          </TableCell>
+          {showOrigin && <TableCell><Chip size="small" variant="outlined" label={origins[item.origin]} sx={{ bgcolor: 'transparent', borderColor: 'divider' }} /></TableCell>}
+          <TableCell><Typography variant="body2">{paymentMethod(item.method)}</Typography></TableCell>
+          <TableCell><Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{formatShortDate(item.createdAt)}</Typography></TableCell>
+          <TableCell><Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{formatShortTime(item.createdAt)}</Typography></TableCell>
+          <TableCell>{type(item)}</TableCell>
+          <TableCell align="right">{amount(item)}</TableCell>
+        </TableRow>
+      })}</TableBody>
+    </Table>
+  </TableContainer>
 }

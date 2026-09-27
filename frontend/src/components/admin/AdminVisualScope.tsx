@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react'
 import { createTheme, ThemeProvider, useTheme, type Theme } from '@mui/material/styles'
+import { TABLE_BORDER } from '../../theme/tokens'
 
 const VisualContext = createContext<Theme | null>(null)
 export const useAdminVisual = () => Boolean(useContext(VisualContext))
@@ -17,7 +18,7 @@ export function AdminVisualScope({ enabled, children }: { enabled: boolean; chil
     components: {
       MuiCard: { styleOverrides: { root: { borderRadius: 12, borderColor: '#E8EAF3', boxShadow: '0 3px 16px rgba(32,25,74,.035)', minWidth: 0 } } },
       MuiCardContent: { styleOverrides: { root: { padding: 24, '&:last-child': { paddingBottom: 24 }, [original.breakpoints.down('sm')]: { padding: 16, '&:last-child': { paddingBottom: 16 } } } } },
-      MuiTableCell: { styleOverrides: { root: { padding: '16px 12px', borderColor: '#EEF0F6', fontSize: '.875rem' }, head: { background: '#F7F8FC', color: '#6C7287', fontSize: '.75rem', fontWeight: 700, whiteSpace: 'nowrap' } } },
+      MuiTableCell: { styleOverrides: { root: { padding: '16px 12px', borderColor: TABLE_BORDER, fontSize: '.875rem' }, head: { backgroundColor: 'transparent', color: '#6C7287', fontSize: '.75rem', fontWeight: 700, whiteSpace: 'nowrap' } } },
       MuiTableRow: { styleOverrides: { root: { '&.MuiTableRow-hover:hover': { background: '#FAF9FF' }, '&:last-child td': { borderBottom: 0 } } } },
       MuiChip: { styleOverrides: { root: { fontWeight: 650, borderRadius: 8, maxWidth: '100%' }, label: { paddingLeft: 10, paddingRight: 10 } } },
       MuiIconButton: { styleOverrides: { root: { minWidth: 44, minHeight: 44 } } },

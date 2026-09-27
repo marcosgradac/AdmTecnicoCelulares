@@ -12,6 +12,9 @@ export interface DeviceInput {
   repairExpenses: number
   estimatedSalePrice: number
 }
+export interface DeviceCreateInput extends DeviceInput {
+  status?: Exclude<ResaleDeviceStatus, 'SOLD'>
+}
 export interface DeviceEditInput extends DeviceInput {
   expectedVersion: number
   status: Exclude<ResaleDeviceStatus, 'SOLD'>
@@ -55,10 +58,12 @@ async function transaction<T>(action: (tx: Prisma.TransactionClient) => Promise<
   }
 }
 
-export async function createDevice(businessId: string, input: DeviceInput) {
+export async function createDevice(businessId: string, input: DeviceCreateInput) {
   validateCost(input)
+  const { status, ...fields } = input
   return transaction(async tx => {
-    const device = await tx.resaleDevice.create({ data: { businessId, ...input } })
+    // El estado se aplica en la misma transacción que los egresos: un equipo comprado roto nace en reparación.
+    const device = await tx.resaleDevice.create({ data: { businessId, ...fields, ...(status && { status }) } })
     await recordCost(tx, device, device.purchasePrice, 'PURCHASE')
     await recordCost(tx, device, device.repairExpenses, 'REPAIR')
     return serializeDevice(device)
