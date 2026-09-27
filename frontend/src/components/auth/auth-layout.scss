@@ -92,6 +92,15 @@
    para que el bloque se sienta equilibrado y no queden zonas vacías. */
 .auth-shell--login .auth-card-content, .auth-shell--forgot-password .auth-card-content { gap: 12px; }
 .auth-shell--login .login-form, .auth-shell--forgot-password .auth-password-form { gap: 14px; }
+/* Login desplaza la columna en desktop y el documento en mobile. Ocultar sólo
+   la barra conserva wheel, trackpad, touch y el acceso al final del formulario. */
+html:has(.auth-shell--login),
+body:has(.auth-shell--login),
+.auth-shell--login .auth-workspace {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar { display: none; }
+}
 .auth-shell--forgot-password .auth-return-link { margin-top: 14px; }
 @media (min-width: 900px) {
   body:has(.auth-shell) { overflow-y: hidden; }

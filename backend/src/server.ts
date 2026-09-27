@@ -682,10 +682,11 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
 app.post('/api/cash/movements', requirePermission('cash.create'), async (req, res) => {
   const parsed = z.object({ type: z.nativeEnum(CashMovementType), origin: z.nativeEnum(CashMovementOrigin).default('GENERAL'), description: z.string().trim().min(2), amount: z.number().int().positive(), method: z.nativeEnum(PaymentMethod).optional() }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Movimiento inválido' })
+  // COMMERCE es un origen válido de movements manuales: se valida el plan y se registra
+  // un único CashMovement, igual que GENERAL, REPAIR y EQUIPMENT.
   if (parsed.data.origin === 'COMMERCE') {
     try { await assertFeatureAccess(authOf(req).businessId, 'commerce') }
     catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos validar Comercio.' }) }
-    return res.status(400).json({ success: false, message: 'Registrá ventas y egresos desde el módulo Comercio.' })
   }
   return res.status(201).json(await prisma.cashMovement.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
 })

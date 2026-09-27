@@ -4,8 +4,10 @@ import { authOf, requirePermission } from '../../middlewares/auth'
 import { assertFeatureAccess } from '../billing/billing.service'
 import { CommerceError, createCommerceExpense, createCommerceSale, getCommerceSummary, listCommerceProducts } from './commerce.service'
 import { prisma } from '../../lib/prisma'
+import { Prisma } from '@prisma/client'
 
 const paymentMethod = z.enum(['CASH', 'TRANSFER', 'CARD', 'OTHER'])
+const iconKey = z.string().trim().min(1).max(40).optional().nullable()
 const requireCommerce = async (req: Request, res: Response, next: NextFunction) => {
   try { await assertFeatureAccess(authOf(req).businessId, 'commerce'); return next() }
   catch (error) {
@@ -20,7 +22,7 @@ commerceRouter.use(requireCommerce)
 commerceRouter.get('/categories', requirePermission('commerce.view'), async (req, res) => {
   const businessId = authOf(req).businessId
   const [categories, counts] = await Promise.all([
-    prisma.commerceCategory.findMany({ where: { businessId }, orderBy: { name: 'asc' } }),
+    prisma.commerceCategory.findMany({ where: { businessId, active: true }, orderBy: { name: 'asc' } }),
     prisma.commerceProduct.groupBy({ by: ['category'], where: { businessId, active: true }, _count: { _all: true } }),
   ])
   const countByName = new Map(counts.map(row => [row.category, row._count._all]))
@@ -30,18 +32,23 @@ commerceRouter.get('/categories', requirePermission('commerce.view'), async (req
 })
 
 commerceRouter.post('/categories', requirePermission('commerce.manage'), async (req, res) => {
-  const parsed = z.object({ name: z.string().trim().min(2).max(80) }).safeParse(req.body)
+  const parsed = z.object({ name: z.string().trim().min(2).max(80), iconKey }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'El nombre de la categoría es inválido' })
   try {
-    return res.status(201).json(await prisma.commerceCategory.create({ data: { businessId: authOf(req).businessId, name: parsed.data.name } }))
+    return res.status(201).json(await prisma.commerceCategory.create({ data: { businessId: authOf(req).businessId, name: parsed.data.name, iconKey: parsed.data.iconKey ?? null } }))
   } catch (error) {
-    if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') return res.status(409).json({ success: false, message: 'Esa categoría ya existe' })
+    if (typeof error === 'object' && error && 'code' in error && error.code === 'P2002') {
+      // Recreating a soft-deleted category reactivates it instead of failing forever on the unique name.
+      const existing = await prisma.commerceCategory.findUnique({ where: { businessId_name: { businessId: authOf(req).businessId, name: parsed.data.name } } })
+      if (existing && !existing.active) return res.status(201).json(await prisma.commerceCategory.update({ where: { id: existing.id }, data: { active: true, iconKey: parsed.data.iconKey ?? null } }))
+      return res.status(409).json({ success: false, message: 'Esa categoría ya existe' })
+    }
     throw error
   }
 })
 
 commerceRouter.patch('/categories/:id', requirePermission('commerce.manage'), async (req, res) => {
-  const parsed = z.object({ name: z.string().trim().min(2).max(80) }).safeParse(req.body)
+  const parsed = z.object({ name: z.string().trim().min(2).max(80), iconKey }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'El nombre de la categoría es inválido' })
   const businessId = authOf(req).businessId
   const id = String(req.params.id)
@@ -59,8 +66,8 @@ commerceRouter.patch('/categories/:id', requirePermission('commerce.manage'), as
         if (duplicate) throw new CommerceError(409, 'Esa categoría ya existe')
       }
       const updated = stored
-        ? await tx.commerceCategory.update({ where: { id: stored.id }, data: { name } })
-        : await tx.commerceCategory.create({ data: { businessId, name } })
+        ? await tx.commerceCategory.update({ where: { id: stored.id }, data: { name, iconKey: parsed.data.iconKey === undefined ? stored.iconKey : parsed.data.iconKey } })
+        : await tx.commerceCategory.create({ data: { businessId, name, iconKey: parsed.data.iconKey ?? null } })
       await tx.commerceProduct.updateMany({ where: { businessId, category: oldName }, data: { category: name } })
       const productCount = await tx.commerceProduct.count({ where: { businessId, category: name, active: true } })
       return { ...updated, productCount }
@@ -74,11 +81,20 @@ commerceRouter.patch('/categories/:id', requirePermission('commerce.manage'), as
 })
 
 commerceRouter.delete('/categories/:id', requirePermission('commerce.manage'), async (req, res) => {
-  const category = await prisma.commerceCategory.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
-  if (!category) return res.status(404).json({ success: false, message: 'Categoría no encontrada' })
-  const products = await prisma.commerceProduct.count({ where: { businessId: category.businessId, category: category.name, active: true } })
-  if (products) return res.status(409).json({ success: false, message: 'No podés eliminar una categoría con productos. Reasigná esos productos primero.' })
-  await prisma.commerceCategory.delete({ where: { id: category.id } })
+  const businessId = authOf(req).businessId
+  const id = String(req.params.id)
+  const stored = await prisma.commerceCategory.findFirst({ where: { id, businessId } })
+  // Older products may have a category name without a CommerceCategory row (virtual category).
+  const legacyName = id.startsWith('product-category-') ? id.slice('product-category-'.length) : ''
+  const legacy = !stored && legacyName ? await prisma.commerceProduct.findFirst({ where: { businessId, category: legacyName, active: true } }) : null
+  if (!stored && !legacy) return res.status(404).json({ success: false, message: 'Categoría no encontrada' })
+  const name = stored?.name ?? legacy!.category
+  // Safe deletion: the category and its products leave the active catalog. Sales history,
+  // CommerceSaleLine snapshots and CashMovement rows are untouched (nothing references this row).
+  await prisma.$transaction([
+    ...(stored ? [prisma.commerceCategory.update({ where: { id: stored.id }, data: { active: false } })] : []),
+    prisma.commerceProduct.updateMany({ where: { businessId, category: name }, data: { active: false } }),
+  ])
   return res.json({ success: true })
 })
 
@@ -92,6 +108,8 @@ commerceRouter.post('/products', requirePermission('commerce.manage'), async (re
   const parsed = z.object({ name: z.string().trim().min(2).max(120), category: z.string().trim().min(2).max(80), purchaseCost: z.number().int().min(0).max(2147483647), salePrice: z.number().int().min(1).max(2147483647), currentStock: z.number().int().min(0).max(2147483647).default(0) }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de producto inválidos' })
   if (parsed.data.salePrice < parsed.data.purchaseCost) return res.status(400).json({ success: false, message: 'El precio de venta no puede ser menor que el costo' })
+  const archived = await prisma.commerceCategory.findFirst({ where: { businessId: authOf(req).businessId, name: parsed.data.category, active: false } })
+  if (archived) return res.status(409).json({ success: false, message: 'Esa categoría está eliminada. Recreala antes de agregar productos.' })
   return res.status(201).json(await prisma.commerceProduct.create({ data: { businessId: authOf(req).businessId, ...parsed.data }, }))
 })
 
@@ -110,10 +128,41 @@ commerceRouter.patch('/products/:id', requirePermission('commerce.manage'), asyn
 commerceRouter.delete('/products/:id', requirePermission('commerce.manage'), async (req, res) => {
   const product = await prisma.commerceProduct.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId, active: true } })
   if (!product) return res.status(404).json({ success: false, message: 'Producto no encontrado' })
-  const sales = await prisma.commerceSaleLine.count({ where: { productId: product.id } })
-  if (sales) return res.json(await prisma.commerceProduct.update({ where: { id: product.id }, data: { active: false } }))
-  await prisma.commerceProduct.delete({ where: { id: product.id } })
+  // Soft delete for every product so CommerceSaleLine snapshots always keep their product row.
+  await prisma.commerceProduct.update({ where: { id: product.id }, data: { active: false } })
   return res.json({ success: true })
+})
+
+commerceRouter.get('/movements', requirePermission('commerce.view'), async (req, res) => {
+  const parsed = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(5),
+    search: z.string().trim().max(160).optional(),
+  }).safeParse(req.query)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Filtros de movimientos inválidos' })
+  const { page, pageSize, search } = parsed.data
+  const where: Prisma.CashMovementWhereInput = {
+    businessId: authOf(req).businessId,
+    origin: 'COMMERCE',
+    ...(search ? { OR: [
+      { description: { contains: search, mode: 'insensitive' } },
+      { id: { contains: search, mode: 'insensitive' } },
+      { commerceSaleId: { contains: search, mode: 'insensitive' } },
+      { commerceSale: { lines: { some: { productName: { contains: search, mode: 'insensitive' } } } } },
+    ] } : {}),
+  }
+  // CashMovement is the row identity: a sale and its cash entry are never listed twice.
+  const [items, total] = await prisma.$transaction([
+    prisma.cashMovement.findMany({
+      where,
+      include: { commerceSale: { include: { lines: true } } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.cashMovement.count({ where }),
+  ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+  return res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
 })
 
 commerceRouter.get('/sales', requirePermission('commerce.view'), async (req, res) => {

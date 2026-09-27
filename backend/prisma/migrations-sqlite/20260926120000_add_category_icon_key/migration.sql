@@ -1,0 +1,1 @@
+ALTER TABLE "CommerceCategory" ADD COLUMN "iconKey" TEXT;

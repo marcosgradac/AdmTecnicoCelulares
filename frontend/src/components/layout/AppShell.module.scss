@@ -12,7 +12,9 @@ $sidebar-collapsed: 78px;
 .mobileBrand { display: flex; align-items: center; width: 150px; height: 36px; margin-left: 8px; }
 .mobileBrand img { width: 100%; height: 100%; object-fit: contain; object-position: left center; }
 .navLabel { padding: 0 12px 8px; font-size: 10px !important; font-weight: 800 !important; letter-spacing: .1em !important; color: #9AA0AE; }
-.nav { display: grid; gap: 4px; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+// El menú sigue desplazándose con rueda, trackpad y touch en pantallas bajas, pero sin mostrar la barra gris.
+.nav { display: grid; gap: 4px; overflow-y: auto; overflow-x: hidden; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
+.nav::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .nav :global(.MuiListItemButton-root) { min-height: 46px; border-radius: 12px; }
 .nav :global(.Mui-selected) :global(.MuiListItemIcon-root) { color: #5B3FD6; }
 .nav :global(.MuiListItemIcon-root), .bottom :global(.MuiListItemIcon-root) { min-width: 38px; color: #687083; }
