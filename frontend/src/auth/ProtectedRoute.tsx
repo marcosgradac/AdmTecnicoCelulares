@@ -11,7 +11,7 @@ export function ProtectedRoute() {
   if (connectionError) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center', p: 2 }}>
     <Stack spacing={2} sx={{ maxWidth: 420, textAlign: 'center' }}>
       <Alert severity="warning">No pudimos conectar con el servidor. Revisá tu conexión e intentá nuevamente.</Alert>
-      <Typography variant="body2" color="text.secondary">Tu sesión sigue activa: no vas a perder nada.</Typography>
+      <Typography variant="body2" color="text.secondary">Conservamos tu sesión en este dispositivo. Reintentá cuando vuelva la conexión.</Typography>
       <Button variant="contained" onClick={retrySession}>Reintentar</Button>
     </Stack>
   </Box>
