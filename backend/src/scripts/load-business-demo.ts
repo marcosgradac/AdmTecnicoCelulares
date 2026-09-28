@@ -23,6 +23,13 @@ const cancellations = [
 const methods = [PaymentMethod.CASH, PaymentMethod.TRANSFER, PaymentMethod.CARD, PaymentMethod.OTHER]
 
 async function main() {
+  // This branch has a stricter, non-overridable local-only guard and its own marker.
+  // Keep the existing small/full account, production opt-in and dataset unchanged.
+  if (process.env.DEMO_PROFILE === 'landing') {
+    const { loadLandingDemo } = await import('./landing-demo')
+    console.log(JSON.stringify(await loadLandingDemo(prisma), null, 2))
+    return
+  }
   const email = process.env.DEMO_USER_EMAIL?.trim().toLowerCase()
   if (!email) throw new Error('DEMO_USER_EMAIL es obligatorio')
   const databaseUrl = new URL(process.env.DATABASE_URL ?? '')
@@ -32,7 +39,7 @@ async function main() {
     throw new Error('Carga demo bloqueada: producción/conexión remota requiere DEMO_ALLOW_PRODUCTION=true durante esta ejecución')
   }
   const profile = process.env.DEMO_PROFILE ?? (production ? 'small' : 'full')
-  if (profile !== 'full' && profile !== 'small') throw new Error('DEMO_PROFILE debe ser full o small')
+  if (profile !== 'full' && profile !== 'small') throw new Error('DEMO_PROFILE debe ser small, full o landing')
   const statuses = profile === 'small' ? smallStatuses : fullStatuses
   const clientCount = profile === 'small' ? 6 : 18
   const deviceCount = profile === 'small' ? 8 : 25

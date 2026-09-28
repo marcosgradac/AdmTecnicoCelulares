@@ -39,6 +39,7 @@
     "test:platform-admin-actions": "tsx tests/platform-admin-subscription-actions.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
     "test:business-demo": "tsx tests/business-demo.ts",
+    "test:landing-demo": "tsx tests/landing-demo.ts",
     "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
