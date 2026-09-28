@@ -11,16 +11,31 @@ interface AuthContextValue {
   markTutorialSeen: () => Promise<void>
   refreshUser: () => Promise<void>
   logout: () => void
+  connectionError: boolean
+  retrySession: () => void
 }
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const logout = useCallback(() => { localStorage.removeItem(TOKEN_KEY); setUser(null) }, [])
+  const [connectionError, setConnectionError] = useState(false)
+  const logout = useCallback(() => { localStorage.removeItem(TOKEN_KEY); setUser(null); setConnectionError(false) }, [])
+  const retrySession = useCallback(() => {
+    if (!localStorage.getItem(TOKEN_KEY)) { setLoading(false); return }
+    setLoading(true); setConnectionError(false)
+    void getMe().then(setUser).catch(() => setConnectionError(true)).finally(() => setLoading(false))
+  }, [])
   useEffect(() => {
     if (!localStorage.getItem(TOKEN_KEY)) { setLoading(false); return }
-    void getMe().then(setUser).catch(logout).finally(() => setLoading(false))
+    // Only a rejected session may drop the token. A network blip or a 5xx must not log the
+    // user out: the token is still valid and clearing it would interrupt real work.
+    void getMe().then(setUser).catch((error: unknown) => {
+      const status = (error as { response?: { status?: number } })?.response?.status
+      if (status === 401 || status === 403) { logout(); return }
+      // Keep the token so a retry can recover; the screen shows the connection problem.
+      setConnectionError(true)
+    }).finally(() => setLoading(false))
   }, [logout])
   useEffect(() => {
     const expire = () => logout()
@@ -40,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (input: ProfileInput) => setUser(await updateProfileRequest(input))
   const refreshUser = async () => setUser(await getMe())
   const markTutorialSeen = async () => { await markTutorialSeenRequest(); setUser(current => current ? { ...current, tutorialSeen: true } : current) }
-  const value = useMemo(() => ({ user, loading, login, register, updateProfile, markTutorialSeen, refreshUser, logout }), [user, loading, logout])
+  const value = useMemo(() => ({ user, loading, login, register, updateProfile, markTutorialSeen, refreshUser, logout, connectionError, retrySession }), [user, loading, logout, connectionError, retrySession])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export const useAuth = () => {
