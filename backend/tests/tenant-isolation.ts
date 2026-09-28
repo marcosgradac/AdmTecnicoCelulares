@@ -16,26 +16,35 @@ async function main() {
   const suffix = randomBytes(6).toString('hex')
   const jwt = (await import('jsonwebtoken')).default
   const passwordHash = 'unused'
-  const ownerA = await prisma.user.create({ data: { business: { create: { name: `Tenant A ${suffix}` } }, name: 'Owner A', email: `tenant-a-${suffix}@local.test`, passwordHash, role: 'OWNER' } })
-  const businessA = ownerA.businessId
-  const ownerB = await prisma.user.create({ data: { business: { create: { name: `Tenant B ${suffix}` } }, name: 'Owner B', email: `tenant-b-${suffix}@local.test`, passwordHash, role: 'OWNER' } })
-  const businessB = ownerB.businessId
-  const clientA = await prisma.client.create({ data: { businessId: businessA, name: 'Cliente A' } })
-  const repairA = await prisma.repair.create({ data: {
-    businessId: businessA, number: 1001, clientId: clientA.id, deviceBrand: 'Audit', deviceModel: 'Tenant',
-    issue: 'Aislamiento', total: 20000, status: 'RECEIVED', trackingToken: `tenant-${suffix}`, trackingEnabled: false, updatedAt: new Date(),
-  } })
-
-  const tokenA = jwt.sign({ userId: ownerA.id, businessId: businessA, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerA.tokenVersion }, process.env.JWT_SECRET!)
-  const tokenB = jwt.sign({ userId: ownerB.id, businessId: businessB, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerB.tokenVersion }, process.env.JWT_SECRET!)
-  const call = async (method: string, path: string, body?: object, token = tokenB) => {
-    const res = await fetch(`${BASE}${path}`, { method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined })
-    return { status: res.status, text: await res.text() }
-  }
-
-  // All generated records are removed in the finally block below, so a failed assertion
-  // never leaves a business, user, client or repair behind in the local database.
+  // Declared up front so the finally block can clean a partial setup of either tenant.
+  let businessA: string | undefined
+  let businessB: string | undefined
+  let ownerAId: string | undefined
+  let ownerBId: string | undefined
+  let clientAId: string | undefined
   try {
+    const ownerA = await prisma.user.create({ data: { business: { create: { name: `Tenant A ${suffix}` } }, name: 'Owner A', email: `tenant-a-${suffix}@local.test`, passwordHash, role: 'OWNER' } })
+    businessA = ownerA.businessId
+    ownerAId = ownerA.id
+    const ownerB = await prisma.user.create({ data: { business: { create: { name: `Tenant B ${suffix}` } }, name: 'Owner B', email: `tenant-b-${suffix}@local.test`, passwordHash, role: 'OWNER' } })
+    businessB = ownerB.businessId
+    ownerBId = ownerB.id
+    const clientA = await prisma.client.create({ data: { businessId: businessA, name: 'Cliente A' } })
+    clientAId = clientA.id
+    const repairA = await prisma.repair.create({ data: {
+      businessId: businessA, number: 1001, clientId: clientA.id, deviceBrand: 'Audit', deviceModel: 'Tenant',
+      issue: 'Aislamiento', total: 20000, status: 'RECEIVED', trackingToken: `tenant-${suffix}`, trackingEnabled: false, updatedAt: new Date(),
+    } })
+
+    const tokenA = jwt.sign({ userId: ownerA.id, businessId: businessA, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerA.tokenVersion }, process.env.JWT_SECRET!)
+    const tokenB = jwt.sign({ userId: ownerB.id, businessId: businessB, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerB.tokenVersion }, process.env.JWT_SECRET!)
+    const call = async (method: string, path: string, body?: object, token = tokenB) => {
+      const res = await fetch(`${BASE}${path}`, { method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined })
+      return { status: res.status, text: await res.text() }
+    }
+
+    // All generated records are removed in the finally block below, so a failed assertion
+    // never leaves a business, user, client or repair behind in the local database.
     const probes: Array<[string, string, string, object?]> = [
       ['GET', `/repairs/${repairA.id}`, 'repair detail'],
       ['GET', `/repairs/${repairA.id}/payments`, 'repair payments'],
@@ -72,15 +81,20 @@ async function main() {
     console.log('PASS: no cross-tenant read, write, payment or deletion')
   } finally {
     // Remove only what this test created, in dependency order and scoped to its own ids.
-    await prisma.cashMovement.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-    await prisma.payment.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-    await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: { in: [businessA, businessB] } } } })
-    await prisma.repair.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-    await prisma.client.deleteMany({ where: { id: clientA.id } })
-    // Registration also creates a Subscription, which RESTRICTs the business deletion.
-    await prisma.subscription.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-    await prisma.user.deleteMany({ where: { id: { in: [ownerA.id, ownerB.id] } } })
-    await prisma.business.deleteMany({ where: { id: { in: [businessA, businessB] } } })
+    // Tenants that were never created are simply skipped.
+    const created = [businessA, businessB].filter((id): id is string => Boolean(id))
+    if (created.length) {
+      await prisma.cashMovement.deleteMany({ where: { businessId: { in: created } } })
+      await prisma.payment.deleteMany({ where: { businessId: { in: created } } })
+      await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: { in: created } } } })
+      await prisma.repair.deleteMany({ where: { businessId: { in: created } } })
+      // Registration also creates a Subscription, which RESTRICTs the business deletion.
+      await prisma.subscription.deleteMany({ where: { businessId: { in: created } } })
+    }
+    if (clientAId) await prisma.client.deleteMany({ where: { id: clientAId } })
+    const ownerIds = [ownerAId, ownerBId].filter((id): id is string => Boolean(id))
+    if (ownerIds.length) await prisma.user.deleteMany({ where: { id: { in: ownerIds } } })
+    if (created.length) await prisma.business.deleteMany({ where: { id: { in: created } } })
   }
 }
 main().finally(() => prisma.$disconnect())

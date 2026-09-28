@@ -15,28 +15,32 @@ const BASE = 'http://127.0.0.1:3000/api'
 async function main() {
   const suffix = randomBytes(6).toString('hex')
   const jwt = (await import('jsonwebtoken')).default
-  const owner = await prisma.user.create({ data: { business: { create: { name: `Concurrencia ${suffix}` } }, name: 'Owner', email: `concurrencia-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
-  const businessId = owner.businessId
-  const client = await prisma.client.create({ data: { businessId, name: 'Cliente Concurrencia' } })
-  const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
-  const call = async (method: string, path: string, body?: object) => {
-    const res = await fetch(`${BASE}${path}`, { method, headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined })
-    return { status: res.status, text: await res.text() }
-  }
-  const newRepair = async (total: number) => prisma.$transaction(async tx => {
-    const number = await allocateRepairNumber(tx, businessId)
-    return tx.repair.create({ data: { businessId, number, clientId: client.id, deviceBrand: 'Audit', deviceModel: 'Race', issue: 'Concurrencia', total, status: 'RECEIVED', trackingToken: `audit-${suffix}-${number}`, trackingEnabled: false, updatedAt: new Date() } })
-  })
-  const cleanup = async (repairId: string) => {
-    await prisma.cashMovement.deleteMany({ where: { repairId } })
-    await prisma.payment.deleteMany({ where: { repairId } })
-    await prisma.repairStatusHistory.deleteMany({ where: { repairId } })
-    await prisma.repair.deleteMany({ where: { id: repairId } })
-  }
-
-  // Every record this test can create is tracked by businessId, so a single finally block
-  // removes them all, whether the run passed or an assertion threw half way through.
+  // Declared up front so the finally block can clean a partial setup.
+  let businessId: string | undefined
+  let ownerId: string | undefined
+  let clientId: string | undefined
   try {
+    const owner = await prisma.user.create({ data: { business: { create: { name: `Concurrencia ${suffix}` } }, name: 'Owner', email: `concurrencia-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
+    businessId = owner.businessId
+    ownerId = owner.id
+    const client = await prisma.client.create({ data: { businessId, name: 'Cliente Concurrencia' } })
+    clientId = client.id
+    const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
+    const call = async (method: string, path: string, body?: object) => {
+      const res = await fetch(`${BASE}${path}`, { method, headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined })
+      return { status: res.status, text: await res.text() }
+    }
+    const newRepair = async (total: number) => prisma.$transaction(async tx => {
+      const number = await allocateRepairNumber(tx, businessId)
+      return tx.repair.create({ data: { businessId, number, clientId: client.id, deviceBrand: 'Audit', deviceModel: 'Race', issue: 'Concurrencia', total, status: 'RECEIVED', trackingToken: `audit-${suffix}-${number}`, trackingEnabled: false, updatedAt: new Date() } })
+    })
+    const cleanup = async (repairId: string) => {
+      await prisma.cashMovement.deleteMany({ where: { repairId } })
+      await prisma.payment.deleteMany({ where: { repairId } })
+      await prisma.repairStatusHistory.deleteMany({ where: { repairId } })
+      await prisma.repair.deleteMany({ where: { id: repairId } })
+    }
+
     // 1. Concurrent creations must not reuse a repair number.
     const concurrent = await Promise.all([1, 2, 3, 4, 5].map(() => newRepair(10000)))
     const numbers = concurrent.map(repair => repair.number)
@@ -71,16 +75,20 @@ async function main() {
     await cleanup(small.id)
     console.log('PASS: no duplicated money, no overshoot, no orphan cash movements')
   } finally {
-    // Scoped to this test's business only: no global delete can touch other tenants.
-    await prisma.cashMovement.deleteMany({ where: { businessId } })
-    await prisma.payment.deleteMany({ where: { businessId } })
-    await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } })
-    await prisma.repair.deleteMany({ where: { businessId } })
-    await prisma.client.deleteMany({ where: { id: client.id } })
-    // Registration also creates a Subscription, which RESTRICTs the business deletion.
-    await prisma.subscription.deleteMany({ where: { businessId } })
-    await prisma.user.deleteMany({ where: { id: owner.id } })
-    await prisma.business.deleteMany({ where: { id: businessId } })
+    // Scoped to this test's own records; each step is skipped when its id was never assigned.
+    if (businessId) {
+      await prisma.cashMovement.deleteMany({ where: { businessId } })
+      await prisma.payment.deleteMany({ where: { businessId } })
+      await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } })
+      await prisma.repair.deleteMany({ where: { businessId } })
+    }
+    if (clientId) await prisma.client.deleteMany({ where: { id: clientId } })
+    if (businessId) {
+      // Registration also creates a Subscription, which RESTRICTs the business deletion.
+      await prisma.subscription.deleteMany({ where: { businessId } })
+    }
+    if (ownerId) await prisma.user.deleteMany({ where: { id: ownerId } })
+    if (businessId) await prisma.business.deleteMany({ where: { id: businessId } })
   }
 }
 main().finally(() => prisma.$disconnect())

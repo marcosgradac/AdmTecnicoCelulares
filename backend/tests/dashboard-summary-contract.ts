@@ -15,18 +15,28 @@ const BASE = 'http://127.0.0.1:3000/api'
 async function main() {
   const suffix = randomBytes(6).toString('hex')
   const jwt = (await import('jsonwebtoken')).default
-  const owner = await prisma.user.create({ data: { business: { create: { name: `Dashboard ${suffix}` } }, name: 'Owner', email: `dashboard-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
-  const businessId = owner.businessId
-  const client = await prisma.client.create({ data: { businessId, name: 'Cliente Dashboard' } })
-  const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
-
-  // Open, WARRANTY and DELIVERED repairs, all with an unpaid balance.
-  const cases = [
-    { number: 1001, status: 'RECEIVED' as const, total: 10000, paid: 0 },
-    { number: 1002, status: 'WARRANTY' as const, total: 20000, paid: 0 },
-    { number: 1003, status: 'DELIVERED' as const, total: 30000, paid: 0 },
-  ]
+  // Declared up front so the finally block can clean a partial setup, including the
+  // second tenant used to prove the figures are not contaminated.
+  let businessId: string | undefined
+  let ownerId: string | undefined
+  let clientId: string | undefined
+  let otherBusinessId: string | undefined
+  let otherOwnerId: string | undefined
+  let otherClientId: string | undefined
   try {
+    const owner = await prisma.user.create({ data: { business: { create: { name: `Dashboard ${suffix}` } }, name: 'Owner', email: `dashboard-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
+    businessId = owner.businessId
+    ownerId = owner.id
+    const client = await prisma.client.create({ data: { businessId, name: 'Cliente Dashboard' } })
+    clientId = client.id
+    const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
+
+    // Open, WARRANTY and DELIVERED repairs, all with an unpaid balance.
+    const cases = [
+      { number: 1001, status: 'RECEIVED' as const, total: 10000, paid: 0 },
+      { number: 1002, status: 'WARRANTY' as const, total: 20000, paid: 0 },
+      { number: 1003, status: 'DELIVERED' as const, total: 30000, paid: 0 },
+    ]
     for (const item of cases) {
       await prisma.repair.create({ data: {
         businessId, number: item.number, clientId: client.id, deviceBrand: 'Audit', deviceModel: 'Dash',
@@ -52,7 +62,10 @@ async function main() {
 
     // A second tenant must not contribute to either figure.
     const other = await prisma.user.create({ data: { business: { create: { name: `Otro ${suffix}` } }, name: 'Otro', email: `otro-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
+    otherBusinessId = other.businessId
+    otherOwnerId = other.id
     const otherClient = await prisma.client.create({ data: { businessId: other.businessId, name: 'Cliente ajeno' } })
+    otherClientId = otherClient.id
     await prisma.repair.create({ data: {
       businessId: other.businessId, number: 1001, clientId: otherClient.id, deviceBrand: 'Otro', deviceModel: 'Ajeno',
       issue: 'Ajeno', total: 999000, paid: 0, status: 'RECEIVED', trackingToken: `otro-${suffix}`, trackingEnabled: false, updatedAt: new Date(),
@@ -61,21 +74,23 @@ async function main() {
     assert.equal(after.activeRepairs, 2, 'another business must not inflate activeRepairs')
     assert.equal(after.pending, 60000, 'another business must not inflate pending')
     console.log('  ok  WARRANTY counts as active; pending covers every repair of the business only')
-
-    await prisma.repair.deleteMany({ where: { businessId: other.businessId } })
-    await prisma.client.deleteMany({ where: { id: otherClient.id } })
-    await prisma.user.deleteMany({ where: { id: other.id } })
-    await prisma.business.deleteMany({ where: { id: other.businessId } })
   } finally {
-    // Scoped to this test's own business and ids.
-    await prisma.cashMovement.deleteMany({ where: { businessId } })
-    await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } })
-    await prisma.repair.deleteMany({ where: { businessId } })
-    await prisma.client.deleteMany({ where: { id: client.id } })
-    // Registration also creates a Subscription, which RESTRICTs the business deletion.
-    await prisma.subscription.deleteMany({ where: { businessId } })
-    await prisma.user.deleteMany({ where: { id: owner.id } })
-    await prisma.business.deleteMany({ where: { id: businessId } })
+    // Both tenants are removed here, never inside the happy path: an assertion that throws
+    // after the second business was created would otherwise leave it behind.
+    for (const tenant of [businessId, otherBusinessId]) {
+      if (!tenant) continue
+      await prisma.cashMovement.deleteMany({ where: { businessId: tenant } })
+      await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: tenant } } })
+      await prisma.repair.deleteMany({ where: { businessId: tenant } })
+      // Registration also creates a Subscription, which RESTRICTs the business deletion.
+      await prisma.subscription.deleteMany({ where: { businessId: tenant } })
+    }
+    if (clientId) await prisma.client.deleteMany({ where: { id: clientId } })
+    if (otherClientId) await prisma.client.deleteMany({ where: { id: otherClientId } })
+    if (ownerId) await prisma.user.deleteMany({ where: { id: ownerId } })
+    if (otherOwnerId) await prisma.user.deleteMany({ where: { id: otherOwnerId } })
+    if (businessId) await prisma.business.deleteMany({ where: { id: businessId } })
+    if (otherBusinessId) await prisma.business.deleteMany({ where: { id: otherBusinessId } })
   }
   console.log('PASS: dashboard summary keeps its contract after the aggregate rewrite')
 }
