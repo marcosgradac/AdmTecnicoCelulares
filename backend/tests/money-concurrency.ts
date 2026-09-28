@@ -34,38 +34,53 @@ async function main() {
     await prisma.repair.deleteMany({ where: { id: repairId } })
   }
 
-  // 1. Concurrent creations must not reuse a repair number.
-  const concurrent = await Promise.all([1, 2, 3, 4, 5].map(() => newRepair(10000)))
-  const numbers = concurrent.map(repair => repair.number)
-  assert.equal(new Set(numbers).size, numbers.length, `duplicate repair numbers: ${numbers.join(',')}`)
-  console.log(`  ok  5 concurrent repairs -> unique numbers ${numbers.join(',')}`)
-  for (const repair of concurrent) await cleanup(repair.id)
+  // Every record this test can create is tracked by businessId, so a single finally block
+  // removes them all, whether the run passed or an assertion threw half way through.
+  try {
+    // 1. Concurrent creations must not reuse a repair number.
+    const concurrent = await Promise.all([1, 2, 3, 4, 5].map(() => newRepair(10000)))
+    const numbers = concurrent.map(repair => repair.number)
+    assert.equal(new Set(numbers).size, numbers.length, `duplicate repair numbers: ${numbers.join(',')}`)
+    console.log(`  ok  5 concurrent repairs -> unique numbers ${numbers.join(',')}`)
+    for (const repair of concurrent) await cleanup(repair.id)
 
-  // 2. A double-clicked payment must charge once.
-  const repair = await newRepair(10000)
-  const body = { amount: 5000, method: 'CASH' }
-  const both = await Promise.all([call('POST', `/repairs/${repair.id}/payments`, body), call('POST', `/repairs/${repair.id}/payments`, body)])
-  const created = both.filter(r => r.status === 201).length
-  const rejected = both.filter(r => r.status === 409).length
-  assert.equal(created + rejected, 2, `unexpected statuses ${both.map(r => r.status).join(',')}`)
-  const payments = await prisma.payment.count({ where: { repairId: repair.id } })
-  const movements = await prisma.cashMovement.count({ where: { repairId: repair.id } })
-  assert.equal(payments, created, `payments(${payments}) != created(${created})`)
-  assert.equal(movements, created, `cash movements(${movements}) != created(${created})`)
-  const stored = await prisma.repair.findUniqueOrThrow({ where: { id: repair.id } })
-  assert.equal(stored.paid, created * 5000, `paid=${stored.paid} does not match ${created} payments`)
-  console.log(`  ok  double payment -> ${created} accepted, ${rejected} rejected; paid=$${stored.paid}, movements=${movements}`)
-  await cleanup(repair.id)
+    // 2. A double-clicked payment must charge once.
+    const repair = await newRepair(10000)
+    const body = { amount: 5000, method: 'CASH' }
+    const both = await Promise.all([call('POST', `/repairs/${repair.id}/payments`, body), call('POST', `/repairs/${repair.id}/payments`, body)])
+    const created = both.filter(r => r.status === 201).length
+    const rejected = both.filter(r => r.status === 409).length
+    assert.equal(created + rejected, 2, `unexpected statuses ${both.map(r => r.status).join(',')}`)
+    const payments = await prisma.payment.count({ where: { repairId: repair.id } })
+    const movements = await prisma.cashMovement.count({ where: { repairId: repair.id } })
+    assert.equal(payments, created, `payments(${payments}) != created(${created})`)
+    assert.equal(movements, created, `cash movements(${movements}) != created(${created})`)
+    const stored = await prisma.repair.findUniqueOrThrow({ where: { id: repair.id } })
+    assert.equal(stored.paid, created * 5000, `paid=${stored.paid} does not match ${created} payments`)
+    console.log(`  ok  double payment -> ${created} accepted, ${rejected} rejected; paid=$${stored.paid}, movements=${movements}`)
+    await cleanup(repair.id)
 
-  // 3. Payments that would exceed the total must be refused atomically.
-  const small = await newRepair(10000)
-  const over = await Promise.all([call('POST', `/repairs/${small.id}/payments`, { amount: 8000, method: 'CASH' }), call('POST', `/repairs/${small.id}/payments`, { amount: 8000, method: 'CASH' })])
-  const after = await prisma.repair.findUniqueOrThrow({ where: { id: small.id } })
-  assert.ok(after.paid <= 10000, `paid exceeded the total: ${after.paid}`)
-  assert.equal(await prisma.payment.count({ where: { repairId: small.id } }), after.paid / 8000, 'payments and paid diverged')
-  assert.equal(await prisma.cashMovement.count({ where: { repairId: small.id } }), after.paid / 8000, 'orphan cash movement')
-  console.log(`  ok  overshoot -> paid=$${after.paid} of $10000, statuses ${over.map(r => r.status).join(',')}`)
-  await cleanup(small.id)
-  console.log('PASS: no duplicated money, no overshoot, no orphan cash movements')
+    // 3. Payments that would exceed the total must be refused atomically.
+    const small = await newRepair(10000)
+    const over = await Promise.all([call('POST', `/repairs/${small.id}/payments`, { amount: 8000, method: 'CASH' }), call('POST', `/repairs/${small.id}/payments`, { amount: 8000, method: 'CASH' })])
+    const after = await prisma.repair.findUniqueOrThrow({ where: { id: small.id } })
+    assert.ok(after.paid <= 10000, `paid exceeded the total: ${after.paid}`)
+    assert.equal(await prisma.payment.count({ where: { repairId: small.id } }), after.paid / 8000, 'payments and paid diverged')
+    assert.equal(await prisma.cashMovement.count({ where: { repairId: small.id } }), after.paid / 8000, 'orphan cash movement')
+    console.log(`  ok  overshoot -> paid=$${after.paid} of $10000, statuses ${over.map(r => r.status).join(',')}`)
+    await cleanup(small.id)
+    console.log('PASS: no duplicated money, no overshoot, no orphan cash movements')
+  } finally {
+    // Scoped to this test's business only: no global delete can touch other tenants.
+    await prisma.cashMovement.deleteMany({ where: { businessId } })
+    await prisma.payment.deleteMany({ where: { businessId } })
+    await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } })
+    await prisma.repair.deleteMany({ where: { businessId } })
+    await prisma.client.deleteMany({ where: { id: client.id } })
+    // Registration also creates a Subscription, which RESTRICTs the business deletion.
+    await prisma.subscription.deleteMany({ where: { businessId } })
+    await prisma.user.deleteMany({ where: { id: owner.id } })
+    await prisma.business.deleteMany({ where: { id: businessId } })
+  }
 }
 main().finally(() => prisma.$disconnect())

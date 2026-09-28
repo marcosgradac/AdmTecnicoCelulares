@@ -47,11 +47,17 @@ async function main() {
     console.log(`  ok  double cancel -> stock=${restored.currentStock}, reversals=${reversals} (statuses ${c1.status}/${c2.status})`)
     console.log('PASS: stock never goes negative and cancellation restores exactly once')
   } finally {
-    await prisma.cashMovement.deleteMany({ where: { relatedCommerceSaleId: { not: null } } })
-    await prisma.cashMovement.deleteMany({ where: { commerceSaleId: { not: null } } })
+    // Scoped strictly to what this test created. Never a global delete: another business
+    // on the same local database must be left untouched.
+    await prisma.cashMovement.deleteMany({ where: { businessId, relatedCommerceSaleId: { not: null } } })
+    await prisma.cashMovement.deleteMany({ where: { businessId, commerceSaleId: { not: null } } })
     await prisma.commerceSaleLine.deleteMany({ where: { sale: { businessId } } })
     await prisma.commerceSale.deleteMany({ where: { businessId } })
     await prisma.commerceProduct.deleteMany({ where: { id: product.id } })
+    // Registration also creates a Subscription, which RESTRICTs the business deletion.
+    await prisma.subscription.deleteMany({ where: { businessId } })
+    await prisma.user.deleteMany({ where: { id: owner.id } })
+    await prisma.business.deleteMany({ where: { id: businessId } })
   }
 }
 main().finally(() => prisma.$disconnect())

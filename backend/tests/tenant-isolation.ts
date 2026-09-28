@@ -33,48 +33,54 @@ async function main() {
     return { status: res.status, text: await res.text() }
   }
 
-  const probes: Array<[string, string, string, object?]> = [
-    ['GET', `/repairs/${repairA.id}`, 'repair detail'],
-    ['GET', `/repairs/${repairA.id}/payments`, 'repair payments'],
-    ['GET', `/repairs/${repairA.id}/history`, 'repair history'],
-    ['POST', `/repairs/${repairA.id}/payments`, 'repair payment', { amount: 1000, method: 'CASH' }],
-    ['PATCH', `/repairs/${repairA.id}`, 'edit repair', { deviceBrand: 'Hack', deviceModel: 'Hack', issue: 'Hack', total: repairA.total }],
-    ['POST', `/repairs/${repairA.id}/cancel`, 'cancel repair', { reviewFee: 0 }],
-    ['GET', `/clients/${clientA.id}`, 'client detail'],
-    ['PATCH', `/clients/${clientA.id}`, 'edit client', { name: 'Hack' }],
-    ['DELETE', `/clients/${clientA.id}`, 'delete client'],
-  ]
-  for (const [method, path, label, body] of probes) {
-    const result = await call(method, path, body)
-    assert.notEqual(result.status, 200, `${label} leaked data across tenants (200)`)
-    assert.ok([403, 404].includes(result.status), `${label} answered ${result.status}, expected 403/404`)
-    console.log(`  ok  ${label} -> ${result.status}`)
+  // All generated records are removed in the finally block below, so a failed assertion
+  // never leaves a business, user, client or repair behind in the local database.
+  try {
+    const probes: Array<[string, string, string, object?]> = [
+      ['GET', `/repairs/${repairA.id}`, 'repair detail'],
+      ['GET', `/repairs/${repairA.id}/payments`, 'repair payments'],
+      ['GET', `/repairs/${repairA.id}/history`, 'repair history'],
+      ['POST', `/repairs/${repairA.id}/payments`, 'repair payment', { amount: 1000, method: 'CASH' }],
+      ['PATCH', `/repairs/${repairA.id}`, 'edit repair', { deviceBrand: 'Hack', deviceModel: 'Hack', issue: 'Hack', total: repairA.total }],
+      ['POST', `/repairs/${repairA.id}/cancel`, 'cancel repair', { reviewFee: 0 }],
+      ['GET', `/clients/${clientA.id}`, 'client detail'],
+      ['PATCH', `/clients/${clientA.id}`, 'edit client', { name: 'Hack' }],
+      ['DELETE', `/clients/${clientA.id}`, 'delete client'],
+    ]
+    for (const [method, path, label, body] of probes) {
+      const result = await call(method, path, body)
+      assert.notEqual(result.status, 200, `${label} leaked data across tenants (200)`)
+      assert.ok([403, 404].includes(result.status), `${label} answered ${result.status}, expected 403/404`)
+      console.log(`  ok  ${label} -> ${result.status}`)
+    }
+    // List endpoints must answer 200 with their own (empty) scope, never with A's rows.
+    for (const path of ['/warranties', '/repairs?paginated=true&page=1&pageSize=10', '/clients?paginated=true&page=1&pageSize=10', '/cash/movements?page=1&pageSize=10']) {
+      const result = await call('GET', path)
+      assert.equal(result.status, 200, `${path} should list the caller's own scope`)
+      const parsed = JSON.parse(result.text)
+      const rows = Array.isArray(parsed) ? parsed : parsed.items
+      assert.equal(rows.length, 0, `${path} returned rows from another tenant`)
+      assert.ok(!result.text.includes(repairA.id), `${path} leaked a foreign repair id`)
+      console.log(`  ok  ${path} -> 200, scope empty`)
+    }
+    // Business A must still be intact.
+    const after = await prisma.repair.findUniqueOrThrow({ where: { id: repairA.id } })
+    assert.equal(after.deviceBrand, repairA.deviceBrand, 'repair was mutated cross-tenant')
+    assert.equal(after.paid, repairA.paid, 'payment was recorded cross-tenant')
+    const movements = await prisma.cashMovement.count({ where: { repairId: repairA.id } })
+    assert.equal(movements, await prisma.cashMovement.count({ where: { repairId: repairA.id, businessId: businessA } }), 'orphan cash movement created')
+    console.log('PASS: no cross-tenant read, write, payment or deletion')
+  } finally {
+    // Remove only what this test created, in dependency order and scoped to its own ids.
+    await prisma.cashMovement.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
+    await prisma.payment.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
+    await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: { in: [businessA, businessB] } } } })
+    await prisma.repair.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
+    await prisma.client.deleteMany({ where: { id: clientA.id } })
+    // Registration also creates a Subscription, which RESTRICTs the business deletion.
+    await prisma.subscription.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
+    await prisma.user.deleteMany({ where: { id: { in: [ownerA.id, ownerB.id] } } })
+    await prisma.business.deleteMany({ where: { id: { in: [businessA, businessB] } } })
   }
-  // List endpoints must answer 200 with their own (empty) scope, never with A's rows.
-  for (const path of ['/warranties', '/repairs?paginated=true&page=1&pageSize=10', '/clients?paginated=true&page=1&pageSize=10', '/cash/movements?page=1&pageSize=10']) {
-    const result = await call('GET', path)
-    assert.equal(result.status, 200, `${path} should list the caller's own scope`)
-    const parsed = JSON.parse(result.text)
-    const rows = Array.isArray(parsed) ? parsed : parsed.items
-    assert.equal(rows.length, 0, `${path} returned rows from another tenant`)
-    assert.ok(!result.text.includes(repairA.id), `${path} leaked a foreign repair id`)
-    console.log(`  ok  ${path} -> 200, scope empty`)
-  }
-  // Business A must still be intact.
-  const after = await prisma.repair.findUniqueOrThrow({ where: { id: repairA.id } })
-  assert.equal(after.deviceBrand, repairA.deviceBrand, 'repair was mutated cross-tenant')
-  assert.equal(after.paid, repairA.paid, 'payment was recorded cross-tenant')
-  const movements = await prisma.cashMovement.count({ where: { repairId: repairA.id } })
-  assert.equal(movements, await prisma.cashMovement.count({ where: { repairId: repairA.id, businessId: businessA } }), 'orphan cash movement created')
-
-  // Remove only what this test created, in dependency order.
-  await prisma.cashMovement.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-  await prisma.payment.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-  await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: { in: [businessA, businessB] } } } })
-  await prisma.repair.deleteMany({ where: { businessId: { in: [businessA, businessB] } } })
-  await prisma.client.deleteMany({ where: { id: clientA.id } })
-  await prisma.user.deleteMany({ where: { id: { in: [ownerA.id, ownerB.id] } } })
-  await prisma.business.deleteMany({ where: { id: { in: [businessA, businessB] } } })
-  console.log('PASS: no cross-tenant read, write, payment or deletion')
 }
 main().finally(() => prisma.$disconnect())
