@@ -254,11 +254,38 @@ model WarrantyClaim {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   resolvedAt  DateTime?
+  coveredWarrantyStartedAt DateTime?
+  coveredWarrantyExpiresAt DateTime?
+  coveredWarrantyDurationDays Int?
+  coveredWarrantyConditions String?
+  deliveredAt DateTime?
+  newWarrantyDurationDays Int?
+  newWarrantyStartedAt DateTime?
+  newWarrantyExpiresAt DateTime?
+  expenses WarrantyClaimExpense[]
   business    Business            @relation(fields: [businessId], references: [id])
   repair      Repair              @relation(fields: [repairId], references: [id], onDelete: Restrict)
 
   @@index([businessId, status])
   @@index([repairId, createdAt])
+  @@unique([id, businessId])
+}
+
+// Amount and payment method live only in CashMovement: the sole financial source.
+model WarrantyClaimExpense {
+  id String @id @default(cuid())
+  businessId String
+  claimId String
+  idempotencyKey String
+  concept String
+  cashMovementId String @unique
+  createdAt DateTime @default(now())
+  claim WarrantyClaim @relation(fields: [claimId, businessId], references: [id, businessId], onDelete: Restrict)
+  cashMovement CashMovement @relation(fields: [cashMovementId, businessId], references: [id, businessId], onDelete: Restrict)
+
+  @@unique([businessId, idempotencyKey])
+  @@index([claimId, createdAt])
+  @@unique([cashMovementId, businessId])
 }
 
 model RepairStatusHistory {
@@ -405,6 +432,8 @@ enum CashMovementType {
 }
 
 model CashMovement {
+  warrantyExpense WarrantyClaimExpense?
+  @@unique([id, businessId])
   resaleDeviceId String?
   resaleDevice   ResaleDevice? @relation(fields: [resaleDeviceId], references: [id], onDelete: Restrict)
   resaleKind     EquipmentCashKind?

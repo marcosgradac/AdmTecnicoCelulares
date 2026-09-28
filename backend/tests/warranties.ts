@@ -1,9 +1,11 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
+import jwt from 'jsonwebtoken'
 import { validRegistrationPayload } from './helpers/registration'
 
 process.env.NODE_ENV = 'test'
+process.env.RATE_LIMIT_AUTH_WRITES_MAX = '300'
 process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
 const nativeFetch = globalThis.fetch
 globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
@@ -15,7 +17,7 @@ async function main() {
   const [{ app }, { prisma }] = await Promise.all([import('../src/server'), import('../src/lib/prisma')])
   const server = app.listen(0); await new Promise<void>(resolve => server.once('listening', resolve)); const address = server.address(); assert.ok(address && typeof address === 'object')
   const base = `http://127.0.0.1:${address.port}/api`, suffix = Date.now(), businesses: string[] = []
-  const request = async (method: string, path: string, body?: object, token?: string) => { const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? JSON.parse(text) : null } }
+  const request = async (method: string, path: string, body?: object, token?: string) => { const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? (response.headers.get('content-type')?.includes('application/json') ? JSON.parse(text) : text) : null } }
   const register = async (label: string) => { const password = `Qa-${randomBytes(12).toString('base64url')}9!`; const result = await request('POST','/auth/register',validRegistrationPayload({firstName:'Garantía',lastName:label,email:`warranty-${label}-${suffix}@example.com`,password,businessName:`Warranty ${label}`})); assert.equal(result.status,201); businesses.push(result.body.user.business.id); return { token:result.body.token as string, businessId:result.body.user.business.id as string } }
   try {
     const ownerA = await register('A'), ownerB = await register('B')
@@ -52,12 +54,86 @@ async function main() {
     assert.equal(await prisma.payment.count({where:{repairId:repairA.body.id}}),1)
     assert.ok(await prisma.repairStatusHistory.count({where:{repairId:repairA.body.id}})>0)
     assert.equal(await prisma.warrantyClaim.count({where:{id:claim.body.id,repairId:repairA.body.id}}),1)
+    // A warranty expense is one business cost, never a customer payment. Delivery starts a new period.
+    const warrantyRepair = await request('POST', '/repairs', { ...input, clientId: clientA.id, warrantyDurationDays: 7 }, ownerA.token)
+    await request('PATCH', `/repairs/${warrantyRepair.body.id}/status`, { status: 'DELIVERED' }, ownerA.token)
+    const firstStart = new Date(Date.now() - 3 * 86_400_000)
+    const firstExpiry = new Date(firstStart.getTime() + 7 * 86_400_000)
+    await prisma.repair.update({ where: { id: warrantyRepair.body.id }, data: { warrantyStartedAt: firstStart, warrantyExpiresAt: firstExpiry } })
+    const warrantyClaim = await request('POST', `/warranties/${warrantyRepair.body.id}/claims`, { description: 'El módulo instalado dejó de dar imagen' }, ownerA.token)
+    const claimPath = `/warranties/claims/${warrantyClaim.body.id}`
+    const expenseInput = { concept: 'Módulo nuevo', amount: 20000, method: 'CASH', idempotencyKey: `expense-${suffix}` }
+    assert.equal((await request('POST', `${claimPath}/expenses`, expenseInput, ownerB.token)).status, 404)
+    const initialExpenses = await Promise.all([request('POST', `${claimPath}/expenses`, expenseInput, ownerA.token), request('POST', `${claimPath}/expenses`, expenseInput, ownerA.token)])
+    const expense = initialExpenses[0]
+    assert.equal(expense.status, 201, 'registering an expense must create a linked cash movement')
+    assert.equal(initialExpenses[1].status, 201)
+    assert.equal(initialExpenses[1].body.id, expense.body.id, 'concurrent first submissions create only one expense')
+    const retries = await Promise.all([request('POST', `${claimPath}/expenses`, expenseInput, ownerA.token), request('POST', `${claimPath}/expenses`, expenseInput, ownerA.token)])
+    for (const retry of retries) { assert.equal(retry.status, 201); assert.equal(retry.body.id, expense.body.id) }
+    assert.equal((await request('POST', `${claimPath}/expenses`, { ...expenseInput, amount: 100 }, ownerA.token)).status, 409)
+    const movements = await prisma.cashMovement.findMany({ where: { repairId: warrantyRepair.body.id } })
+    assert.equal(movements.length, 1)
+    assert.equal(movements[0].id, expense.body.cashMovement.id)
+    assert.equal(movements[0].type, 'EXPENSE'); assert.equal(movements[0].origin, 'REPAIR')
+    assert.equal(movements[0].amount, 20000); assert.equal(movements[0].method, 'CASH')
+    assert.equal(await prisma.payment.count({ where: { repairId: warrantyRepair.body.id } }), 0)
+    const cash = await request('GET', '/cash/movements?origin=REPAIR', undefined, ownerA.token)
+    assert.equal(cash.status, 200)
+    assert.equal(cash.body.summary.expenseToday, 20000)
+    assert.equal(cash.body.summary.balanceToday, -20000)
+    assert.ok(cash.body.items.some((item: any) => item.id === expense.body.cashMovementId))
+    const tech = await prisma.user.create({ data: { businessId: ownerA.businessId, name: 'Técnico sin acceso a caja', email: `warranty-tech-${suffix}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.view', 'repairs.update'] } })
+    const techToken = jwt.sign({ userId: tech.id, businessId: tech.businessId, role: tech.role, platformRole: tech.platformRole, tokenVersion: tech.tokenVersion }, process.env.JWT_SECRET!)
+    assert.equal((await request('POST', `${claimPath}/expenses`, { ...expenseInput, idempotencyKey: 'forbidden-expense' }, techToken)).status, 403)
+    assert.equal((await request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, techToken)).status, 403)
+    const techList = (await request('GET', '/warranties', undefined, techToken)).body
+    assert.deepEqual(techList.find((item: any) => item.id === warrantyRepair.body.id).warrantyClaims[0].expenses, [])
+    await prisma.user.update({ where: { id: tech.id }, data: { permissions: ['cash.create'] } })
+    assert.equal((await request('POST', `${claimPath}/expenses`, { ...expenseInput, idempotencyKey: 'forbidden-expense' }, techToken)).status, 403)
+    assert.equal((await request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, ownerA.token)).status, 409)
+    const resolution = { status: 'RESOLVED', resolution: 'Se reemplazó el módulo fallado por uno nuevo.' }
+    assert.equal((await request('PATCH', claimPath, resolution, ownerA.token)).status, 200)
+    assert.equal((await request('PATCH', claimPath, resolution, ownerA.token)).status, 200)
+    assert.equal((await request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, ownerB.token)).status, 404)
+    const beforeDelivery = Date.now()
+    const firstDeliveries = await Promise.all([request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, ownerA.token), request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, ownerA.token)])
+    const newDelivery = firstDeliveries[0]
+    assert.equal(newDelivery.status, 200)
+    assert.equal(firstDeliveries[1].status, 200)
+    assert.equal(firstDeliveries[1].body.deliveredAt, newDelivery.body.deliveredAt)
+    assert.ok(new Date(newDelivery.body.deliveredAt).getTime() >= beforeDelivery)
+    assert.equal(newDelivery.body.newWarrantyStartedAt, newDelivery.body.deliveredAt)
+    assert.equal(new Date(newDelivery.body.newWarrantyExpiresAt).getTime() - new Date(newDelivery.body.deliveredAt).getTime(), 604800000)
+    assert.equal(newDelivery.body.coveredWarrantyStartedAt, firstStart.toISOString())
+    assert.equal(newDelivery.body.coveredWarrantyExpiresAt, firstExpiry.toISOString())
+    const deliveryRetries = await Promise.all([request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, ownerA.token), request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, ownerA.token)])
+    deliveryRetries.forEach(result => { assert.equal(result.status, 200); assert.equal(result.body.deliveredAt, newDelivery.body.deliveredAt) })
+    assert.equal((await request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 30 }, ownerA.token)).status, 409)
+    assert.equal((await request('PATCH', claimPath, { status: 'OPEN' }, ownerA.token)).status, 409)
+    assert.equal(await prisma.cashMovement.count({ where: { repairId: warrantyRepair.body.id } }), 1)
+    const renewedRepair = (await request('GET', `/repairs/${warrantyRepair.body.id}`, undefined, ownerA.token)).body
+    assert.equal(renewedRepair.warrantyStartedAt, newDelivery.body.deliveredAt)
+    const rejected = await request('POST', `/warranties/${warrantyRepair.body.id}/claims`, { description: 'Golpe posterior a la entrega' }, ownerA.token)
+    const rejectedPath = `/warranties/claims/${rejected.body.id}`
+    assert.equal((await request('PATCH', rejectedPath, { status: 'REJECTED', resolution: 'Daño por golpe' }, ownerA.token)).status, 200)
+    assert.equal((await request('POST', `${rejectedPath}/expenses`, { ...expenseInput, idempotencyKey: 'rejected-expense' }, ownerA.token)).status, 409)
+    assert.equal((await request('POST', `${rejectedPath}/delivery`, { warrantyDurationDays: 7 }, ownerA.token)).status, 409)
+    const noWarranty = await request('POST', `/warranties/${warrantyRepair.body.id}/claims`, { description: 'Nueva revisión del conector' }, ownerA.token)
+    await request('PATCH', `/warranties/claims/${noWarranty.body.id}`, resolution, ownerA.token)
+    assert.equal((await request('POST', `/warranties/claims/${noWarranty.body.id}/delivery`, { warrantyDurationDays: 0 }, ownerA.token)).status, 200)
+    const history = (await request('GET', '/warranties', undefined, ownerA.token)).body.find((item: any) => item.id === warrantyRepair.body.id)
+    assert.ok(history, 'history remains visible after delivery without a new warranty')
+    assert.equal(history.warrantyEnabled, false)
+    assert.equal(history.warrantyClaims.length, 3)
+    assert.equal(history.warrantyClaims.find((item: any) => item.id === warrantyClaim.body.id).expenses[0].cashMovement.amount, 20000)
+    assert.equal((await request('POST', `/warranties/${warrantyRepair.body.id}/claims`, { description: 'Sin cobertura nueva' }, ownerA.token)).status, 404)
     const repairB = await request('POST','/repairs',{...input,clientId:clientB.id,warrantyDurationDays:7},ownerB.token); assert.equal(repairB.status,201)
     await prisma.repair.update({ where:{id:repairB.body.id}, data:{warrantyStartedAt:new Date(Date.now()-10*86_400_000),warrantyExpiresAt:new Date(Date.now()-3*86_400_000)} })
     assert.equal((await request('POST',`/warranties/${repairB.body.id}/claims`,{description:'Reclamo fuera de término'},ownerB.token)).status,409)
-    console.log('WARRANTY TESTS PASSED: delivery activation, duration, expiry, soft-delete traceability, RESTRICT integrity and tenant isolation')
+    console.log('WARRANTY TESTS PASSED: original coverage, expenses and cash totals, concurrent retries, renewal from delivery, no-warranty history, rejection, permissions and tenant isolation')
   } finally {
-    for (const businessId of businesses) await prisma.$transaction([prisma.warrantyClaim.deleteMany({where:{businessId}}),prisma.repairStatusHistory.deleteMany({where:{repair:{businessId}}}),prisma.repairPhoto.deleteMany({where:{repair:{businessId}}}),prisma.payment.deleteMany({where:{businessId}}),prisma.cashMovement.deleteMany({where:{businessId}}),prisma.repair.deleteMany({where:{businessId}}),prisma.device.deleteMany({where:{businessId}}),prisma.client.deleteMany({where:{businessId}}),prisma.passwordResetToken.deleteMany({where:{user:{businessId}}}),prisma.subscription.deleteMany({where:{businessId}}),prisma.user.deleteMany({where:{businessId}}),prisma.business.deleteMany({where:{id:businessId}})]); await prisma.$disconnect(); await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()))
+    for (const businessId of businesses) await prisma.$transaction([prisma.warrantyClaimExpense.deleteMany({where:{businessId}}),prisma.warrantyClaim.deleteMany({where:{businessId}}),prisma.repairStatusHistory.deleteMany({where:{repair:{businessId}}}),prisma.repairPhoto.deleteMany({where:{repair:{businessId}}}),prisma.payment.deleteMany({where:{businessId}}),prisma.cashMovement.deleteMany({where:{businessId}}),prisma.repair.deleteMany({where:{businessId}}),prisma.device.deleteMany({where:{businessId}}),prisma.client.deleteMany({where:{businessId}}),prisma.passwordResetToken.deleteMany({where:{user:{businessId}}}),prisma.subscription.deleteMany({where:{businessId}}),prisma.user.deleteMany({where:{businessId}}),prisma.business.deleteMany({where:{id:businessId}})]); await prisma.$disconnect(); await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()))
   }
 }
 main().catch(error=>{console.error(error);process.exitCode=1})

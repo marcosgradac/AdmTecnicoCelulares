@@ -23,7 +23,7 @@
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
     "test:repair-numbering": "tsx tests/repair-number-migration.ts && tsx tests/repair-numbering.ts",
     "test:repair-cancellation": "tsx tests/repair-cancellation.ts",
-    "test:warranties": "tsx tests/warranties.ts",
+    "test:warranties": "tsx tests/warranties.ts && tsx tests/warranties-sqlite.ts",
     "test:pagination": "tsx tests/pagination.ts",
     "test:client-soft-delete": "tsx tests/client-soft-delete.ts",
     "test:cash-pagination": "tsx tests/cash-pagination.ts",

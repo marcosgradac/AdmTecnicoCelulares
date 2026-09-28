@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
 import { randomBytes } from 'node:crypto'
-import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus, WarrantyClaimStatus } from '@prisma/client'
+import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
@@ -23,6 +23,7 @@ import { permissionsFor } from './config/permissions'
 import { settingsRouter } from './modules/settings/settings.routes'
 import { commerceRouter } from './modules/commerce/commerce.routes'
 import { equipmentSalesRouter } from './modules/equipment-sales/equipment-sales.routes'
+import { warrantiesRouter } from './modules/warranties/warranties.routes'
 import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
@@ -691,50 +692,7 @@ app.post('/api/cash/movements', requirePermission('cash.create'), async (req, re
   return res.status(201).json(await prisma.cashMovement.create({ data: { businessId: authOf(req).businessId, ...parsed.data } }))
 })
 
-app.get('/api/warranties', async (req, res) => {
-  const businessId = authOf(req).businessId
-  const repairs = await prisma.repair.findMany({
-    where: { businessId, warrantyEnabled: true, warrantyDeletedAt: null },
-    include: { client: true, warrantyClaims: { orderBy: { createdAt: 'desc' } } },
-    orderBy: [{ warrantyExpiresAt: 'asc' }, { updatedAt: 'desc' }],
-  })
-  return res.json(repairs)
-})
-app.patch('/api/warranties/:repairId', async (req, res) => {
-  const parsed = z.object({ durationDays: z.number().int().min(1).max(365), conditions: z.string().trim().max(2000).optional() }).safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de garantía inválidos' })
-  const businessId = authOf(req).businessId
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId, warrantyEnabled: true, warrantyDeletedAt: null } })
-  if (!repair) return res.status(404).json({ success: false, message: 'Garantía no encontrada' })
-  const warrantyExpiresAt = repair.warrantyStartedAt ? new Date(repair.warrantyStartedAt.getTime() + parsed.data.durationDays * 86_400_000) : null
-  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { warrantyDurationDays: parsed.data.durationDays, warrantyConditions: parsed.data.conditions || null, warrantyExpiresAt }, include: { client: true, warrantyClaims: { orderBy: { createdAt: 'desc' } } } }))
-})
-app.delete('/api/warranties/:repairId', async (req, res) => {
-  const businessId = authOf(req).businessId
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId, warrantyEnabled: true, warrantyDeletedAt: null } })
-  if (!repair) return res.status(404).json({ success: false, message: 'Garantía no encontrada' })
-  await prisma.repair.update({ where: { id: repair.id }, data: { warrantyEnabled: false, warrantyDeletedAt: new Date() } })
-  return res.json({ success: true })
-})
-app.post('/api/warranties/:repairId/claims', async (req, res) => {
-  const parsed = z.object({ description: z.string().trim().min(5).max(1500) }).safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Describí el reclamo de garantía' })
-  const businessId = authOf(req).businessId
-  const repair = await prisma.repair.findFirst({ where: { id: req.params.repairId, businessId, warrantyEnabled: true, warrantyDeletedAt: null } })
-  if (!repair) return res.status(404).json({ success: false, message: 'Garantía no encontrada' })
-  if (!repair.warrantyStartedAt || !repair.warrantyExpiresAt) return res.status(409).json({ success: false, message: 'La garantía comienza cuando la reparación se entrega' })
-  if (repair.warrantyExpiresAt < new Date()) return res.status(409).json({ success: false, message: 'La garantía está vencida' })
-  return res.status(201).json(await prisma.warrantyClaim.create({ data: { businessId, repairId: repair.id, description: parsed.data.description } }))
-})
-app.patch('/api/warranties/claims/:id', async (req, res) => {
-  const parsed = z.object({ status: z.nativeEnum(WarrantyClaimStatus), resolution: z.string().trim().max(1500).optional() }).safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Actualización inválida' })
-  const businessId = authOf(req).businessId
-  const claim = await prisma.warrantyClaim.findFirst({ where: { id: req.params.id, businessId } })
-  if (!claim) return res.status(404).json({ success: false, message: 'Reclamo no encontrado' })
-  const closed = ['RESOLVED', 'REJECTED'].includes(parsed.data.status)
-  return res.json(await prisma.warrantyClaim.update({ where: { id: claim.id }, data: { ...parsed.data, resolution: parsed.data.resolution || null, resolvedAt: closed ? new Date() : null } }))
-})
+app.use('/api/warranties', warrantiesRouter)
 app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
   const businessId = authOf(req).businessId
   const canViewFinancials = authOf(req).role === 'OWNER'
