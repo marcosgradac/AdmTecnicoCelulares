@@ -4,14 +4,26 @@ import { PrismaClient } from '@prisma/client'
 // number of backend connections. Prisma's default pool (cpus * 2 + 1) can open more sockets
 // than the pooler allows, and the extra ones fail with "too many clients" under load, so the
 // limit is explicit and can be tuned per instance size without touching code.
+const DEFAULT_CONNECTION_LIMIT = 5
+const DEFAULT_POOL_TIMEOUT_SECONDS = 10
+
+/**
+ * A typo in an env var must never silently disable the pool: an invalid value falls back to
+ * the safe default instead of leaving the connection unbounded, which is the failure this
+ * setting exists to prevent.
+ */
+const positiveInteger = (value: string | undefined, fallback: number) => {
+  if (value === undefined || value.trim() === '') return fallback
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed <= 0) return fallback
+  return parsed
+}
+
 const withPoolOptions = (url: string | undefined) => {
   if (!url) return undefined
-  const limit = Number(process.env.DATABASE_CONNECTION_LIMIT ?? 5)
-  const timeout = Number(process.env.DATABASE_POOL_TIMEOUT_SECONDS ?? 10)
-  if (!Number.isFinite(limit) || limit <= 0) return url
   const tuned = new URL(url)
-  tuned.searchParams.set('connection_limit', String(limit))
-  tuned.searchParams.set('pool_timeout', String(Number.isFinite(timeout) && timeout > 0 ? timeout : 10))
+  tuned.searchParams.set('connection_limit', String(positiveInteger(process.env.DATABASE_CONNECTION_LIMIT, DEFAULT_CONNECTION_LIMIT)))
+  tuned.searchParams.set('pool_timeout', String(positiveInteger(process.env.DATABASE_POOL_TIMEOUT_SECONDS, DEFAULT_POOL_TIMEOUT_SECONDS)))
   return tuned.toString()
 }
 
