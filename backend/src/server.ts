@@ -697,10 +697,24 @@ app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
   const businessId = authOf(req).businessId
   const canViewFinancials = authOf(req).role === 'OWNER'
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
-  const [repairs, clients, movements] = await Promise.all([
-    prisma.repair.findMany({ where: { businessId }, include: { client: true }, orderBy: { createdAt: 'desc' } }),
+  // Every figure here is an aggregate: loading whole repairs (and their clients) just to count
+  // them made this endpoint grow with the whole history. Recent repairs are the only rows needed.
+  const openStatuses = [RepairStatus.RECEIVED, RepairStatus.REVIEW, RepairStatus.BUDGET, RepairStatus.APPROVED, RepairStatus.WAITING_PART, RepairStatus.REPAIRING, RepairStatus.TESTING, RepairStatus.READY]
+  const [byStatusRows, activeRepairs, readyRepairs, activeWarranties, repairsToday, clients, outstanding, movements, recentRepairs] = await Promise.all([
+    prisma.repair.groupBy({ by: ['status'], where: { businessId }, _count: { _all: true } }),
+    prisma.repair.count({ where: { businessId, status: { in: openStatuses } } }),
+    prisma.repair.count({ where: { businessId, status: RepairStatus.READY } }),
+    prisma.repair.count({ where: { businessId, warrantyEnabled: true, warrantyDeletedAt: null, warrantyExpiresAt: { gte: now } } }),
+    prisma.repair.count({ where: { businessId, createdAt: { gte: today } } }),
     prisma.client.count({ where: { businessId, deletedAt: null } }),
-    canViewFinancials ? prisma.cashMovement.findMany({ where: { businessId, createdAt: { gte: month } }, orderBy: { createdAt: 'asc' } }) : Promise.resolve([]),
+    canViewFinancials ? prisma.repair.aggregate({ where: { businessId, status: { in: openStatuses } }, _sum: { total: true, paid: true } }) : Promise.resolve(null),
+    canViewFinancials ? prisma.cashMovement.findMany({ where: { businessId, createdAt: { gte: month } }, orderBy: { createdAt: 'asc' }, select: { type: true, amount: true, createdAt: true } }) : Promise.resolve([]),
+    prisma.repair.findMany({
+      where: { businessId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { id: true, number: true, deviceBrand: true, deviceModel: true, issue: true, status: true, total: true, createdAt: true, client: { select: { name: true } } },
+    }),
   ])
   const income = movements.filter(m => m.type === 'INCOME').reduce((sum, m) => sum + m.amount, 0)
   const expenses = movements.filter(m => m.type === 'EXPENSE').reduce((sum, m) => sum + m.amount, 0)
@@ -709,8 +723,9 @@ app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
     for (const movement of movements.filter(m => m.type === 'INCOME')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.income += movement.amount }
     for (const movement of movements.filter(m => m.type === 'EXPENSE')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.expense += movement.amount }
   }
-  const pending = canViewFinancials ? repairs.reduce((sum, repair) => sum + Math.max(0, repair.total - repair.paid), 0) : 0
-  return res.json({ activeRepairs: repairs.filter(r => !['DELIVERED', 'CANCELLED'].includes(r.status)).length, readyRepairs: repairs.filter(r => r.status === 'READY').length, activeWarranties: repairs.filter(r => r.warrantyEnabled && !r.warrantyDeletedAt && r.warrantyExpiresAt && r.warrantyExpiresAt >= now).length, repairsToday: repairs.filter(r => r.createdAt >= today).length, monthlyIncome: income, monthlyExpenses: expenses, pending, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: repairs.filter(r => r.status === status).length })), cashFlow: flow.map(({ key: _key, ...point }) => point), recentRepairs: repairs.slice(0, 5) })
+  const pending = outstanding ? Math.max(0, (outstanding._sum.total ?? 0) - (outstanding._sum.paid ?? 0)) : 0
+  const countByStatus = (status: RepairStatus) => byStatusRows.find(row => row.status === status)?._count._all ?? 0
+  return res.json({ activeRepairs, readyRepairs, activeWarranties, repairsToday, monthlyIncome: income, monthlyExpenses: expenses, pending, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: countByStatus(status) })), cashFlow: flow.map(({ key: _key, ...point }) => point), recentRepairs })
 })
 
 const port = Number(process.env.PORT ?? 3000)

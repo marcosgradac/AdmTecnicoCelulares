@@ -74,7 +74,6 @@ export const updateClient = async (id: string, input: { name: string; phone?: st
 export const deleteClient = async (id: string) => { await api.delete(`/clients/${id}`) }
 export const getCashMovements = async (params: { page: number; pageSize: number; origin?: CashMovement['origin'] }) => (await api.get<CashMovementsPage>('/cash/movements', { params })).data
 export const createCashMovement = async (input: { origin?: CashMovement['origin']; type: 'INCOME' | 'EXPENSE'; description: string; amount: number; method?: CashMovement['method'] }) => (await api.post<CashMovement>('/cash/movements', input)).data
-export const getDashboardSummary = async () => (await api.get<DashboardSummary>('/dashboard/summary')).data
 export const registerPayment = async (repairId: string, input: { amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string }) => { await api.post(`/repairs/${repairId}/payments`, input) }
 
 export type { Repair }
