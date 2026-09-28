@@ -28,10 +28,14 @@ warrantiesRouter.patch('/:repairId', requirePermission('repairs.update'), run(as
 warrantiesRouter.delete('/:repairId', requirePermission('repairs.update'), run(async (req, res) => {
   res.json(await removeWarranty(authOf(req).businessId, String(req.params.repairId)))
 }))
+const expenseSchema = z.object({ concept: z.string().trim().min(2).max(200), amount: z.number().int().positive().max(2147483647), method: z.nativeEnum(PaymentMethod), idempotencyKey: z.string().trim().min(8).max(100) })
+const canCreateExpense = (req: Request) => authOf(req).role === 'OWNER' || authOf(req).permissions?.includes('cash.create')
 warrantiesRouter.post('/:repairId/claims', requirePermission('repairs.update'), run(async (req, res) => {
-  const input = z.object({ description: z.string().trim().min(5).max(1500) }).safeParse(req.body)
+  const input = z.object({ description: z.string().trim().min(5).max(1500), initialExpense: expenseSchema.optional() }).safeParse(req.body)
   if (!input.success) return res.status(400).json({ message: 'Describí el reclamo de garantía' })
-  res.status(201).json(publicClaim(req, await createClaim(authOf(req).businessId, String(req.params.repairId), input.data.description)))
+  // El gasto inicial se registra junto al reclamo: exige los mismos permisos que un gasto posterior.
+  if (input.data.initialExpense && !canCreateExpense(req)) return res.status(403).json({ message: 'No tenés permisos para registrar gastos' })
+  res.status(201).json(publicClaim(req, await createClaim(authOf(req).businessId, String(req.params.repairId), input.data.description, input.data.initialExpense)))
 }))
 warrantiesRouter.patch('/claims/:id', requirePermission('repairs.update'), run(async (req, res) => {
   const input = z.object({ status: z.nativeEnum(WarrantyClaimStatus), resolution: z.string().trim().max(1500).optional() }).safeParse(req.body)
@@ -39,7 +43,7 @@ warrantiesRouter.patch('/claims/:id', requirePermission('repairs.update'), run(a
   res.json(publicClaim(req, await updateClaim(authOf(req).businessId, String(req.params.id), input.data)))
 }))
 warrantiesRouter.post('/claims/:id/expenses', requirePermission('repairs.update'), requirePermission('cash.create'), run(async (req, res) => {
-  const input = z.object({ concept: z.string().trim().min(2).max(200), amount: z.number().int().positive().max(2147483647), method: z.nativeEnum(PaymentMethod), idempotencyKey: z.string().trim().min(8).max(100) }).safeParse(req.body)
+  const input = expenseSchema.safeParse(req.body)
   if (!input.success) return res.status(400).json({ message: 'Indicá concepto, importe positivo y medio de pago.' })
   res.status(201).json(await addClaimExpense(authOf(req).businessId, String(req.params.id), input.data))
 }))

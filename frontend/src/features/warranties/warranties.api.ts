@@ -11,7 +11,10 @@ export interface WarrantyClaim {
 }
 export interface WarrantyRepair { id: string; number: number; deviceBrand: string; deviceModel: string; warrantyEnabled: boolean; warrantyDurationDays: number | null; warrantyStartedAt: string | null; warrantyExpiresAt: string | null; warrantyConditions: string | null; client: { id: string; name: string; phone: string | null }; warrantyClaims: WarrantyClaim[] }
 export const getWarranties = async () => (await api.get<WarrantyRepair[]>('/warranties')).data
-export const createWarrantyClaim = async (repairId: string, description: string) => (await api.post<WarrantyClaim>(`/warranties/${repairId}/claims`, { description })).data
+export interface WarrantyInitialExpense { concept: string; amount: number; method: WarrantyPaymentMethod; idempotencyKey: string }
+export const createWarrantyClaim = async (repairId: string, description: string, initialExpense?: WarrantyInitialExpense) =>
+  // El gasto inicial viaja en la misma petición: el backend registra reclamo y egreso atómicamente.
+  (await api.post<WarrantyClaim>(`/warranties/${repairId}/claims`, { description, ...(initialExpense && { initialExpense }) })).data
 export const updateWarrantyClaim = async (id: string, input: { status: WarrantyClaimStatus; resolution?: string }) => (await api.patch<WarrantyClaim>(`/warranties/claims/${id}`, input)).data
 export const addWarrantyExpense = async (id: string, input: { concept: string; amount: number; method: WarrantyPaymentMethod; idempotencyKey: string }) => (await api.post<WarrantyExpense>(`/warranties/claims/${id}/expenses`, input)).data
 export const deliverWarrantyClaim = async (id: string, warrantyDurationDays: number) => (await api.post<WarrantyClaim>(`/warranties/claims/${id}/delivery`, { warrantyDurationDays })).data

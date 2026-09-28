@@ -33,17 +33,41 @@ async function lockedClaim(tx: Prisma.TransactionClient, businessId: string, id:
   const claim = await tx.warrantyClaim.findFirstOrThrow({ where: { id, businessId }, include: claimInclude })
   return { claim, repair }
 }
-export function createClaim(businessId: string, repairId: string, description: string) {
+export interface ClaimExpenseInput { concept: string; amount: number; method: PaymentMethod; idempotencyKey: string }
+// One business cost is one CashMovement; WarrantyClaimExpense is only its traceability link.
+// Callers must already hold the repair lock and the claim inside the same transaction, so a
+// failure while recording the cost rolls the whole claim back instead of leaving it orphaned.
+async function recordClaimExpense(tx: Prisma.TransactionClient, businessId: string, claim: { id: string }, repair: { id: string; number: number; client: { name: string } }, input: ClaimExpenseInput) {
+  const cashMovement = await tx.cashMovement.create({ data: {
+    businessId, repairId: repair.id, type: 'EXPENSE', origin: 'REPAIR', amount: input.amount, method: input.method,
+    description: `Garantía reparación #${repair.number} · ${input.concept}`, clientName: repair.client.name,
+  } })
+  return tx.warrantyClaimExpense.create({ data: { businessId, claimId: claim.id, concept: input.concept, idempotencyKey: input.idempotencyKey, cashMovementId: cashMovement.id } })
+}
+export function createClaim(businessId: string, repairId: string, description: string, initialExpense?: ClaimExpenseInput) {
   return transaction(async tx => {
+    // A replayed creation carrying the same key is the very same claim: return it untouched
+    // instead of opening a second one and charging the business twice.
+    if (initialExpense) {
+      const previous = await tx.warrantyClaimExpense.findUnique({ where: { businessId_idempotencyKey: { businessId, idempotencyKey: initialExpense.idempotencyKey } }, include: { cashMovement: true, claim: { include: claimInclude } } })
+      if (previous) {
+        if (previous.claim.repairId !== repairId || previous.claim.description !== description || previous.concept !== initialExpense.concept || previous.cashMovement.amount !== initialExpense.amount || previous.cashMovement.method !== initialExpense.method) {
+          throw new WarrantyError(409, 'Esta operación ya fue registrada con otros datos.')
+        }
+        return previous.claim
+      }
+    }
     const repair = await lockRepair(tx, businessId, repairId)
     if (!repair.warrantyEnabled || repair.warrantyDeletedAt) throw new WarrantyError(404, 'Garantía no encontrada')
     if (!repair.warrantyStartedAt || !repair.warrantyExpiresAt) throw new WarrantyError(409, 'La garantía comienza cuando la reparación se entrega')
     if (repair.warrantyExpiresAt < new Date()) throw new WarrantyError(409, 'La garantía está vencida')
-    return tx.warrantyClaim.create({ data: {
+    const claim = await tx.warrantyClaim.create({ data: {
       businessId, repairId, description,
       coveredWarrantyStartedAt: repair.warrantyStartedAt, coveredWarrantyExpiresAt: repair.warrantyExpiresAt,
       coveredWarrantyDurationDays: repair.warrantyDurationDays, coveredWarrantyConditions: repair.warrantyConditions,
-    }, include: claimInclude })
+    } })
+    if (initialExpense) await recordClaimExpense(tx, businessId, claim, repair, initialExpense)
+    return tx.warrantyClaim.findFirstOrThrow({ where: { id: claim.id }, include: claimInclude })
   })
 }
 export function updateClaim(businessId: string, id: string, input: { status: WarrantyClaimStatus; resolution?: string }) {
@@ -60,7 +84,7 @@ export function updateClaim(businessId: string, id: string, input: { status: War
     }, include: claimInclude })
   })
 }
-export function addClaimExpense(businessId: string, id: string, input: { concept: string; amount: number; method: PaymentMethod; idempotencyKey: string }) {
+export function addClaimExpense(businessId: string, id: string, input: ClaimExpenseInput) {
   return transaction(async tx => {
     const { claim, repair } = await lockedClaim(tx, businessId, id)
     const previous = await tx.warrantyClaimExpense.findUnique({ where: { businessId_idempotencyKey: { businessId, idempotencyKey: input.idempotencyKey } }, include: { cashMovement: true } })
@@ -71,11 +95,7 @@ export function addClaimExpense(businessId: string, id: string, input: { concept
       return previous
     }
     if (claim.status === 'REJECTED' || claim.deliveredAt || repair.cancelledAt) throw new WarrantyError(409, 'No se pueden agregar gastos a este reclamo.')
-    const cashMovement = await tx.cashMovement.create({ data: {
-      businessId, repairId: repair.id, type: 'EXPENSE', origin: 'REPAIR', amount: input.amount, method: input.method,
-      description: `Garantía reparación #${repair.number} · ${input.concept}`, clientName: repair.client.name,
-    } })
-    return tx.warrantyClaimExpense.create({ data: { businessId, claimId: id, concept: input.concept, idempotencyKey: input.idempotencyKey, cashMovementId: cashMovement.id }, include: { cashMovement: true } })
+    return recordClaimExpense(tx, businessId, claim, repair, input).then(expense => tx.warrantyClaimExpense.findFirstOrThrow({ where: { id: expense.id }, include: { cashMovement: true } }))
   })
 }
 export function deliverClaim(businessId: string, id: string, durationDays: number) {
