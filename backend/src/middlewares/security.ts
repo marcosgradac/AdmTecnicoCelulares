@@ -24,16 +24,53 @@ const handler = (eventName: string, message = 'Hiciste demasiados intentos. Espe
   }
 
 const ipKey = (req: Request) => ipKeyGenerator(req.ip ?? '')
-const limiter = (windowMs: number, limit: number, eventName: string, keyGenerator?: (req: Request) => string) => rateLimit({
+
+// Los preflight CORS no representan una operacion del usuario: se responden antes de
+// llegar a las rutas, asi que contarlos solo agotaria el presupuesto del cliente legitimo.
+const isPreflight = (req: Request) => req.method === 'OPTIONS'
+
+// /health y /api/health los consulta la plataforma de hosting desde IPs de
+// infraestructura, no los usuarios. Si contaran aqui, un health check podria
+// contribuir a bloquear el trafico real del comercio.
+const isHealthCheck = (req: Request) => {
+  const path = req.originalUrl.split('?')[0]
+  return path === '/health' || path === '/api/health'
+}
+
+const limiter = (
+  windowMs: number,
+  limit: number,
+  eventName: string,
+  keyGenerator?: (req: Request) => string,
+  skip?: (req: Request) => boolean,
+) => rateLimit({
   windowMs,
   limit,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   keyGenerator: keyGenerator ?? ipKey,
+  skip: skip ?? (() => false),
   handler: handler(eventName),
 })
 
-export const globalApiLimiter = limiter(securityConfig.rateLimits.global.windowMs, securityConfig.rateLimits.global.limit, 'RATE_LIMIT_HIT')
+export const globalApiLimiter = limiter(
+  securityConfig.rateLimits.global.windowMs,
+  securityConfig.rateLimits.global.limit,
+  'RATE_LIMIT_HIT',
+  undefined,
+  req => isPreflight(req) || isHealthCheck(req),
+)
+
+// Presupuesto por usuario autenticado. Debe montarse DESPUES de `authenticate` para que
+// `req.auth.userId` exista; si faltara, cae a la IP para no dejar el endpoint sin proteccion.
+export const authenticatedApiLimiter = limiter(
+  securityConfig.rateLimits.authenticatedApi.windowMs,
+  securityConfig.rateLimits.authenticatedApi.limit,
+  'RATE_LIMIT_HIT',
+  req => req.auth?.userId ?? ipKey(req),
+  isPreflight,
+)
+
 export const loginIpLimiter = limiter(securityConfig.rateLimits.loginIp.windowMs, securityConfig.rateLimits.loginIp.limit, 'LOGIN_RATE_LIMIT')
 export const signupLimiter = limiter(securityConfig.rateLimits.signup.windowMs, securityConfig.rateLimits.signup.limit, 'SIGNUP_RATE_LIMIT')
 export const publicTrackingLimiter = limiter(

@@ -42,7 +42,8 @@
     "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "start": "node scripts/start-production.cjs"
+    "start": "node scripts/start-production.cjs",
+    "test:rate-limit": "tsx tests/rate-limit-multiuser.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

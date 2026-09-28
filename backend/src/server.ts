@@ -27,7 +27,7 @@ import { warrantiesRouter } from './modules/warranties/warranties.routes'
 import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
-import { authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
+import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 import { getArgentinaDayBounds } from './lib/argentina-day'
 
@@ -314,6 +314,10 @@ app.patch('/api/auth/tutorial-seen', authenticate, authenticatedWriteLimiter, as
 app.get('/api/billing/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))
 
 app.use('/api', authenticate)
+// El presupuesto por usuario va despues de `authenticate` (necesita req.auth.userId) y antes
+// de los routers, de modo que cubre igual el orden especial de billing y platform-admin.
+// El limite de escrituras queda separado y mas estricto.
+app.use('/api', authenticatedApiLimiter)
 app.use('/api', limitAuthenticatedWrites)
 app.use('/api/billing', billingRouter)
 app.use('/api/platform-admin', platformAdminRouter)

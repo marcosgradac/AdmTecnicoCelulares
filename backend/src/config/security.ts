@@ -6,7 +6,11 @@ const numberFromEnv = (name: string, fallback: number) => {
 export const securityConfig = {
   payloadLimit: process.env.JSON_PAYLOAD_LIMIT ?? '256kb',
   rateLimits: {
-    global: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_GLOBAL_MAX', 120) },
+    // Techo anti-abuso por IP. En un comercio real varios empleados pueden salir por la
+    // misma IP publica, asi que este limite protege el proceso y no el uso individual:
+    // el presupuesto por persona vive en `authenticatedApi`, que se aplica tras authenticate.
+    global: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_GLOBAL_MAX', 600) },
+    authenticatedApi: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_AUTH_MAX', 300) },
     loginIp: { windowMs: 15 * 60_000, limit: numberFromEnv('RATE_LIMIT_LOGIN_IP_MAX', 20) },
     signup: { windowMs: 60 * 60_000, limit: numberFromEnv('RATE_LIMIT_SIGNUP_MAX', 3) },
     passwordCodeUser: { windowMs: 15 * 60_000, limit: numberFromEnv('RATE_LIMIT_PASSWORD_CODE_USER_MAX', 3) },
