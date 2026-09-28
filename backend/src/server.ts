@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import express, { type Request, type Response } from 'express'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import bcrypt from 'bcryptjs'
@@ -714,6 +714,27 @@ app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
 })
 
 const port = Number(process.env.PORT ?? 3000)
+// Last resort: without these, Express answers with an HTML page that leaks the Node stack
+// trace and absolute server paths. The message stays generic; the detail only goes to logs.
+app.use((req: Request, res: Response) => res.status(404).json({ success: false, message: 'Recurso no encontrado' }))
+app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
+  if (res.headersSent) return next(error)
+  // Express attaches `type` to body-parser failures; route handlers may throw `statusCode`.
+  const failure = error as { type?: string; statusCode?: number }
+  // A malformed or oversized body is the caller's fault, not a server failure.
+  if (failure.type === 'entity.parse.failed' || failure.type === 'entity.too.large') {
+    return res.status(failure.type === 'entity.too.large' ? 413 : 400).json({ success: false, message: 'El contenido enviado no es válido' })
+  }
+  const statusCode = typeof failure.statusCode === 'number' ? failure.statusCode : 500
+  if (statusCode >= 500) {
+    console.error('[error] No se pudo completar la petición', {
+      method: req.method, path: `${req.baseUrl}${req.path}`,
+      userId: req.auth?.userId, businessId: req.auth?.businessId,
+      message: error?.message, stack: process.env.NODE_ENV === 'production' ? undefined : error?.stack,
+    })
+  }
+  return res.status(statusCode).json({ success: false, message: statusCode >= 500 ? 'Ocurrió un error inesperado' : error.message })
+})
 export const startServer = () => app.listen(port, '0.0.0.0', () => {
   console.log(`TecnoDesk API iniciada en el puerto ${port} (${process.env.NODE_ENV ?? 'development'})`)
 })
