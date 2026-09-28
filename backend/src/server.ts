@@ -699,15 +699,20 @@ app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
   const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
   // Every figure here is an aggregate: loading whole repairs (and their clients) just to count
   // them made this endpoint grow with the whole history. Recent repairs are the only rows needed.
-  const openStatuses = [RepairStatus.RECEIVED, RepairStatus.REVIEW, RepairStatus.BUDGET, RepairStatus.APPROVED, RepairStatus.WAITING_PART, RepairStatus.REPAIRING, RepairStatus.TESTING, RepairStatus.READY]
-  const [byStatusRows, activeRepairs, readyRepairs, activeWarranties, repairsToday, clients, outstanding, movements, recentRepairs] = await Promise.all([
+  // The active set is "everything not finished", expressed as a negation so a new status is
+  // counted automatically instead of needing this list updated.
+  const activeWhere = { businessId, status: { notIn: [RepairStatus.DELIVERED, RepairStatus.CANCELLED] } }
+  const [byStatusRows, activeRepairs, readyRepairs, activeWarranties, repairsToday, clients, pending, movements, recentRepairs] = await Promise.all([
     prisma.repair.groupBy({ by: ['status'], where: { businessId }, _count: { _all: true } }),
-    prisma.repair.count({ where: { businessId, status: { in: openStatuses } } }),
+    prisma.repair.count({ where: activeWhere }),
     prisma.repair.count({ where: { businessId, status: RepairStatus.READY } }),
     prisma.repair.count({ where: { businessId, warrantyEnabled: true, warrantyDeletedAt: null, warrantyExpiresAt: { gte: now } } }),
     prisma.repair.count({ where: { businessId, createdAt: { gte: today } } }),
     prisma.client.count({ where: { businessId, deletedAt: null } }),
-    canViewFinancials ? prisma.repair.aggregate({ where: { businessId, status: { in: openStatuses } }, _sum: { total: true, paid: true } }) : Promise.resolve(null),
+    // `pending` keeps its original meaning: the unpaid balance of EVERY repair, including
+    // delivered and cancelled ones. Prisma cannot sum an expression, so the clamp is done in
+    // SQL, always scoped to this business. The raw rows are never sent to the client.
+    prisma.$queryRaw<Array<{ pending: number | null }>>`SELECT COALESCE(SUM(GREATEST("total" - "paid", 0)), 0) AS "pending" FROM "Repair" WHERE "businessId" = ${businessId}`,
     canViewFinancials ? prisma.cashMovement.findMany({ where: { businessId, createdAt: { gte: month } }, orderBy: { createdAt: 'asc' }, select: { type: true, amount: true, createdAt: true } }) : Promise.resolve([]),
     prisma.repair.findMany({
       where: { businessId },
@@ -723,9 +728,9 @@ app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
     for (const movement of movements.filter(m => m.type === 'INCOME')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.income += movement.amount }
     for (const movement of movements.filter(m => m.type === 'EXPENSE')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.expense += movement.amount }
   }
-  const pending = outstanding ? Math.max(0, (outstanding._sum.total ?? 0) - (outstanding._sum.paid ?? 0)) : 0
+  const pendingBalance = Number(pending[0]?.pending ?? 0)
   const countByStatus = (status: RepairStatus) => byStatusRows.find(row => row.status === status)?._count._all ?? 0
-  return res.json({ activeRepairs, readyRepairs, activeWarranties, repairsToday, monthlyIncome: income, monthlyExpenses: expenses, pending, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: countByStatus(status) })), cashFlow: flow.map(({ key: _key, ...point }) => point), recentRepairs })
+  return res.json({ activeRepairs, readyRepairs, activeWarranties, repairsToday, monthlyIncome: income, monthlyExpenses: expenses, pending: canViewFinancials ? pendingBalance : 0, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: countByStatus(status) })), cashFlow: flow.map(({ key: _key, ...point }) => point), recentRepairs })
 })
 
 const port = Number(process.env.PORT ?? 3000)
@@ -735,12 +740,15 @@ app.use((req: Request, res: Response) => res.status(404).json({ success: false, 
 app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
   if (res.headersSent) return next(error)
   // Express attaches `type` to body-parser failures; route handlers may throw `statusCode`.
-  const failure = error as { type?: string; statusCode?: number }
+  const failure = error as { type?: string; statusCode?: unknown }
   // A malformed or oversized body is the caller's fault, not a server failure.
   if (failure.type === 'entity.parse.failed' || failure.type === 'entity.too.large') {
     return res.status(failure.type === 'entity.too.large' ? 413 : 400).json({ success: false, message: 'El contenido enviado no es válido' })
   }
-  const statusCode = typeof failure.statusCode === 'number' ? failure.statusCode : 500
+  // A thrown `statusCode` is only trusted when it is a real HTTP error status; anything else
+  // (0, 200, 999, NaN, a string) must not produce an absurd or crashing response.
+  const candidate = failure.statusCode
+  const statusCode = Number.isInteger(candidate) && Number(candidate) >= 400 && Number(candidate) <= 599 ? Number(candidate) : 500
   if (statusCode >= 500) {
     console.error('[error] No se pudo completar la petición', {
       method: req.method, path: `${req.baseUrl}${req.path}`,
