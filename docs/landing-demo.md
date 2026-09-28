@@ -101,7 +101,8 @@ historiales, stock, snapshots, conciliación de caja y las APIs reales de Dashbo
 en los cuatro períodos, seguimiento y módulos. La regresión business-demo cubre
 los perfiles anteriores.
 
-Observación de la revisión visual: el Dashboard existente cuenta 15 ventas de
-comercio, incluyendo la cancelada; el módulo Comercio muestra las 14 vigentes.
-Esta diferencia pertenece a la lógica actual de la aplicación y no se corrige
-en este cambio. No se modifica la UI ni se generan las 27 capturas finales.
+Las ventas canceladas se conservan como historial pero no computan en los KPIs
+comerciales: cantidad de ventas, ingresos y ganancia bruta. Dashboard y Comercio
+consideran sólo ventas vigentes. Caja conserva el ingreso original y el egreso de
+reversión. La suite compara los tres KPIs contra Prisma usando el rango devuelto
+por Dashboard. No se modifica la UI ni se generan las 27 capturas finales.

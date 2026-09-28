@@ -39,7 +39,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
       tx.resaleDevice.groupBy({ by: ['status'], where: { businessId }, _count: true }),
       // Cash records the confirmation instant. soldAt can be a different accounting date.
       tx.resaleDevice.aggregate({ where: { businessId, status: 'SOLD', cashMovements: { some: { businessId, resaleKind: 'SALE', createdAt } } }, _count: true, _sum: { actualSalePrice: true, saleCostBasis: true } }),
-      features.commerce ? tx.commerceSale.aggregate({ where: { businessId, createdAt }, _count: true, _sum: { total: true, profit: true } }) : null,
+      features.commerce ? tx.commerceSale.aggregate({ where: { businessId, createdAt, cancelledAt: null }, _count: true, _sum: { total: true, profit: true } }) : null,
       tx.cashMovement.findMany({ where: { businessId, createdAt }, select: { id: true, type: true, amount: true, origin: true, description: true, createdAt: true, repairId: true, resaleDeviceId: true, commerceSaleId: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 6 }),
       tx.resaleDevice.findMany({ where: { businessId, status: 'READY_FOR_SALE' }, select: { id: true, brand: true, model: true }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: 3 }),
     ])

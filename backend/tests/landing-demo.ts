@@ -183,6 +183,7 @@ async function main() {
   const products = await prisma.commerceProduct.findMany({ where: { businessId } })
   const sales = await prisma.commerceSale.findMany({ where: { businessId }, include: { lines: true } })
   assert.deepEqual([categories.length, products.length, sales.length], [5, 28, 15])
+  assert.equal(sales.filter(s => s.cancelledAt !== null).length, 1, 'One cancelled sale remains in the 15 historical sales')
   assert.ok(categories.every(c => ['charger', 'cable', 'case', 'screen-protector', 'earbuds'].includes(c.iconKey!)))
   assert.ok(products.some(p => p.currentStock === 0) && products.some(p => p.currentStock >= 20))
   // Hand-checked closing stock catches omitted decrements or double cancellation restocks.
@@ -235,6 +236,22 @@ async function main() {
     const get = async (path: string) => { const r = await fetch(root + path, { headers: { authorization: `Bearer ${token}` } }); assert.equal(r.status, 200, path); return r.json() as Promise<any> }
     for (const period of ['today', '7d', '30d', 'month']) {
       const d = await get('/dashboard/overview?period=' + period)
+      const createdAt = { gte: new Date(d.period.start), lt: new Date(d.period.end) }
+      const historicalSales = await prisma.commerceSale.count({ where: { businessId, createdAt } })
+      const cancelledSales = await prisma.commerceSale.count({ where: { businessId, createdAt, cancelledAt: { not: null } } })
+      const activeSales = await prisma.commerceSale.aggregate({
+        where: { businessId, createdAt, cancelledAt: null },
+        _count: true, _sum: { total: true, profit: true },
+      })
+      assert.deepEqual(d.modules.commerce, {
+        sales: activeSales._count, revenue: activeSales._sum.total ?? 0, grossProfit: activeSales._sum.profit ?? 0,
+      }, `${period}: all commercial KPIs exclude cancelled sales`)
+      assert.equal(d.modules.commerce.sales, historicalSales - cancelledSales)
+      if (period === 'month') {
+        assert.equal(historicalSales, sales.length, 'This month contains all 15 historical sales')
+        assert.equal(cancelledSales, 1, 'The period includes the cancelled sale')
+      }
+      console.log(`COMMERCE ${period}: historical=${historicalSales}, cancelled=${cancelledSales}, sales=${activeSales._count}, revenue=${activeSales._sum.total ?? 0}, grossProfit=${activeSales._sum.profit ?? 0}`)
       assert.ok(d.financial.income > 0 && d.financial.expense > 0 && d.financial.balance !== 0)
       const rows = cash.filter(c => +c.createdAt >= +new Date(d.period.start) && +c.createdAt < +new Date(d.period.end))
       assert.equal(d.financial.income, rows.filter(c => c.type === 'INCOME').reduce((n, c) => n + c.amount, 0))
