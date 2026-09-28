@@ -38,7 +38,7 @@
     "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "prisma migrate deploy && node dist/server.js"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",
