@@ -93,8 +93,11 @@ export function RepairDetailPage() {
   const reviewPaid = repair.cancellationReviewPaid ?? 0
   const reviewBalance = cancellationReviewBalance(repair)
   const reviewCollected = liquidated ? Math.min(reviewFee, (repair.cancellationPaidAmount ?? 0) + reviewPaid) : 0
+  const repairCost = (repair.partsCost ?? 0) + (repair.laborCost ?? 0)
+  const estimatedProfit = repair.total - repairCost
+  const initialAdvance = (repair.payments ?? []).filter(item => item.isAdvance).reduce((sum, item) => sum + item.amount, 0)
   const historyEvents: Array<{ id: string; date?: string; label: string; amount?: number }> = []
-  for (const payment of [...(repair.payments ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) historyEvents.push({ id: `payment-${payment.id}`, date: payment.createdAt, label: payment.cancellationReview ? 'Pago de revisión' : 'Pago recibido', amount: payment.amount })
+  for (const payment of [...(repair.payments ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) historyEvents.push({ id: `payment-${payment.id}`, date: payment.createdAt, label: payment.cancellationReview ? 'Pago de revisión' : payment.isAdvance ? 'Adelanto recibido' : 'Pago recibido', amount: payment.amount })
   if (repair.status === 'cancelled') {
     const cancelledAt = repair.cancelledAt ?? (repair.history ?? []).find(item => item.newStatus === 'cancelled')?.createdAt ?? repair.updatedAt
     historyEvents.push({ id: 'cancelled', date: cancelledAt, label: 'Reparación cancelada' })
@@ -113,6 +116,16 @@ export function RepairDetailPage() {
     <PageHeader context={`REPARACIÓN #${repair.number}`} title={repair.device} description={`${repair.clientName} · Ingresó el ${formatDate(repair.createdAt)}`} action={<Stack direction="row" gap={1} alignItems="center"><StatusChip status={repair.status}/>{!editing && <Button variant="outlined" startIcon={<EditRounded/>} onClick={startEditing}>Editar</Button>}{!editing && canAccess(user,'repairs.delete') && repair.status!=='cancelled' && repair.paid===0 && <Button variant="outlined" color="error" onClick={() => setDeleteOpen(true)}>Eliminar</Button>}</Stack>} />
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+    {canAccess(user, 'repairs.viewFinancials') && repair.status !== 'cancelled' && <Card sx={{ mb: 2.2 }}><CardContent>
+      <Typography variant="h2" mb={2}>Costos y ganancia</Typography>
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 6, md: 3 }}><Info label="Costo / gasto de la reparación" value={formatMoney(repairCost)} /></Grid>
+        <Grid size={{ xs: 6, md: 3 }}><Info label="Mano de obra cobrada" value={formatMoney(repair.laborCharge ?? 0)} /></Grid>
+        <Grid size={{ xs: 6, md: 3 }}><Info label="Ganancia estimada" value={formatMoney(estimatedProfit)} color={estimatedProfit < 0 ? 'warning.main' : 'success.main'} /></Grid>
+        <Grid size={{ xs: 6, md: 3 }}><Info label="Adelanto inicial" value={formatMoney(initialAdvance)} /></Grid>
+      </Grid>
+      <Typography variant="caption" color="text.secondary" display="block" mt={2}>La mano de obra está incluida en el total al cliente. Los pagos reducen el saldo, no la ganancia estimada.</Typography>
+    </CardContent></Card>}
     {editing && form ? <Card sx={{ mb: 2.2 }}><CardContent>
       <Typography variant="h2" mb={2}>Editar datos generales</Typography>
       <Grid container spacing={2}>

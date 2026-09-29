@@ -9,6 +9,7 @@ import { randomBytes } from 'node:crypto'
 import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
+import { initialRepairFinanceSchema, recordInitialRepairFinance } from './modules/repairs/repair-finance'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
@@ -374,30 +375,41 @@ app.get('/api/repairs/:id', requirePermission('repairs.view'), async (req, res) 
   return repair ? res.json(repair) : res.status(404).json({ success: false, message: 'Reparación no encontrada' })
 })
 
-const createRepairSchema = z.object({
+const createRepairSchema = initialRepairFinanceSchema.extend({
   clientId: z.string().min(1),
   deviceBrand: z.string().trim().min(1), deviceModel: z.string().trim().min(1), imei: z.string().optional(),
   color: z.string().optional(), issue: z.string().trim().min(2), diagnosis: z.string().optional(),
-  notes: z.string().optional(), total: z.number().int().nonnegative().default(0), estimatedDeliveryDate: z.coerce.date().optional(), status: z.nativeEnum(RepairStatus).default(RepairStatus.RECEIVED)
+  notes: z.string().optional(), estimatedDeliveryDate: z.coerce.date().optional(), status: z.nativeEnum(RepairStatus).default(RepairStatus.RECEIVED)
   , warrantyEnabled: z.boolean().default(false), warrantyDurationDays: z.number().int().min(1).max(365).optional()
+}).superRefine((data, context) => {
+  if (data.advanceAmount > data.total) context.addIssue({ code: 'custom', path: ['advanceAmount'], message: 'El adelanto no puede superar el total al cliente' })
+  if (data.advanceAmount > 0 && !data.advanceMethod) context.addIssue({ code: 'custom', path: ['advanceMethod'], message: 'Seleccioná el medio de pago del adelanto' })
+  if (data.advanceAmount > 0 && data.status === RepairStatus.CANCELLED) context.addIssue({ code: 'custom', path: ['status'], message: 'Una reparación cancelada no admite adelantos' })
 })
 app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) => {
   const parsed = createRepairSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos inválidos' })
+  if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message ?? 'Datos inválidos' })
+  const auth = authOf(req)
+  if ((parsed.data.partsCost > 0 || parsed.data.laborCharge > 0 || parsed.data.advanceAmount > 0)
+    && auth.role !== 'OWNER' && !auth.permissions?.includes('repairs.viewFinancials')) {
+    return res.status(403).json({ success: false, message: 'No tenés permisos para registrar costos o adelantos' })
+  }
   const businessId = authOf(req).businessId
   try {
     await assertWithinLimit(authOf(req).businessId, 'repairs')
     let trackingAllowed = true
     try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch { trackingAllowed = false }
     const data = parsed.data
-    const client = await prisma.client.findFirst({ where: { id: data.clientId, businessId, deletedAt: null } })
-    if (!client) return res.status(404).json({ success: false, message: 'El cliente seleccionado fue eliminado o no está disponible.' })
     const repair = await prisma.$transaction(async tx => {
+      const client = await tx.client.findFirst({ where: { id: data.clientId, businessId, deletedAt: null } })
+      if (!client) throw Object.assign(new Error('El cliente seleccionado fue eliminado o no está disponible.'), { statusCode: 404 })
       const number = await allocateRepairNumber(tx, businessId)
       const deliveredAt = data.status === RepairStatus.DELIVERED ? new Date() : null
       const warrantyStartedAt = data.warrantyEnabled && deliveredAt ? deliveredAt : null
       const warrantyExpiresAt = warrantyStartedAt && data.warrantyDurationDays ? new Date(warrantyStartedAt.getTime() + data.warrantyDurationDays * 86_400_000) : null
-      return tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? randomBytes(32).toString('hex') : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
+      const created = await tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, partsCost: data.partsCost, laborCharge: data.laborCharge, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? randomBytes(32).toString('hex') : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt } })
+      await recordInitialRepairFinance(tx, created, client.name, data)
+      return tx.repair.findUniqueOrThrow({ where: { id: created.id }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.status(201).json(repair)
   } catch (error) {

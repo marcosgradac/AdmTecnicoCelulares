@@ -116,6 +116,11 @@ model Repair {
   notes         String?
   status        RepairStatus @default(RECEIVED)
   total         Int          @default(0)
+  partsCost     Int          @default(0)
+  laborCost     Int          @default(0)
+  laborCharge   Int          @default(0)
+  initialCostMovementId String? @unique
+  initialCostMovement CashMovement? @relation("RepairInitialCost", fields: [initialCostMovementId], references: [id], onDelete: Restrict)
   paid          Int          @default(0)
   cancelledAt          DateTime?
   cancellationPaidAmount Int?
@@ -145,6 +150,7 @@ model Payment {
   method     PaymentMethod
   note       String?
   cancellationReview Boolean  @default(false)
+  isAdvance Boolean @default(false)
   createdAt  DateTime      @default(now())
   repair     Repair        @relation(fields: [repairId], references: [id])
   client     Client        @relation(fields: [clientId], references: [id])
@@ -191,6 +197,7 @@ model RepairPart {
 }
 
 model CashMovement {
+  initialCostRepair Repair? @relation("RepairInitialCost")
   warrantyExpense WarrantyClaimExpense?
   @@unique([id, businessId])
   resaleDeviceId String?

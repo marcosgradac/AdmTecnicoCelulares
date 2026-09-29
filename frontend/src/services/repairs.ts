@@ -24,6 +24,9 @@ interface ApiRepair {
   status: ApiRepairStatus
   total: number
   paid: number
+  partsCost?: number
+  laborCost?: number
+  laborCharge?: number
   cancelledAt?: string | null
   cancellationPaidAmount?: number | null
   cancellationReviewFee?: number | null
@@ -39,7 +42,7 @@ interface ApiRepair {
   warrantyStartedAt: string | null
   warrantyExpiresAt: string | null
   statusHistory?: Array<{ id?: string; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
-  payments?: Array<{ id: string; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string | null; cancellationReview?: boolean; createdAt: string }>
+  payments?: Array<{ id: string; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string | null; cancellationReview?: boolean; isAdvance?: boolean; createdAt: string }>
   createdAt: string
   updatedAt: string
   client: ApiClient
@@ -56,6 +59,10 @@ export interface CreateRepairInput {
   diagnosis?: string
   notes?: string
   total: number
+  partsCost?: number
+  laborCharge?: number
+  advanceAmount?: number
+  advanceMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
   estimatedDeliveryDate?: string
   status?: RepairStatus
   warrantyEnabled?: boolean
@@ -107,6 +114,9 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   status: statusFromApi[repair.status],
   total: repair.total,
   paid: repair.paid,
+  partsCost: repair.partsCost,
+  laborCost: repair.laborCost,
+  laborCharge: repair.laborCharge,
   cancelledAt: repair.cancelledAt ?? undefined,
   cancellationPaidAmount: repair.cancellationPaidAmount ?? undefined,
   cancellationReviewFee: repair.cancellationReviewFee ?? undefined,

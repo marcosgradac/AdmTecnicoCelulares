@@ -21,6 +21,7 @@
     "test:inventory": "tsx tests/inventory.ts",
     "test:reports": "tsx tests/reports.ts",
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
+    "test:repair-creation-finance": "tsx tests/repair-creation-finance.ts && tsx tests/repair-creation-finance-sqlite.ts",
     "test:repair-numbering": "tsx tests/repair-number-migration.ts && tsx tests/repair-numbering.ts",
     "test:repair-cancellation": "tsx tests/repair-cancellation.ts",
     "test:warranties": "tsx tests/warranties.ts && tsx tests/warranties-sqlite.ts",

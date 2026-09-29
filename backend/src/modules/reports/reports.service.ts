@@ -86,7 +86,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     }),
     prisma.repair.findMany({ where: { businessId, deliveredAt: range }, select: { createdAt: true, deliveredAt: true } }),
     prisma.payment.findMany({ where: { businessId, createdAt: range }, select: { amount: true, method: true, createdAt: true } }),
-    prisma.cashMovement.findMany({ where: { businessId, type: 'EXPENSE', createdAt: range }, select: { amount: true, createdAt: true } }),
+    prisma.cashMovement.findMany({ where: { businessId, type: 'EXPENSE', createdAt: range }, select: { amount: true, createdAt: true, initialCostRepair: { select: { businessId: true, status: true } } } }),
     prisma.client.count({ where: { businessId, createdAt: range } }),
   ])
 
@@ -97,7 +97,16 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
   const repairPartsCost = validRepairs.reduce((sum, repair) => sum + repair.partsCost, 0)
   const laborCost = validRepairs.reduce((sum, repair) => sum + repair.laborCost, 0)
   const expensesTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-  const estimatedProfit = billed - repairPartsCost - laborCost - expensesTotal
+  // partsCost is recognized with the repair, even when its cash entry falls in another
+  // period. Only the explicitly linked mirror is excluded; unrelated repair/warranty
+  // expenses remain deductible. Cancelled repairs are absent from billed/cost totals,
+  // so their cash expenses must still count here.
+  const expensesAlreadyInRepairCosts = expenses.reduce((sum, expense) => sum + (
+    expense.initialCostRepair?.businessId === businessId && expense.initialCostRepair.status !== RepairStatus.CANCELLED
+      ? expense.amount : 0
+  ), 0)
+  const additionalExpenses = expensesTotal - expensesAlreadyInRepairCosts
+  const estimatedProfit = billed - repairPartsCost - laborCost - additionalExpenses
   const active = repairs.filter(repair => activeStatuses.includes(repair.status)).length
   const overdue = repairs.filter(repair => activeStatuses.includes(repair.status) && repair.estimatedDeliveryDate && repair.estimatedDeliveryDate < now).length
   const averageDeliveryHours = deliveredRepairs.length
@@ -117,7 +126,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     const current = timelineMap.get(label) ?? { label, billed: 0, collected: 0, expenses: 0, partsCost: 0, repairs: 0 }
     timelineMap.set(label, current); return current
   }
-  for (const repair of validRepairs) { const row = timelineRow(repair.createdAt); row.billed += repair.total; row.repairs += 1 }
+  for (const repair of validRepairs) { const row = timelineRow(repair.createdAt); row.billed += repair.total; row.partsCost += repair.partsCost; row.repairs += 1 }
   for (const payment of payments) timelineRow(payment.createdAt).collected += payment.amount
   for (const expense of expenses) timelineRow(expense.createdAt).expenses += expense.amount
   const profitability = validRepairs.map(repair => ({ id: repair.id, number: repair.number, label: `#${repair.number} · ${repair.deviceBrand} ${repair.deviceModel}`, billed: repair.total, profit: repair.total - repair.partsCost - repair.laborCost, margin: repair.total ? (repair.total - repair.partsCost - repair.laborCost) / repair.total : 0 }))
@@ -141,7 +150,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
       employees: { available: false, reason: 'Las reparaciones todavía no registran un técnico asignado.' },
     },
     finance: {
-      billed, collected, outstanding, partsCost: repairPartsCost, laborCost, expenses: expensesTotal, estimatedProfit,
+      billed, collected, outstanding, partsCost: repairPartsCost, laborCost, expenses: expensesTotal, expensesAlreadyInRepairCosts, additionalExpenses, estimatedProfit,
       timeline: [...timelineMap.values()].sort((a, b) => a.label.localeCompare(b.label)),
       mostProfitable: [...profitability].sort((a, b) => b.profit - a.profit).slice(0, 7),
       lowestMargin: profitability.filter(item => item.billed > 0).sort((a, b) => a.margin - b.margin).slice(0, 7),

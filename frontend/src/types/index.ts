@@ -25,6 +25,7 @@ export interface RepairPayment {
   method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
   note?: string | null
   cancellationReview?: boolean
+  isAdvance?: boolean
   createdAt: string
 }
 
@@ -45,6 +46,9 @@ export interface Repair {
   status: RepairStatus
   total: number
   paid: number
+  partsCost?: number
+  laborCost?: number
+  laborCharge?: number
   cancelledAt?: string
   cancellationPaidAmount?: number
   cancellationReviewFee?: number
