@@ -101,3 +101,11 @@
 /* Floating commercial contact aligned with TecnoDesk's visual identity. */
 .floating-whatsapp{min-width:54px;min-height:54px;padding:9px;border:1px solid #ffffffd6;border-radius:18px;color:#fff;background:linear-gradient(135deg,#6545dd 0%,#386fe8 58%,#259ee9 100%);box-shadow:0 16px 38px #493cc04d,0 4px 12px #20206020}.floating-whatsapp:before{content:none}.floating-whatsapp svg{width:34px;height:34px;padding:5px;flex:none}.floating-whatsapp span{padding-right:5px;font-size:.87rem;letter-spacing:-.01em}.floating-whatsapp:hover,.floating-whatsapp:focus-visible{transform:translateY(-3px);border-color:#fff;box-shadow:0 20px 44px #493cc060,0 6px 16px #20206024}.floating-whatsapp:focus-visible{outline:3px solid #8fd7ff;outline-offset:3px}
 @media(max-width:700px){.floating-whatsapp{min-width:52px;min-height:52px;padding:8px;border-radius:17px}.floating-whatsapp svg{width:34px;height:34px}}
+/* Mobile angosto: huella mas chica para no tapar el badge "MAS ELEGIDO", los
+   botones de plan ni el CTA final. Se mantiene visible, con el mismo enlace y
+   con un area tactil de 46px (por encima del minimo de 44px de WCAG 2.5.5).
+   Cuando el boton se cruzaria con contenido critico se retira con un fade
+   corto y vuelve a aparecer apenas el contenido se aleja. */
+@media(max-width:600px){.floating-whatsapp{min-width:46px;min-height:46px;padding:6px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));border-radius:15px;box-shadow:0 10px 26px #493cc047,0 2px 8px #2020601f;transition:opacity .2s ease,transform .2s ease,box-shadow .2s ease}.floating-whatsapp svg{width:24px;height:24px;padding:4px}.floating-whatsapp.is-dodging{opacity:0;transform:translateY(10px) scale(.82);pointer-events:none}.floating-whatsapp:hover,.floating-whatsapp:focus-visible{transform:translateY(-2px)}}
+@media(prefers-reduced-motion:reduce){.floating-whatsapp,.floating-whatsapp.is-dodging{transition:none}}
+
