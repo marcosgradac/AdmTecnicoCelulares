@@ -141,6 +141,12 @@
 }
 .showcase.is-reversed .showcase__copy { order: 2; }
 .showcase.is-reversed .showcase__visual { order: 1; }
+@media (min-width: 981px) {
+  .landing-redesign :is(#seguimiento, #garantias) .showcase__grid {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+  }
+  .landing-redesign #seguimiento .showcase__phone-frame { max-width: none; }
+}
 .showcase__copy { min-width: 0; }
 .showcase__eyebrow {
   display: inline-block; color: var(--td-violet);
@@ -204,23 +210,37 @@
 .landing-redesign .final-cta { padding: 0 0 104px; color: inherit; background: #fff; }
 .landing-redesign .final-cta .landing-container { display: block; }
 .final-cta__inner {
-  position: relative; overflow: hidden; padding: 76px 48px;
-  text-align: center; border-radius: 32px;
+  position: relative; isolation: isolate; overflow: hidden; padding: 68px 56px;
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .85fr); gap: 48px; align-items: center;
+  text-align: left; border-radius: 32px; border: 1px solid rgba(255,255,255,.3);
   background:
-    radial-gradient(760px 320px at 50% -10%, rgba(255,255,255,.34), transparent 62%),
-    linear-gradient(128deg, #5B3FD6 0%, #7A5BE8 46%, #2F9BFF 100%);
-  box-shadow: 0 34px 80px rgba(69,48,168,.28);
+    radial-gradient(ellipse at 90% 0%, rgba(126,215,255,.48), transparent 58%),
+    radial-gradient(ellipse at 0% 100%, rgba(49,24,134,.6), transparent 65%),
+    linear-gradient(115deg, #6240CF 0%, #554DDD 48%, #278BD9 100%);
+  box-shadow: 0 34px 80px rgba(69,48,168,.24), inset 0 1px 0 rgba(255,255,255,.28);
+}
+.final-cta__inner::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  width: 520px; height: 520px; right: -180px; top: -280px;
+  border: 1px solid rgba(255,255,255,.17); border-radius: 50%;
+  box-shadow: 0 0 0 54px rgba(255,255,255,.035), 0 0 0 108px rgba(255,255,255,.025);
+}
+.final-cta__copy, .final-cta__action { min-width: 0; }
+.final-cta__action {
+  padding: 30px 24px; border-radius: 24px; text-align: center;
+  border: 1px solid rgba(255,255,255,.24); background: rgba(20,28,108,.13);
+  box-shadow: 0 16px 40px rgba(30,20,90,.12), inset 0 1px 0 rgba(255,255,255,.12);
 }
 .final-cta__title { margin: 0; color: #fff; font-size: clamp(1.85rem, 3.3vw, 2.85rem); font-weight: 800; line-height: 1.14; letter-spacing: -.03em; }
-.final-cta__text { max-width: 52ch; margin: 16px auto 0; color: rgba(255,255,255,.9); font-size: 1.06rem; line-height: 1.65; }
+.final-cta__text { max-width: 52ch; margin: 16px 0 0; color: rgba(255,255,255,.9); font-size: 1.06rem; line-height: 1.65; }
 .final-cta__button {
-  display: inline-block; margin-top: 30px; padding: 16px 36px; border-radius: 14px;
+  display: inline-block; margin-top: 0; padding: 16px 36px; border-radius: 14px;
   background: #fff; color: #4327B7; font-weight: 800; font-size: 1rem; text-decoration: none;
   box-shadow: 0 14px 34px rgba(20,18,31,.22);
   transition: transform .25s ease, box-shadow .25s ease;
 }
 .final-cta__button:hover { transform: translateY(-3px); box-shadow: 0 20px 44px rgba(20,18,31,.28); }
-.final-cta__points { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin: 26px 0 0; padding: 0; color: rgba(255,255,255,.94); font-size: .92rem; list-style: none; }
+.final-cta__points { display: grid; justify-content: center; gap: 10px; margin: 24px 0 0; padding: 0; color: rgba(255,255,255,.94); font-size: .92rem; list-style: none; }
 .final-cta__points li::before { content: '✓'; margin-right: 8px; font-weight: 900; }
 
 /* ------------------------------------------ Animaciones de entrada ------ */
@@ -237,6 +257,8 @@
   background: linear-gradient(135deg, rgba(91,63,214,.13), rgba(47,155,255,.15));
   color: var(--td-violet); letter-spacing: .1em;
 }
+.pricing-carousel__controls { display: none; }
+.pricing-carousel__viewport:focus-visible { outline: 2px solid var(--td-violet); outline-offset: 4px; }
 
 /* ================================ RESPONSIVE ============================= */
 @media (max-width: 1180px) {
@@ -265,6 +287,9 @@
 @media (max-width: 760px) {
   .duo-grid { grid-template-columns: 1fr; gap: 26px; }
   .redesign-pricing { padding-top: 78px; }
+  .final-cta__inner { grid-template-columns: 1fr; gap: 30px; text-align: center; }
+  .final-cta__text { margin-inline: auto; }
+  .final-cta__action { width: min(100%, 380px); margin-inline: auto; }
 }
 
 @media (max-width: 600px) {
@@ -293,6 +318,40 @@
   .landing-redesign .final-cta { padding-bottom: 76px; }
   .final-cta__inner { padding: 46px 22px; border-radius: 24px; }
   .final-cta__points { gap: 8px 18px; font-size: .85rem; }
+  .final-cta__action { padding: 26px 16px; }
+  .landing-redesign .pricing-carousel__viewport {
+    width: calc(100% + 32px); margin-inline: -16px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+  .pricing-carousel__viewport::-webkit-scrollbar { display: none; }
+  .landing-redesign .pricing-carousel .billing-plan-grid {
+    display: flex; width: max-content; gap: 16px; padding: 24px 6vw 32px;
+  }
+  .landing-redesign .pricing-carousel .billing-plan-card {
+    flex: 0 0 88vw; width: 88vw; min-width: 0; scroll-snap-align: center;
+    transform: translateY(2px); transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .landing-redesign .pricing-carousel .billing-plan-card .MuiButton-root { margin-top: auto; }
+  @for $index from 0 through 2 {
+    .landing-redesign .pricing-carousel[data-active-plan='#{$index}'] .billing-plan-card:nth-child(#{$index + 1}) {
+      transform: translateY(-2px); box-shadow: 0 18px 34px rgba(91,63,198,.16);
+    }
+  }
+  .pricing-carousel__controls {
+    display: flex; width: fit-content; max-width: 100%; align-items: center; justify-content: center;
+    gap: 10px; margin: 0 auto;
+  }
+  .pricing-carousel__controls button {
+    display: grid; place-items: center; width: 40px; height: 44px; padding: 0;
+    border: 1px solid var(--td-line); border-radius: 14px; background: #fff; color: var(--td-violet); cursor: pointer;
+  }
+  .pricing-carousel__controls button:disabled { opacity: .35; cursor: default; }
+  .pricing-carousel__controls button:focus-visible { outline: 2px solid var(--td-violet); outline-offset: 3px; }
+  .pricing-carousel__dots { display: flex; }
+  .pricing-carousel__dots button { border: 0; background: transparent; }
+  .pricing-carousel__dots span { width: 8px; height: 8px; border-radius: 50%; background: #D8D2ED; transition: background .2s ease, transform .2s ease; }
+  .pricing-carousel__dots [aria-current='true'] span { background: var(--td-violet); transform: scale(1.2); }
 }
 
 @media (max-width: 380px) {
@@ -301,6 +360,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .landing-redesign .pricing-carousel__viewport { scroll-behavior: auto; }
+  .landing-redesign .pricing-carousel .billing-plan-card, .pricing-carousel__dots span { transition: none; }
   .landing-redesign [data-reveal] { opacity: 1; transform: none; transition: none; }
   .product-shot, .duo-card, .feature-pill, .final-cta__button { transition: none; }
   .product-shot:hover, .duo-card:hover, .feature-pill:hover, .final-cta__button:hover { transform: none; }

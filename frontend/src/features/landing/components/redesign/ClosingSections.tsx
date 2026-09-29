@@ -49,10 +49,14 @@ export function FinalCta() {
   return <section className="final-cta" aria-labelledby="cta-title">
     <div className="landing-container">
       <div className="final-cta__inner" data-reveal>
-        <h2 id="cta-title" className="final-cta__title">Empezá a ordenar tu servicio técnico hoy</h2>
-        <p className="final-cta__text">Probá TecnoDesk completo durante 30 días y conocé todas sus funciones.</p>
-        <Link className="final-cta__button" to="/register">Empezar gratis</Link>
-        <ul className="final-cta__points"><li>30 días gratis</li><li>Sin tarjeta</li><li>Acceso completo durante la prueba</li></ul>
+        <div className="final-cta__copy">
+          <h2 id="cta-title" className="final-cta__title">Empezá a ordenar tu servicio técnico hoy</h2>
+          <p className="final-cta__text">Probá TecnoDesk completo durante 30 días y conocé todas sus funciones.</p>
+        </div>
+        <div className="final-cta__action">
+          <Link className="final-cta__button" to="/register">Empezar gratis</Link>
+          <ul className="final-cta__points"><li>30 días gratis</li><li>Sin tarjeta</li><li>Acceso completo durante la prueba</li></ul>
+        </div>
       </div>
     </div>
   </section>
