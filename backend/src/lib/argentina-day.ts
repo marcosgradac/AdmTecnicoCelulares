@@ -57,3 +57,27 @@ export const getArgentinaDayBounds = (now: Date) => {
     end: utcForMidnight(year, month, day + 1),
   }
 }
+
+/**
+ * Límites de un rango de días calendario hacia atrás: desde la medianoche de hace
+ * `daysBack` días hasta el cierre lógico del día de hoy.
+ *
+ * Se calcula sobre la fecha civil argentina y no restando horas, para que un rango de
+ * "7 días" siempre sea 7 amaneceres completos aunque cambie el horario de verano.
+ */
+export const getArgentinaDayRangeBack = (now: Date, daysBack: number) => {
+  if (Number.isNaN(now.getTime())) throw new RangeError('Invalid date')
+  const { year, month, day } = partsFor(now)
+  const shifted = new Date(Date.UTC(year, month - 1, day - daysBack))
+  return {
+    start: utcForMidnight(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, shifted.getUTCDate()),
+    end: utcForMidnight(year, month, day + 1),
+  }
+}
+
+/** Desde la medianoche del día 1 del mes en curso hasta el cierre lógico del día de hoy. */
+export const getArgentinaMonthBounds = (now: Date) => {
+  if (Number.isNaN(now.getTime())) throw new RangeError('Invalid date')
+  const { year, month } = partsFor(now)
+  return { start: utcForMidnight(year, month, 1), end: getArgentinaDayBounds(now).end }
+}

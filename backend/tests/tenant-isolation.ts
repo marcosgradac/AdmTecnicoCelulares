@@ -84,8 +84,9 @@ async function main() {
     // Tenants that were never created are simply skipped.
     const created = [businessA, businessB].filter((id): id is string => Boolean(id))
     if (created.length) {
-      await prisma.cashMovement.deleteMany({ where: { businessId: { in: created } } })
+      // Pagos antes que caja: Payment.cashMovementId usa ON DELETE RESTRICT sobre CashMovement.
       await prisma.payment.deleteMany({ where: { businessId: { in: created } } })
+      await prisma.cashMovement.deleteMany({ where: { businessId: { in: created } } })
       await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: { in: created } } } })
       await prisma.repair.deleteMany({ where: { businessId: { in: created } } })
       // Registration also creates a Subscription, which RESTRICTs the business deletion.

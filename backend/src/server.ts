@@ -9,7 +9,10 @@ import { randomBytes } from 'node:crypto'
 import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
-import { initialRepairFinanceSchema, recordInitialRepairFinance } from './modules/repairs/repair-finance'
+import { advanceCorrectionNote, correctInitialRepairAdvance, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, RepairFinanceError } from './modules/repairs/repair-finance'
+import { assertStatusChange, deliveredLockedMessage, deliveryDates, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
+import { emptyLoose, linkedWhereFor, looseCashMovements, looseColumns, looseWhereFor, repairCashGroups, toLooseBlock } from './modules/cash/cash-groups.service'
+import { cashPeriodWhere, DEFAULT_CASH_PERIOD, isCashPeriod } from './modules/cash/cash-period'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
@@ -30,7 +33,6 @@ import { deviceSummary } from './modules/equipment-sales/equipment-sales.service
 import { securityConfig } from './config/security'
 import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
-import { getArgentinaDayBounds } from './lib/argentina-day'
 
 export const app = express()
 app.set('trust proxy', 1)
@@ -434,22 +436,148 @@ app.patch('/api/repairs/:id', requirePermission('repairs.update'), async (req, r
   const repair = await prisma.repair.update({ where: { id: current.id }, data: { ...parsed.data, imei: parsed.data.imei || null, color: parsed.data.color || null, diagnosis: parsed.data.diagnosis || null, notes: parsed.data.notes || null }, include: includeRepair })
   return res.json(repair)
 })
+const statusMessagesSchema = z.object({ publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() })
+const advanceStatus = 'advance' as const
+const rewindStatus = 'rewind' as const
+const noStatusStepMessage = (action: string, status: RepairStatus) => {
+  if (isSpecialRepairStatus(status)) return 'Una reparación en estado especial no se mueve con el flujo normal.'
+  if (status === RepairStatus.DELIVERED) return deliveredLockedMessage
+  return action === advanceStatus ? 'La reparación ya está en el último estado del flujo.' : 'La reparación ya está en el primer estado del flujo.'
+}
+const statusFailure = (res: Response, error: unknown, fallback: string) => {
+  const statusCode = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
+  if (statusCode >= 500) return res.status(statusCode).json({ success: false, message: fallback })
+  const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined
+  return res.status(statusCode).json({ success: false, ...(code ? { code } : {}), message: error instanceof Error ? error.message : fallback })
+}
+/**
+ * Aplica un cambio de estado y deja el rastro en RepairStatusHistory.
+ * Entregar sella deliveredAt e inicia la garantía; el resto de los pasos no las tocan.
+ */
+const applyStatusChange = async (
+  tx: Prisma.TransactionClient,
+  current: { id: string; status: RepairStatus; deliveredAt: Date | null; warrantyEnabled: boolean; warrantyDurationDays: number | null; warrantyStartedAt: Date | null; warrantyExpiresAt: Date | null },
+  target: RepairStatus,
+  messages: z.infer<typeof statusMessagesSchema>,
+  userId: string,
+) => {
+  const dates = deliveryDates(current, target)
+  await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: target, publicMessage: messages.publicMessage || null, internalNote: messages.internalNote || null, changedByUserId: userId } })
+  return tx.repair.update({ where: { id: current.id }, data: { status: target, ...dates }, include: includeRepair })
+}
+/** Avance y retroceso de un solo paso. Los estados especiales y Entregado quedan bloqueados. */
+const statusStepRoute = (action: typeof advanceStatus | typeof rewindStatus) => async (req: Request, res: Response) => {
+  const parsed = statusMessagesSchema.safeParse(req.body ?? {})
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de estado inválidos' })
+  const auth = authOf(req)
+  const repairId = String(req.params.id)
+  try {
+    const result = await prisma.$transaction(async tx => {
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
+      if (!current) throw statusError(404, 'Reparación no encontrada')
+      const target = action === advanceStatus ? nextRepairStatus(current.status) : previousRepairStatus(current.status)
+      if (!target) throw statusError(409, noStatusStepMessage(action, current.status))
+      assertStatusChange(current.status, target)
+      return applyStatusChange(tx, current, target, parsed.data, auth.userId)
+    }, { timeout: 15_000 })
+    return res.json(result)
+  } catch (error) {
+    return statusFailure(res, error, 'No pudimos actualizar el estado')
+  }
+}
+app.patch('/api/repairs/:id/status/advance', requirePermission('repairs.changeStatus'), statusStepRoute(advanceStatus))
+app.patch('/api/repairs/:id/status/rewind', requirePermission('repairs.changeStatus'), statusStepRoute(rewindStatus))
+
 app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), async (req, res) => {
-  const parsed = z.object({ status: z.nativeEnum(RepairStatus), publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() }).safeParse(req.body)
+  const parsed = z.object({ status: z.nativeEnum(RepairStatus), ...statusMessagesSchema.shape }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Estado inválido' })
   if (parsed.data.status === RepairStatus.CANCELLED) return res.status(409).json({ success: false, message: 'Para cancelar una reparación con liquidación financiera usá el flujo específico: POST /api/repairs/:id/cancel' })
-  const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
-  if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   const auth = authOf(req)
-  const repair = await prisma.$transaction(async tx => {
-    await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: parsed.data.status, publicMessage: parsed.data.publicMessage || null, internalNote: parsed.data.internalNote || null, changedByUserId: auth.userId } })
-    const deliveredAt = parsed.data.status === 'DELIVERED' ? current.deliveredAt ?? new Date() : current.deliveredAt
-    const warrantyStartedAt = parsed.data.status === 'DELIVERED' && current.warrantyEnabled ? current.warrantyStartedAt ?? deliveredAt : current.warrantyStartedAt
-    const warrantyExpiresAt = warrantyStartedAt && current.warrantyDurationDays ? current.warrantyExpiresAt ?? new Date(warrantyStartedAt.getTime() + current.warrantyDurationDays * 86_400_000) : current.warrantyExpiresAt
-    return tx.repair.update({ where: { id: current.id }, data: { status: parsed.data.status, deliveredAt, warrantyStartedAt, warrantyExpiresAt }, include: includeRepair })
-  })
-  return res.json(repair)
+  const repairId = String(req.params.id)
+  try {
+    const result = await prisma.$transaction(async tx => {
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
+      if (!current) throw statusError(404, 'Reparación no encontrada')
+      assertStatusChange(current.status, parsed.data.status)
+      return applyStatusChange(tx, current, parsed.data.status, parsed.data, auth.userId)
+    }, { timeout: 15_000 })
+    return res.json(result)
+  } catch (error) {
+    return statusFailure(res, error, 'No pudimos actualizar el estado')
+  }
 })
+
+/**
+ * Corrección excepcional de entrega.
+ *
+ * Entregado es el final del flujo normal: esta es la única vía para volver a Listo y existe
+ * sólo para una entrega cargada por error. No es un botón de navegación, exige OWNER, motivo
+ * y confirmación, y deja el mismo rastro que cualquier cambio de estado. Si ya hay un reclamo
+ * de garantía, deshacer la entrega dejaría la cobertura sin origen y la acción se bloquea.
+ */
+app.post('/api/repairs/:id/delivery/correction', requireRole('OWNER'), async (req, res) => {
+  const parsed = z.object({ reason: z.string().trim().min(5).max(500) }).safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Indicá el motivo de la corrección de entrega' })
+  const auth = authOf(req)
+  const repairId = String(req.params.id)
+  try {
+    const result = await prisma.$transaction(async tx => {
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
+      if (!current) throw statusError(404, 'Reparación no encontrada')
+      if (current.status !== RepairStatus.DELIVERED) throw statusError(409, 'La reparación no está entregada: no hay nada que corregir.')
+      const claims = await tx.warrantyClaim.count({ where: { repairId: current.id, businessId: auth.businessId } })
+      if (claims > 0) throw statusError(409, 'La reparación tiene reclamos de garantía asociados. No se puede deshacer la entrega porque dejaría la cobertura sin origen.')
+      // Compare-and-swap sobre el estado: dos correcciones simultáneas no pueden aplicadas dos veces.
+      const claimed = await tx.repair.updateMany({
+        where: { id: current.id, businessId: auth.businessId, status: RepairStatus.DELIVERED },
+        data: { status: RepairStatus.READY, deliveredAt: null, warrantyStartedAt: null, warrantyExpiresAt: null },
+      })
+      if (claimed.count !== 1) throw statusError(409, 'La entrega ya fue corregida por otra operación')
+      await tx.repairStatusHistory.create({ data: {
+        repairId: current.id, previousStatus: RepairStatus.DELIVERED, newStatus: RepairStatus.READY, changedByUserId: auth.userId,
+        internalNote: `Corrección de entrega: ${parsed.data.reason}`,
+      } })
+      return tx.repair.findFirst({ where: { id: current.id, businessId: auth.businessId }, include: includeRepair })
+    }, { timeout: 15_000 })
+    return res.json(result)
+  } catch (error) {
+    return statusFailure(res, error, 'No pudimos corregir la entrega')
+  }
+})
+
+/**
+ * Corrige el adelanto inicial de una reparación ya creada.
+ *
+ * Todo el trabajo ocurre en una sola transacción: Payment del adelanto, CashMovement INCOME,
+ * Repair.paid y el historial. Nunca queda un segundo adelanto ni se duplica la entrada de caja.
+ */
+app.patch('/api/repairs/:id/advance', requirePermission('repairs.viewFinancials'), async (req, res) => {
+  const parsed = repairAdvanceSchema.safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message ?? 'Datos de adelanto inválidos' })
+  const auth = authOf(req)
+  const repairId = String(req.params.id)
+  try {
+    const result = await prisma.$transaction(async tx => {
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
+      if (!current) throw statusError(404, 'Reparación no encontrada')
+      if (current.status === RepairStatus.CANCELLED) throw statusError(409, 'Una reparación cancelada no se edita: su liquidación tiene su propio flujo.')
+      const { previousAmount } = await correctInitialRepairAdvance(tx, current, current.client.name, parsed.data)
+      // El historial interno deja el rastro exacto de la corrección del importe.
+      if (previousAmount !== parsed.data.amount) {
+        await tx.repairStatusHistory.create({ data: {
+          repairId: current.id, previousStatus: current.status, newStatus: current.status, changedByUserId: auth.userId,
+          internalNote: advanceCorrectionNote(previousAmount, parsed.data.amount),
+        } })
+      }
+      return tx.repair.findFirst({ where: { id: current.id, businessId: auth.businessId }, include: includeRepair })
+    }, { timeout: 15_000 })
+    return res.json(result)
+  } catch (error) {
+    if (error instanceof RepairFinanceError) return res.status(error.statusCode).json({ success: false, message: error.message })
+    return statusFailure(res, error, 'No pudimos corregir el adelanto')
+  }
+})
+
 const cancellationError = (statusCode: number, message: string) => Object.assign(new Error(message), { statusCode })
 const cancelRepairSchema = z.object({
   reviewFee: z.number().int().nonnegative().default(0),
@@ -517,14 +645,15 @@ app.post('/api/repairs/:id/cancellation-payment', requirePermission('repairs.vie
       const balance = reviewFee - covered - (current.cancellationPaidAmount ?? 0)
       if (balance <= 0) throw cancellationError(409, 'La revisión ya está cobrada por completo')
       if (parsed.data.amount > balance) throw cancellationError(400, `El monto supera el saldo de revisión pendiente (${balance})`)
-      await tx.cashMovement.create({ data: { businessId: current.businessId, type: CashMovementType.INCOME, origin: CashMovementOrigin.REPAIR, description: `Cobro revisión reparación #${current.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: current.id, clientName: current.client.name } })
+      const reviewMovement = await tx.cashMovement.create({ data: { businessId: current.businessId, type: CashMovementType.INCOME, origin: CashMovementOrigin.REPAIR, description: `Cobro revisión reparación #${current.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: current.id, clientName: current.client.name } })
       // Compare-and-swap sobre el saldo ya cubierto: dos cobros simultáneos del mismo saldo no pueden ocurrir.
       const claimed = await tx.repair.updateMany({
         where: { id: current.id, businessId: auth.businessId, status: RepairStatus.CANCELLED, cancellationReviewFee: reviewFee, cancellationReviewPaid: covered },
         data: { cancellationReviewPaid: { increment: parsed.data.amount } },
       })
       if (claimed.count !== 1) throw cancellationError(409, 'El cobro de revisión ya fue registrado por otra operación')
-      await tx.payment.create({ data: { businessId: current.businessId, repairId: current.id, clientId: current.clientId, amount: parsed.data.amount, method: parsed.data.method, note: `Cobro revisión reparación #${current.number}`, cancellationReview: true } })
+      // El cobro queda vinculado por ID a su ingreso de caja, igual que los pagos normales.
+      await tx.payment.create({ data: { businessId: current.businessId, repairId: current.id, clientId: current.clientId, amount: parsed.data.amount, method: parsed.data.method, note: `Cobro revisión reparación #${current.number}`, cancellationReview: true, cashMovementId: reviewMovement.id } })
       return tx.repair.findFirst({ where: { id: current.id }, include: includeRepair })
     }, { timeout: 15_000 })
     return res.json(repair)
@@ -627,8 +756,9 @@ app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'
       data: { paid: { increment: parsed.data.amount } },
     })
     if (changed.count !== 1) return null
-    const created = await tx.payment.create({ data: { businessId, ...parsed.data, repairId: repair.id, clientId: repair.clientId } })
-    await tx.cashMovement.create({ data: { businessId, type: 'INCOME', origin: 'REPAIR', description: `Pago reparación #${repair.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: repair.id, clientName: repair.client.name } })
+    // El pago y su ingreso de caja quedan vinculados por ID, no sólo por descripción.
+    const movement = await tx.cashMovement.create({ data: { businessId, type: 'INCOME', origin: 'REPAIR', description: `Pago reparación #${repair.number}`, amount: parsed.data.amount, method: parsed.data.method, repairId: repair.id, clientName: repair.client.name } })
+    const created = await tx.payment.create({ data: { businessId, ...parsed.data, repairId: repair.id, clientId: repair.clientId, cashMovementId: movement.id } })
     return created
   })
   return payment
@@ -666,6 +796,10 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
     page: z.coerce.number().int().positive().default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(10),
     origin: z.nativeEnum(CashMovementOrigin).optional(),
+    // Caja de reparaciones agrupada por reparación, con paginación por grupos.
+    groupByRepair: z.coerce.boolean().optional(),
+    // Período de todas las cajas. Un valor desconocido cae en TODAY en lugar de fallar.
+    period: z.string().optional(),
   }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Parámetros de paginación inválidos' })
 
@@ -675,24 +809,60 @@ app.get('/api/cash/movements', requirePermission('cash.view'), async (req, res) 
     try { await assertFeatureAccess(businessId, 'commerce') }
     catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos validar Comercio.' }) }
   }
-  const { start, end } = getArgentinaDayBounds(new Date())
-  const where = { businessId, ...(parsed.data.origin ? { origin: parsed.data.origin } : {}) }
-  const todayWhere = { ...where, createdAt: { gte: start, lt: end } }
-  const [items, total, grouped] = await prisma.$transaction([
-    prisma.cashMovement.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
-    prisma.cashMovement.count({ where }),
-    prisma.cashMovement.groupBy({ by: ['type'], where: todayWhere, orderBy: { type: 'asc' }, _sum: { amount: true } }),
+  // El backend es la única fuente de los límites temporales: el navegador elige el período
+  // de una lista cerrada y nunca manda un rango arbitrario.
+  const period = isCashPeriod(parsed.data.period) ? parsed.data.period : DEFAULT_CASH_PERIOD
+  const now = new Date()
+  const createdAt = cashPeriodWhere(period, now)
+  const where = { businessId, ...(parsed.data.origin ? { origin: parsed.data.origin } : {}), createdAt }
+  // El resumen usa exactamente el mismo rango que el listado: tarjetas y tabla no se contradicen.
+  const summaryQuery = prisma.cashMovement.groupBy({ by: ['type'], where, orderBy: { type: 'asc' }, _sum: { amount: true } })
+  const countQuery = prisma.cashMovement.count({ where })
+  const buildSummary = (grouped: { type: CashMovementType; _sum: { amount: number | null } }[], totalMovements: number) => {
+    const income = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
+    const expense = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
+    return { income, expense, balance: income - expense, totalMovements }
+  }
+
+  if (parsed.data.groupByRepair) {
+    if (parsed.data.origin && parsed.data.origin !== 'REPAIR') {
+      return res.status(400).json({ success: false, message: 'La agrupación por reparación sólo existe para la caja de reparaciones.' })
+    }
+    // El resumen y el total se leen juntos; la agrupación no cambia ninguna cifra.
+    const [grouped, movementCount] = await prisma.$transaction([summaryQuery, countQuery], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+    const [groups, loose] = await Promise.all([repairCashGroups(businessId, page, pageSize, period, now), looseCashMovements(businessId, 'REPAIR', period, now)])
+    return res.json({
+      items: groups.items,
+      total: groups.total,
+      page,
+      pageSize,
+      pages: Math.max(1, Math.ceil(groups.total / pageSize)),
+      period,
+      summary: buildSummary(grouped, movementCount),
+      // Los movimientos manuales van en su propia tabla y NO se paginan con los grupos: la
+      // paginación sigue siendo por reparación, así que un manual nunca desplaza un grupo.
+      loose,
+    })
+  }
+
+  // La tabla principal muestra sólo lo vinculado al módulo; los manuales van aparte pero
+  // SIGUEN contando en el resumen de la caja: ningún importe se pierde por separarlos.
+  const [items, linkedTotal, grouped, loose] = await prisma.$transaction([
+    prisma.cashMovement.findMany({ where: { ...where, ...linkedWhereFor(parsed.data.origin) }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.cashMovement.count({ where: { ...where, ...linkedWhereFor(parsed.data.origin) } }),
+    summaryQuery,
+    prisma.cashMovement.findMany({ where: { ...where, ...looseWhereFor(parsed.data.origin) }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: looseColumns }),
   ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
-  const incomeToday = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
-  const expenseToday = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
-  const equipmentSummary = parsed.data.origin === 'EQUIPMENT' ? await deviceSummary(businessId) : undefined
+  const equipmentSummary = parsed.data.origin === 'EQUIPMENT' ? await deviceSummary(businessId, createdAt) : undefined
   return res.json({
     items,
-    total,
+    total: linkedTotal,
     page,
     pageSize,
-    pages: Math.max(1, Math.ceil(total / pageSize)),
-    summary: { incomeToday, expenseToday, balanceToday: incomeToday - expenseToday, totalMovements: total },
+    pages: Math.max(1, Math.ceil(linkedTotal / pageSize)),
+    period,
+    summary: buildSummary(grouped, linkedTotal + loose.length),
+    loose: loose.length ? toLooseBlock(loose) : emptyLoose,
     ...(equipmentSummary ? { equipmentSummary } : {}),
   })
 })

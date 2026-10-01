@@ -125,7 +125,7 @@ async function main() {
     const repairs = await request('GET', '/cash/movements?origin=REPAIR&pageSize=100', a.token)
     assert.equal(general.body.total, 6)
     assert.equal(equipment.body.total, 6)
-    assert.equal(equipment.body.summary.balanceToday, 70000)
+    assert.equal(equipment.body.summary.balance, 70000)
     assert.equal(equipment.body.equipmentSummary.salesCount, 1)
     assert.equal(equipment.body.equipmentSummary.purchaseInvestment, 90000)
     assert.equal(equipment.body.equipmentSummary.repairInvestment, 10000)

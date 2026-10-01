@@ -13,11 +13,15 @@ export type RepairStatus =
 
 export interface RepairHistory {
   id?: string
+  previousStatus?: RepairStatus | null
   newStatus: RepairStatus
   publicMessage?: string | null
   internalNote?: string | null
   createdAt: string
 }
+
+/** Entrada de historial que no cambia el estado (por ejemplo, una corrección del adelanto). */
+export const isStatusNote = (item: RepairHistory) => Boolean(item.internalNote) && item.previousStatus === item.newStatus
 
 export interface RepairPayment {
   id: string

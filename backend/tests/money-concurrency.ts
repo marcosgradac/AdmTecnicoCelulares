@@ -35,8 +35,9 @@ async function main() {
       return tx.repair.create({ data: { businessId, number, clientId: client.id, deviceBrand: 'Audit', deviceModel: 'Race', issue: 'Concurrencia', total, status: 'RECEIVED', trackingToken: `audit-${suffix}-${number}`, trackingEnabled: false, updatedAt: new Date() } })
     })
     const cleanup = async (repairId: string) => {
-      await prisma.cashMovement.deleteMany({ where: { repairId } })
+      // Los pagos van primero: Payment.cashMovementId usa ON DELETE RESTRICT sobre CashMovement.
       await prisma.payment.deleteMany({ where: { repairId } })
+      await prisma.cashMovement.deleteMany({ where: { repairId } })
       await prisma.repairStatusHistory.deleteMany({ where: { repairId } })
       await prisma.repair.deleteMany({ where: { id: repairId } })
     }
@@ -77,8 +78,9 @@ async function main() {
   } finally {
     // Scoped to this test's own records; each step is skipped when its id was never assigned.
     if (businessId) {
-      await prisma.cashMovement.deleteMany({ where: { businessId } })
+      // Pagos antes que caja: Payment.cashMovementId usa ON DELETE RESTRICT sobre CashMovement.
       await prisma.payment.deleteMany({ where: { businessId } })
+      await prisma.cashMovement.deleteMany({ where: { businessId } })
       await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } })
       await prisma.repair.deleteMany({ where: { businessId } })
     }

@@ -128,10 +128,22 @@ export async function listDevices(businessId: string, input: { page: number; pag
   return { items: items.map(serializeDevice), total, page: input.page, pageSize: input.pageSize, pages: Math.max(1, Math.ceil(total / input.pageSize)) }
 }
 
-export async function deviceSummary(businessId: string) {
+/** Rango temporal a aplicar a ventas y movimientos de caja. */
+export type EquipmentPeriodRange = { gte: Date; lt: Date }
+
+/**
+ * Resumen de reventa acotado a un período.
+ *
+ * La lógica financiera es exactamente la de siempre —mismas reglas de costos, ajustes y
+ * ganancias reales—; lo único nuevo es el rango temporal, aplicado a las ventas y a los
+ * movimientos de caja. Los conteos de inventario (en proceso, listos para vender) son
+ * estado actual, no hechos del período, y por eso no se filtran.
+ */
+export async function deviceSummary(businessId: string, range?: EquipmentPeriodRange) {
+  const createdAt = range ? { createdAt: range } : {}
   const stateQuery = prisma.resaleDevice.groupBy({ by: ['status'], where: { businessId }, _count: { _all: true } })
-  const soldQuery = prisma.resaleDevice.aggregate({ where: { businessId, status: 'SOLD' }, _sum: { actualSalePrice: true, saleCostBasis: true }, _count: { _all: true } })
-  const costQuery = prisma.cashMovement.groupBy({ by: ['resaleKind', 'type'], where: { businessId, origin: 'EQUIPMENT', resaleDeviceId: { not: null }, resaleKind: { in: ['PURCHASE', 'REPAIR', 'PURCHASE_ADJUSTMENT', 'REPAIR_ADJUSTMENT'] } }, _sum: { amount: true } })
+  const soldQuery = prisma.resaleDevice.aggregate({ where: { businessId, status: 'SOLD', ...createdAt }, _sum: { actualSalePrice: true, saleCostBasis: true }, _count: { _all: true } })
+  const costQuery = prisma.cashMovement.groupBy({ by: ['resaleKind', 'type'], where: { businessId, origin: 'EQUIPMENT', resaleDeviceId: { not: null }, resaleKind: { in: ['PURCHASE', 'REPAIR', 'PURCHASE_ADJUSTMENT', 'REPAIR_ADJUSTMENT'] }, ...createdAt }, _sum: { amount: true } })
   const [states, sold, costs] = await prisma.$transaction([stateQuery, soldQuery, costQuery], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
   const count = (state: ResaleDeviceStatus) => states.find(row => row.status === state)?._count._all ?? 0
   const net = (kinds: EquipmentCashKind[]) => costs.reduce((sum, row) => sum + (row.resaleKind && kinds.includes(row.resaleKind) ? (row._sum.amount ?? 0) * (row.type === 'EXPENSE' ? 1 : -1) : 0), 0)

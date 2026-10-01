@@ -8,6 +8,8 @@
     "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
     "verify:brands": "node scripts/verify-device-brands.mjs",
+    "test:repair-flow": "node tests/repair-flow.cjs",
+    "test:cash-groups": "node tests/cash-groups.cjs",
     "preview": "vite preview"
   },
   "dependencies": {

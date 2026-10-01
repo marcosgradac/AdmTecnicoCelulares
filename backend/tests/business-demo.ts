@@ -130,7 +130,8 @@ async function main() {
     console.log('BUSINESS DEMO PASSED: settlement, cash, relations, histories, full/small profiles, idempotence, concurrency, tenant isolation, guards and legacy protection')
   } finally {
     for (const businessId of businesses) await prisma.$transaction([
-      prisma.cashMovement.deleteMany({ where: { businessId } }), prisma.payment.deleteMany({ where: { businessId } }),
+      // Pagos antes que caja: Payment.cashMovementId usa ON DELETE RESTRICT sobre CashMovement.
+      prisma.payment.deleteMany({ where: { businessId } }), prisma.cashMovement.deleteMany({ where: { businessId } }),
       prisma.warrantyClaim.deleteMany({ where: { businessId } }),
       prisma.repair.deleteMany({ where: { businessId } }), prisma.device.deleteMany({ where: { businessId } }),
       prisma.client.deleteMany({ where: { businessId } }), prisma.user.deleteMany({ where: { businessId } }),

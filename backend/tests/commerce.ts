@@ -66,11 +66,21 @@ async function main() {
       assert.equal(movement.status, 201)
       assert.equal(movement.body.origin, origin, 'manual movements retain their structured origin')
       const filtered = await request('GET', `/cash/movements?origin=${origin}`, undefined, completeToken)
-      assert.equal(filtered.body.total, 1)
-      assert.equal(filtered.body.summary.incomeToday, 0, 'commerce sales do not enter other cash views')
+      // El egreso se cargó a mano y no tiene entidad: va a "Otros movimientos", no a la principal.
+      assert.equal(filtered.body.total, 0, 'un movimiento manual no aparece en la tabla principal')
+      assert.equal(filtered.body.loose.movementCount, 1, 'sí aparece en la tabla de otros movimientos')
+      assert.equal(filtered.body.summary.income, 0, 'commerce sales do not enter other cash views')
+      // Separarlo es sólo presentación: sigue sumando en el resumen de su propia caja.
+      assert.equal(filtered.body.summary.expense, 100, 'y no deja de contar en los egresos de la caja')
+      assert.equal(filtered.body.summary.totalMovements, 1, 'ni en el total de movimientos')
     }
-    assert.equal((await request('GET', '/cash/movements?origin=COMMERCE', undefined, completeToken)).body.total, 1)
-    assert.equal((await request('GET', '/cash/movements', undefined, completeToken)).body.total, 3)
+    const commerceBox = await request('GET', '/cash/movements?origin=COMMERCE', undefined, completeToken)
+    assert.equal(commerceBox.body.total, 1, 'la venta de Comercio sí está vinculada y va a la tabla principal')
+    assert.equal(commerceBox.body.loose.movementCount, 0, 'y no genera movimientos manuales')
+    const allBox = await request('GET', '/cash/movements', undefined, completeToken)
+    assert.equal(allBox.body.total, 1, 'la vista global sólo lista lo vinculado')
+    assert.equal(allBox.body.loose.movementCount, 2, 'y lleva los dos manuales a su propia tabla')
+    assert.equal(allBox.body.summary.totalMovements, 3, 'el resumen sigue contando las dos tablas juntas')
     for (const token of [initialToken, professionalToken]) {
       for (const path of ['/commerce/products', '/commerce/sales', '/commerce/summary', '/commerce/categories', '/cash/movements?origin=COMMERCE']) {
         assert.equal((await request('GET', path, undefined, token)).status, 403, path)

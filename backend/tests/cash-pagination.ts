@@ -89,37 +89,62 @@ async function main() {
     const businessB = businesses[1]
     assert.ok(businessA && businessB)
 
+    // Cada movimiento con entidad tiene una reparación: así la tabla principal de la caja los
+    // lista y la de "Otros movimientos" queda vacía. Los dos negocios arman la suya para que el
+    // aislamiento se siga comprobando contra movimientos del mismo origen.
+    const repairFor = async (token: string, label: string, phone: string) => {
+      const client = (await request('POST', '/clients', { name: `Cliente ${label}`, phone }, token)).body
+      const repair = (await request('POST', '/repairs', { clientId: client.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Pantalla', total: 50_000 }, token)).body
+      assert.ok(repair?.id, `se pudo crear la reparación de ${label}`)
+      return repair.id as string
+    }
+    const repairA = await repairFor(tokenA, 'Caja A', '1111111111')
+    const repairB = await repairFor(tokenB, 'Caja B', '3333333333')
+
     await prisma.cashMovement.createMany({
       data: [
-        { businessId: businessA, type: 'INCOME', description: 'Antes de medianoche', amount: 700, method: 'CASH', createdAt: beforeMidnight },
-        { businessId: businessA, type: 'EXPENSE', description: 'Después de medianoche', amount: 500, method: 'TRANSFER', createdAt: afterMidnight },
+        { businessId: businessA, repairId: repairA, origin: 'REPAIR', type: 'INCOME', description: 'Antes de medianoche', amount: 700, method: 'CASH', createdAt: beforeMidnight },
+        { businessId: businessA, repairId: repairA, origin: 'REPAIR', type: 'EXPENSE', description: 'Después de medianoche', amount: 500, method: 'TRANSFER', createdAt: afterMidnight },
         ...historicalDates.map((createdAt, index) => ({
           businessId: businessA,
+          repairId: repairA,
+          origin: 'REPAIR' as const,
           type: index % 2 === 0 ? 'INCOME' as const : 'EXPENSE' as const,
           description: `Histórico ${index + 1}`,
           amount: index + 1,
           method: null,
           createdAt,
         })),
-        { id: 'cash-tie-a', businessId: businessA, type: 'INCOME', description: 'Empate A', amount: 8, method: null, createdAt: tiedAt },
-        { id: 'cash-tie-z', businessId: businessA, type: 'EXPENSE', description: 'Empate Z', amount: 9, method: null, createdAt: tiedAt },
-        { businessId: businessA, type: 'INCOME', description: 'Histórico antiguo', amount: 10, method: null, createdAt: olderThanTie },
-        { businessId: businessB, type: 'INCOME', description: 'Ingreso de otro negocio', amount: 99_999, method: 'CASH', createdAt: afterMidnight },
+        { id: 'cash-tie-a', businessId: businessA, repairId: repairA, origin: 'REPAIR', type: 'INCOME', description: 'Empate A', amount: 8, method: null, createdAt: tiedAt },
+        { id: 'cash-tie-z', businessId: businessA, repairId: repairA, origin: 'REPAIR', type: 'EXPENSE', description: 'Empate Z', amount: 9, method: null, createdAt: tiedAt },
+        { businessId: businessA, repairId: repairA, origin: 'REPAIR', type: 'INCOME', description: 'Histórico antiguo', amount: 10, method: null, createdAt: olderThanTie },
+        { businessId: businessB, repairId: repairB, origin: 'REPAIR', type: 'INCOME', description: 'Ingreso de otro negocio', amount: 99_999, method: 'CASH', createdAt: afterMidnight },
       ],
     })
 
+    // Los fixtures viven en agosto 2026, así que la "hoy" del servidor se fija dentro de ese
+    // mes y se pide MONTH: el filtro de período no puede dejar movimientos fuera de la página.
+    const fixtureNow = new Date('2026-08-27T12:00:00.000Z')
+    const listQuery = 'origin=REPAIR&page=1&pageSize=10&period=MONTH'
     const originalTransaction = prisma.$transaction
     let cashReadIsolation: unknown
+    let cashReadWidth = 0
     prisma.$transaction = ((...args: unknown[]) => {
-      if (Array.isArray(args[0]) && args[0].length === 3) cashReadIsolation = (args[1] as { isolationLevel?: unknown } | undefined)?.isolationLevel
+      // La caja de reparaciones lee en una sola transacción: página, total, resumen y tabla de
+      // otros movimientos. Se cuenta la amplitud para no depender del número exacto de consultas.
+      if (Array.isArray(args[0]) && args[0].length >= 2) {
+        cashReadWidth = args[0].length
+        cashReadIsolation = (args[1] as { isolationLevel?: unknown } | undefined)?.isolationLevel
+      }
       return Reflect.apply(originalTransaction, prisma, args)
     }) as typeof originalTransaction
     let pageOne
     try {
-      pageOne = await request('GET', '/cash/movements?page=1&pageSize=10', undefined, tokenA)
+      pageOne = await withFixedNow(fixtureNow, () => request('GET', `/cash/movements?${listQuery}`, undefined, tokenA))
     } finally {
       prisma.$transaction = originalTransaction
     }
+    assert.equal(cashReadWidth, 4, 'la caja de reparaciones lee página, total, resumen y otros movimientos juntos')
     assert.equal(cashReadIsolation, Prisma.TransactionIsolationLevel.RepeatableRead, 'cash page and summary share a repeatable-read snapshot')
     assert.equal(pageOne.status, 200)
     assert.equal(pageOne.body.items.length, 10, 'page one returns ten movements')
@@ -128,8 +153,12 @@ async function main() {
     assert.equal(pageOne.body.pageSize, 10)
     assert.equal(pageOne.body.pages, 2)
     assert.ok(pageOne.body.items.every((item: { description: string }) => item.description !== 'Ingreso de otro negocio'))
+    // Todos los fixtures tienen reparación: la tabla de otros movimientos queda vacía y la
+    // principal los lista enteros, sin partir ninguno entre páginas.
+    assert.equal(pageOne.body.loose.movementCount, 0, 'nada manual se cuela en la caja de reparaciones')
+    assert.equal(pageOne.body.summary.totalMovements, 12, 'pero el resumen sigue contando los 12 movimientos')
 
-    const pageTwo = await request('GET', '/cash/movements?page=2&pageSize=10', undefined, tokenA)
+    const pageTwo = await withFixedNow(fixtureNow, () => request('GET', `/cash/movements?origin=REPAIR&page=2&pageSize=10&period=MONTH`, undefined, tokenA))
     assert.equal(pageTwo.status, 200)
     assert.equal(pageTwo.body.items.length, 2, 'page two returns the remaining movements')
     assert.equal(pageTwo.body.total, 12)
@@ -155,23 +184,33 @@ async function main() {
     assert.equal(afterBounds.start.toISOString(), '2026-08-27T03:00:00.000Z')
     assert.equal(afterBounds.end.toISOString(), '2026-08-28T03:00:00.000Z')
 
+    // El resumen sigue siendo el del período pedido y usa los nombres por período.
     const beforeSummary = await withFixedNow(beforeMidnight, () => request('GET', '/cash/movements?page=1&pageSize=10', undefined, tokenA))
-    assert.equal(beforeSummary.body.summary.incomeToday, 700)
-    assert.equal(beforeSummary.body.summary.expenseToday, 0)
-    assert.equal(beforeSummary.body.summary.balanceToday, 700)
-    assert.equal(beforeSummary.body.summary.totalMovements, 12)
+    assert.equal(beforeSummary.body.period, 'TODAY', 'sin período se usa TODAY')
+    assert.equal(beforeSummary.body.summary.income, 700)
+    assert.equal(beforeSummary.body.summary.expense, 0)
+    assert.equal(beforeSummary.body.summary.balance, 700)
+    assert.equal(beforeSummary.body.summary.totalMovements, 1, 'HOY cuenta sólo el movimiento de ese día')
 
     const afterSummary = await withFixedNow(afterMidnight, () => request('GET', '/cash/movements?page=1&pageSize=10', undefined, tokenA))
-    assert.equal(afterSummary.body.summary.incomeToday, 0)
-    assert.equal(afterSummary.body.summary.expenseToday, 500)
-    assert.equal(afterSummary.body.summary.balanceToday, -500)
-    assert.equal(afterSummary.body.summary.totalMovements, 12)
+    assert.equal(afterSummary.body.summary.income, 0)
+    assert.equal(afterSummary.body.summary.expense, 500)
+    assert.equal(afterSummary.body.summary.balance, -500)
+    assert.equal(afterSummary.body.summary.totalMovements, 1, 'HOY cambia al pasar la medianoche argentina')
 
-    console.log('CASH PAGINATION TESTS PASSED: page envelope, Argentina-day summary and tenant isolation')
+    // Con MONTH el resumen abarca todo el mes del fixture, no sólo un día.
+    const monthSummary = await withFixedNow(fixtureNow, () => request('GET', '/cash/movements?page=1&pageSize=10&period=MONTH', undefined, tokenA))
+    assert.equal(monthSummary.body.summary.totalMovements, 12, 'MES suma los 12 movimientos del mes')
+
+    console.log('CASH PAGINATION TESTS PASSED: page envelope, Argentina-day summary, period filter and tenant isolation')
   } finally {
     for (const businessId of businesses) {
       await prisma.$transaction([
+        prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } }),
+        prisma.repair.updateMany({ where: { businessId }, data: { initialCostMovementId: null } }),
         prisma.cashMovement.deleteMany({ where: { businessId } }),
+        prisma.repair.deleteMany({ where: { businessId } }),
+        prisma.client.deleteMany({ where: { businessId } }),
         prisma.passwordResetToken.deleteMany({ where: { user: { businessId } } }),
         prisma.subscription.deleteMany({ where: { businessId } }),
         prisma.user.deleteMany({ where: { businessId } }),

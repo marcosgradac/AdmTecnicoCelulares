@@ -41,7 +41,7 @@ interface ApiRepair {
   warrantyDurationDays: number | null
   warrantyStartedAt: string | null
   warrantyExpiresAt: string | null
-  statusHistory?: Array<{ id?: string; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
+  statusHistory?: Array<{ id?: string; previousStatus?: ApiRepairStatus | null; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
   payments?: Array<{ id: string; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string | null; cancellationReview?: boolean; isAdvance?: boolean; createdAt: string }>
   createdAt: string
   updatedAt: string
@@ -133,7 +133,7 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   warrantyDurationDays: repair.warrantyDurationDays ?? undefined,
   warrantyStartedAt: repair.warrantyStartedAt ?? undefined,
   warrantyExpiresAt: repair.warrantyExpiresAt ?? undefined,
-  history: (repair.statusHistory ?? []).map(item => ({ ...item, newStatus: statusFromApi[item.newStatus] })),
+  history: (repair.statusHistory ?? []).map(item => ({ ...item, previousStatus: item.previousStatus ? statusFromApi[item.previousStatus] : null, newStatus: statusFromApi[item.newStatus] })),
   payments: repair.payments,
   business: repair.business ? { ...repair.business, logoUrl: apiAssetUrl(repair.business.logoUrl) ?? null } : undefined,
 })
@@ -161,6 +161,33 @@ export async function createRepair(input: CreateRepairInput) {
 
 export async function updateRepairStatus(id: string, status: RepairStatus, messages?: { publicMessage?: string; internalNote?: string }) {
   const response = await api.patch<ApiRepair>(`/repairs/${id}/status`, { status: statusToApi[status], ...messages })
+  return mapRepair(response.data)
+}
+
+/** Avanza un solo paso del flujo. El backend rechaza destinos históricos y estados especiales. */
+export async function advanceRepairStatus(id: string, messages?: { publicMessage?: string; internalNote?: string }) {
+  const response = await api.patch<ApiRepair>(`/repairs/${id}/status/advance`, { ...messages })
+  return mapRepair(response.data)
+}
+
+/** Retrocede un solo paso del flujo. No existe para Entregado, Cancelado ni Garantía. */
+export async function rewindRepairStatus(id: string, messages?: { publicMessage?: string; internalNote?: string }) {
+  const response = await api.patch<ApiRepair>(`/repairs/${id}/status/rewind`, { ...messages })
+  return mapRepair(response.data)
+}
+
+/**
+ * Corrige el adelanto inicial de una reparación ya creada. El backend actualiza en una sola
+ * transacción el pago, el ingreso de caja, el pagado y el saldo.
+ */
+export async function updateRepairAdvance(id: string, input: { amount: number; method?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }) {
+  const response = await api.patch<ApiRepair>(`/repairs/${id}/advance`, input)
+  return mapRepair(response.data)
+}
+
+/** Acción administrativa para una entrega cargada por error. Sólo OWNER; nunca es navegación. */
+export async function correctRepairDelivery(id: string, reason: string) {
+  const response = await api.post<ApiRepair>(`/repairs/${id}/delivery/correction`, { reason })
   return mapRepair(response.data)
 }
 

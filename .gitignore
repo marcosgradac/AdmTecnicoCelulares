@@ -3,10 +3,13 @@ backend/.env
 backend/backups/
 backend/generated/
 backend/.postgres-data/
+backend/.postgres-iso-data/
 backend/prisma/*.db
 backend/prisma/*.db-journal
 backend/postgres-dev*.log
 backend/api-test*.log
+# Salida de arranque del servidor en local: nunca es código versionable.
+backend/*.out
 cellufix-dev*.log
 *.log
 artifacts/

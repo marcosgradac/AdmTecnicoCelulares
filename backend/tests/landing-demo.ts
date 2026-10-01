@@ -45,8 +45,9 @@ async function cleanup(id: string) {
     await tx.repairPart.deleteMany({ where: { repair: { businessId: id } } })
     await tx.inventoryMovement.deleteMany({ where: { businessId: id } })
     await tx.warrantyClaim.deleteMany({ where: { businessId: id } })
-    await tx.cashMovement.deleteMany({ where: { businessId: id } })
+    // Pagos antes que caja: Payment.cashMovementId usa ON DELETE RESTRICT sobre CashMovement.
     await tx.payment.deleteMany({ where: { businessId: id } })
+    await tx.cashMovement.deleteMany({ where: { businessId: id } })
     await tx.repairStatusHistory.deleteMany({ where: { repair: { businessId: id } } })
     await tx.repair.deleteMany({ where: { businessId: id } })
     await tx.device.deleteMany({ where: { businessId: id } })

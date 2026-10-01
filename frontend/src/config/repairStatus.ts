@@ -6,18 +6,74 @@ export interface RepairStatusConfig {
   label: string; color: string; background: string; order: number; progress: number; icon: SvgIconComponent
 }
 
-export const repairStatusConfig: Record<RepairStatus, RepairStatusConfig> = {
-  received: { label: 'Recibido', color: '#2879C2', background: '#EAF5FF', order: 0, progress: 10, icon: AssignmentTurnedInRounded },
-  review: { label: 'En revisión', color: '#A66B00', background: '#FFF5DF', order: 1, progress: 22, icon: BiotechRounded },
-  budget: { label: 'Presupuesto informado', color: '#6849DB', background: '#EEE9FF', order: 2, progress: 34, icon: LocalOfferRounded },
-  approved: { label: 'Presupuesto aceptado', color: '#2879C2', background: '#EAF5FF', order: 3, progress: 46, icon: AssignmentTurnedInRounded },
-  waiting_part: { label: 'Esperando repuesto', color: '#C76800', background: '#FFF0DF', order: 4, progress: 55, icon: PendingActionsRounded },
-  repairing: { label: 'En reparación', color: '#5B3FD6', background: '#EEE9FF', order: 5, progress: 66, icon: HandymanRounded },
-  testing: { label: 'Control de calidad', color: '#1686B7', background: '#E5F7FF', order: 6, progress: 78, icon: FactCheckRounded },
-  ready: { label: 'Listo para retirar', color: '#1F9254', background: '#E9F8F0', order: 7, progress: 90, icon: TaskAltRounded },
-  delivered: { label: 'Entregado', color: '#687083', background: '#F0F2F5', order: 8, progress: 100, icon: CheckCircleRounded },
-  cancelled: { label: 'Cancelado', color: '#C83E3E', background: '#FFF0F0', order: 9, progress: 0, icon: CancelRounded },
-  warranty: { label: 'Garantía', color: '#7650C7', background: '#F2EEFF', order: 10, progress: 20, icon: ReplayRounded },
+/**
+ * Flujo visible de una reparación.
+ *
+ * BUDGET, APPROVED y TESTING siguen existiendo en el tipo porque hay reparaciones históricas
+ * guardadas con esos valores, pero dejaron de ser pasos del flujo: se muestran y avanzan como
+ * su equivalente actual (ver `legacyStatusMap`) y nunca se ofrecen como paso siguiente.
+ */
+export const repairFlow: RepairStatus[] = ['received', 'review', 'waiting_part', 'repairing', 'ready', 'delivered']
+
+/** Estados especiales: quedan fuera del flujo y no admiten avance ni retroceso normal. */
+export const specialRepairStatuses: RepairStatus[] = ['cancelled', 'warranty']
+
+/** Estados históricos: se leen, se muestran y avanzan como su equivalente del flujo actual. */
+export const legacyStatusMap: Partial<Record<RepairStatus, RepairStatus>> = {
+  budget: 'review',
+  approved: 'review',
+  testing: 'repairing',
 }
 
-export const repairStatuses = (Object.keys(repairStatusConfig) as RepairStatus[]).sort((a, b) => repairStatusConfig[a].order - repairStatusConfig[b].order)
+export const isLegacyStatus = (status: RepairStatus) => Object.prototype.hasOwnProperty.call(legacyStatusMap, status)
+export const isSpecialStatus = (status: RepairStatus) => specialRepairStatuses.includes(status)
+export const canonicalStatus = (status: RepairStatus) => legacyStatusMap[status] ?? status
+
+/** Siguiente paso del flujo, o `null` si ya está en Entregado o en un estado especial. */
+export const nextStatus = (status: RepairStatus): RepairStatus | null => {
+  const index = repairFlow.indexOf(canonicalStatus(status))
+  return index >= 0 && index < repairFlow.length - 1 ? repairFlow[index + 1] : null
+}
+
+/**
+ * Paso anterior del flujo, o `null` en Recibido, en Entregado y en estados especiales.
+ * Desde Entregado nunca hay un paso anterior en el flujo normal: la única vuelta atrás es
+ * la corrección administrativa de entrega, que es una acción aparte.
+ */
+export const previousStatus = (status: RepairStatus): RepairStatus | null => {
+  if (status === 'delivered') return null
+  const index = repairFlow.indexOf(canonicalStatus(status))
+  return index > 0 ? repairFlow[index - 1] : null
+}
+
+const step = (label: string, color: string, background: string, order: number, progress: number, icon: SvgIconComponent): RepairStatusConfig =>
+  ({ label, color, background, order, progress, icon })
+
+export const repairStatusConfig: Record<RepairStatus, RepairStatusConfig> = {
+  received: step('Recibido', '#2879C2', '#EAF5FF', 0, 10, AssignmentTurnedInRounded),
+  review: step('En revisión', '#A66B00', '#FFF5DF', 1, 30, BiotechRounded),
+  // Estados históricos: conservan su orden, color e icono de siempre. El flujo los lee como
+  // su equivalente actual (ver `legacyStatusMap`), nunca como un paso propio.
+  budget: step('Presupuesto informado', '#6849DB', '#EEE9FF', 2, 34, LocalOfferRounded),
+  approved: step('Presupuesto aceptado', '#2879C2', '#EAF5FF', 3, 46, AssignmentTurnedInRounded),
+  waiting_part: step('Esperando repuesto', '#C76800', '#FFF0DF', 4, 50, PendingActionsRounded),
+  repairing: step('En reparación', '#5B3FD6', '#EEE9FF', 5, 70, HandymanRounded),
+  testing: step('Control de calidad', '#1686B7', '#E5F7FF', 6, 78, FactCheckRounded),
+  ready: step('Listo para retirar', '#1F9254', '#E9F8F0', 7, 90, TaskAltRounded),
+  delivered: step('Entregado', '#687083', '#F0F2F5', 8, 100, CheckCircleRounded),
+  cancelled: step('Cancelado', '#C83E3E', '#FFF0F0', 9, 0, CancelRounded),
+  warranty: step('Garantía', '#7650C7', '#F2EEFF', 10, 20, ReplayRounded),
+}
+
+/** Configuración del paso que un estado representa realmente, aunque sea histórico. */
+export const canonicalStatusConfig = (status: RepairStatus) => repairStatusConfig[canonicalStatus(status)]
+
+/** Etiqueta del paso real que representa un estado: BUDGET y APPROVED muestran «En revisión». */
+export const repairStatusLabel = (status: RepairStatus) => canonicalStatusConfig(status).label
+
+/** Los estados que el usuario puede elegir: el flujo más los especiales, nunca los históricos. */
+export const repairStatuses: RepairStatus[] = [...repairFlow, ...specialRepairStatuses]
+
+/** Todos los estados, incluidos los históricos: sólo para filtrar y mostrar datos existentes. */
+export const allRepairStatuses: RepairStatus[] = (Object.keys(repairStatusConfig) as RepairStatus[])
+  .sort((a, b) => repairStatusConfig[a].order - repairStatusConfig[b].order)

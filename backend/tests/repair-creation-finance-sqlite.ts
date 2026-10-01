@@ -25,8 +25,8 @@ try {
     INSERT INTO "Repair" (id,businessId,number,clientId,deviceBrand,deviceModel,issue,trackingToken,updatedAt,partsCost,laborCharge,total)
       VALUES ('new','a',1002,'ca','Samsung','A14','Pantalla','new-token',CURRENT_TIMESTAMP,30000,30000,60000);
     INSERT INTO "CashMovement" (id,businessId,type,origin,repairId,description,amount) VALUES ('cost','a','EXPENSE','REPAIR','new','Costo',30000);
-    INSERT INTO "Payment" (id,businessId,repairId,clientId,amount,method,isAdvance) VALUES ('advance','a','new','ca',20000,'CASH',1);
     INSERT INTO "CashMovement" (id,businessId,type,origin,repairId,description,amount,method) VALUES ('income','a','INCOME','REPAIR','new','Adelanto',20000,'CASH');
+    INSERT INTO "Payment" (id,businessId,repairId,clientId,amount,method,isAdvance,"cashMovementId") VALUES ('advance','a','new','ca',20000,'CASH',1,'income');
     UPDATE "Repair" SET paid=20000,initialCostMovementId='cost' WHERE id='new';
     COMMIT;`)
   const repair = db.prepare('SELECT total,paid,partsCost,laborCharge,laborCost FROM Repair WHERE id=?').get('new')!
@@ -34,6 +34,13 @@ try {
   assert.equal(Number(repair.total) - Number(repair.paid), 40000)
   assert.equal(repair.laborCost, 0)
   assert.equal(db.prepare('SELECT isAdvance FROM Payment WHERE id=?').get('advance')!.isAdvance, 1)
+  // El adelanto queda vinculado a su ingreso de Caja por ID, no por el texto de la descripción.
+  const linked = db.prepare('SELECT p.id AS pid, p."cashMovementId" AS mid, m.amount AS amount FROM Payment p JOIN CashMovement m ON m.id = p."cashMovementId" WHERE p.id=?').get('advance')!
+  assert.equal(linked.mid, 'income', 'el pago apunta a su movimiento de caja por ID')
+  assert.equal(linked.amount, 20000, 'el movimiento enlazado es el ingreso del adelanto')
+  assert.throws(() => db.exec(`DELETE FROM "CashMovement" WHERE id='income'`), /FOREIGN KEY/, 'no se puede borrar una caja que todavía respalda un pago')
+  // Un movimiento no puede respaldar dos pagos a la vez.
+  assert.throws(() => db.exec(`INSERT INTO "Payment" (id,businessId,repairId,clientId,amount,method,"cashMovementId") VALUES ('dup','a','new','ca',100,'CASH','income')`), /UNIQUE/, 'un movimiento no puede asignarse a dos pagos')
   assert.throws(() => db.exec(`DELETE FROM "CashMovement" WHERE id='cost'`), /FOREIGN KEY/)
   assert.throws(() => db.exec(`UPDATE "Repair" SET initialCostMovementId='missing' WHERE id='legacy'`), /FOREIGN KEY/)
   assert.throws(() => db.exec(`UPDATE "Repair" SET initialCostMovementId='cost' WHERE id='legacy'`), /UNIQUE/)

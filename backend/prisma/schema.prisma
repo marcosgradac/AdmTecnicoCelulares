@@ -342,12 +342,18 @@ model Payment {
   note       String?
   cancellationReview Boolean  @default(false)
   isAdvance Boolean @default(false)
+  // Vínculo directo con el CashMovement INCOME que representa este pago. Es único: un pago
+  // corresponde a un solo movimiento. Nulo en pagos históricos cargados antes de existir la
+  // relación; RESTRICT impide borrar una caja que todavía respalda un pago.
+  cashMovementId String?      @unique
   createdAt  DateTime      @default(now())
   repair     Repair        @relation(fields: [repairId], references: [id])
   client     Client        @relation(fields: [clientId], references: [id])
   business   Business      @relation(fields: [businessId], references: [id])
+  cashMovement CashMovement? @relation("RepairPaymentCashMovement", fields: [cashMovementId], references: [id], onDelete: Restrict)
 
   @@index([businessId])
+  @@index([repairId])
 }
 
 model StockItem {
@@ -438,6 +444,7 @@ enum CashMovementType {
 model CashMovement {
   initialCostRepair Repair? @relation("RepairInitialCost")
   warrantyExpense WarrantyClaimExpense?
+  repairPayment Payment? @relation("RepairPaymentCashMovement")
   @@unique([id, businessId])
   resaleDeviceId String?
   resaleDevice   ResaleDevice? @relation(fields: [resaleDeviceId], references: [id], onDelete: Restrict)
