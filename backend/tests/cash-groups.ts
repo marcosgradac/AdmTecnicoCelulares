@@ -74,8 +74,8 @@ async function main() {
     const clientA = (await request('POST', '/clients', { name: 'Bruno Acosta', phone: '1111111111' }, ownerA.token)).body
     const clientB = (await request('POST', '/clients', { name: 'Bruno Acosta', phone: '3333333333' }, ownerB.token)).body
     // Reparación con costo inicial y adelanto: dos movimientos de la misma orden.
-    const r1 = await create(clientA.id, ownerA.token, { total: 60000, partsCost: 30000, advanceAmount: 30000, advanceMethod: 'TRANSFER' })
-    const r2 = await create(clientA.id, ownerA.token, { total: 40000, partsCost: 20000, advanceAmount: 20000, advanceMethod: 'CASH' })
+    const r1 = await create(clientA.id, ownerA.token, { total: 60000, partsCost: 30000, partsCostMethod: 'TRANSFER', advanceAmount: 30000, advanceMethod: 'TRANSFER' })
+    const r2 = await create(clientA.id, ownerA.token, { total: 40000, partsCost: 20000, partsCostMethod: 'CASH', advanceAmount: 20000, advanceMethod: 'CASH' })
     assert.equal((await request('POST', `/repairs/${r2.id}/payments`, { amount: 10000, method: 'CARD' }, ownerA.token)).status, 201)
 
     // 1. Los dos movimientos de la misma reparación quedan en un único grupo.

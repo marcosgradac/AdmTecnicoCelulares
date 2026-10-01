@@ -37,7 +37,7 @@ async function main() {
     const token = owner.body.token
     const client = await request('POST', '/clients', { name: 'Cliente costos', phone: '1112345678' }, token)
     assert.equal(client.status, 201)
-    const created = await request('POST', '/repairs', { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Pantalla rota', partsCost: 30000, laborCharge: 30000, total: 60000, advanceAmount: 20000, advanceMethod: 'TRANSFER' }, token)
+    const created = await request('POST', '/repairs', { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Pantalla rota', partsCost: 30000, partsCostMethod: 'TRANSFER', laborCharge: 30000, total: 60000, advanceAmount: 20000, advanceMethod: 'CASH' }, token)
     assert.equal(created.status, 201)
     assert.equal(created.body.partsCost, 30000, 'El costo inicial debe persistirse')
     assert.equal(created.body.laborCharge, 30000)
@@ -51,7 +51,9 @@ async function main() {
     assert.equal(cash.find(row => row.type === 'INCOME')?.amount, 20000)
     assert.equal(created.body.initialCostMovementId, cash.find(row => row.type === 'EXPENSE')?.id)
     assert.ok(cash.every(row => row.businessId === businesses[0] && row.origin === 'REPAIR' && row.clientName === client.body.name))
-    assert.equal(cash.find(row => row.type === 'EXPENSE')?.method, null, 'Do not invent a cost payment method')
+    // El gasto y el adelanto son movimientos distintos: cada uno conserva su propio medio de pago.
+    assert.equal(cash.find(row => row.type === 'EXPENSE')?.method, 'TRANSFER', 'el gasto guarda el medio de pago informado')
+    assert.equal(cash.find(row => row.type === 'INCOME')?.method, 'CASH', 'el adelanto no hereda el medio de pago del gasto')
     assert.equal(created.body.payments[0].isAdvance, true)
     assert.equal(created.body.payments[0].clientId, client.body.id)
     const tracking = await request('GET', `/tracking/${created.body.trackingToken}`)
@@ -96,7 +98,7 @@ async function main() {
     await prisma.repair.update({ where: { id: created.body.id }, data: { createdAt: originalDate } })
     await prisma.cashMovement.update({ where: { id: created.body.initialCostMovementId }, data: { createdAt: originalDate } })
 
-    const baseInput = { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Pantalla', partsCost: 30000, laborCharge: 30000, total: 60000 }
+    const baseInput = { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Pantalla', partsCost: 30000, partsCostMethod: 'CASH', laborCharge: 30000, total: 60000 }
     const noAdvance = await request('POST', '/repairs', baseInput, token)
     assert.equal(noAdvance.status, 201)
     assert.equal(noAdvance.body.paid, 0)
@@ -130,7 +132,7 @@ async function main() {
       counter: (await prisma.business.findUniqueOrThrow({ where: { id: businesses[0] } })).lastRepairNumber,
     })
     const beforeInvalid = await snapshot()
-    for (const invalid of [{ advanceAmount: 60001, advanceMethod: 'CASH' }, { advanceAmount: 1 }, { advanceAmount: 1, advanceMethod: 'INVALID' }, { partsCost: -1 }, { laborCharge: -1 }, { total: -1 }, { advanceAmount: -1 }, { partsCost: .5 }, { total: 2147483648 }, { advanceAmount: 1, advanceMethod: 'CASH', status: 'CANCELLED' }]) {
+    for (const invalid of [{ advanceAmount: 60001, advanceMethod: 'CASH' }, { advanceAmount: 1 }, { advanceAmount: 1, advanceMethod: 'INVALID' }, { partsCost: -1 }, { laborCharge: -1 }, { total: -1 }, { advanceAmount: -1 }, { partsCost: .5 }, { total: 2147483648 }, { advanceAmount: 1, advanceMethod: 'CASH', status: 'CANCELLED' }, { partsCost: 30000, partsCostMethod: undefined }, { partsCost: 30000, partsCostMethod: 'INVALID' }]) {
       assert.equal((await request('POST', '/repairs', { ...baseInput, ...invalid }, token)).status, 400, JSON.stringify(invalid))
     }
     assert.deepEqual(await snapshot(), beforeInvalid)
@@ -185,7 +187,45 @@ async function main() {
     }
     assert.deepEqual(await snapshot(), beforeDenied)
     assert.equal((await request('POST', '/repairs', { ...baseInput, partsCost: 0, laborCharge: 0 }, technicianToken)).status, 201, 'Keep the pre-existing creation flow for technicians')
-    console.log('REPAIR CREATION FINANCE PASSED: zero/partial/full advance, editable total, payment history, settlement, cash, validations, rollback, business isolation, legacy costs and report deduplication across periods')
+
+    // El medio de pago del gasto inicial se guarda tal como se informo y nunca se inventa.
+    // Va al final para no alterar los totales de reporte verificados arriba.
+    const costMethod = async (input: object) => {
+      const response = await request('POST', '/repairs', { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Costo', laborCharge: 30000, total: 60000, ...input }, token)
+      return { response, cash: await prisma.cashMovement.findMany({ where: { repairId: response.body.id } }) }
+    }
+    // Caso 1: gasto en efectivo.
+    const cashCost = await costMethod({ partsCost: 30000, partsCostMethod: 'CASH' })
+    assert.equal(cashCost.response.status, 201)
+    assert.equal(cashCost.cash.find(row => row.type === 'EXPENSE')?.amount, 30000)
+    assert.equal(cashCost.cash.find(row => row.type === 'EXPENSE')?.method, 'CASH', 'el gasto guarda el medio de pago informado')
+    // Caso 2: gasto por transferencia.
+    const transferCost = await costMethod({ partsCost: 30000, partsCostMethod: 'TRANSFER' })
+    assert.equal(transferCost.response.status, 201)
+    assert.equal(transferCost.cash.find(row => row.type === 'EXPENSE')?.amount, 30000)
+    assert.equal(transferCost.cash.find(row => row.type === 'EXPENSE')?.method, 'TRANSFER')
+    // Caso 3: costo cargado sin medio de pago se rechaza y no deja rastros.
+    const beforeMissingMethod = await snapshot()
+    const missingMethod = await request('POST', '/repairs', { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Sin metodo', partsCost: 30000, partsCostMethod: undefined, laborCharge: 30000, total: 60000 }, token)
+    assert.equal(missingMethod.status, 400, 'un gasto sin medio de pago no se puede crear')
+    assert.deepEqual(await snapshot(), beforeMissingMethod, 'el rechazo no deja movimientos a medias')
+    // Caso 4: sin costo no hace falta metodo y no se crea el egreso.
+    const freeCost = await costMethod({ partsCost: 0 })
+    assert.equal(freeCost.response.status, 201)
+    assert.equal(freeCost.response.body.initialCostMovementId, null)
+    assert.equal(freeCost.cash.find(row => row.type === 'EXPENSE'), undefined)
+    // Un gasto previo sin metodo informado queda en NULL y Caja lo muestra como
+    // "Sin medio informado": no se inventa como se pago.
+    const legacyCost = await prisma.cashMovement.create({ data: { businessId: businesses[0], repairId: cashCost.response.body.id, origin: 'REPAIR', type: 'EXPENSE', description: 'Gasto historico sin medio', amount: 500 } })
+    assert.equal(legacyCost.method, null, 'un gasto historico sin metodo queda intacto')
+    await prisma.cashMovement.delete({ where: { id: legacyCost.id } })
+    // Caso 5: el metodo del gasto no arrastra al adelanto.
+    const splitMethods = await costMethod({ partsCost: 30000, partsCostMethod: 'TRANSFER', advanceAmount: 20000, advanceMethod: 'CASH' })
+    assert.equal(splitMethods.response.status, 201)
+    assert.equal(splitMethods.cash.find(row => row.type === 'EXPENSE')?.method, 'TRANSFER', 'el gasto conserva su metodo')
+    assert.equal(splitMethods.cash.find(row => row.type === 'INCOME')?.method, 'CASH', 'el adelanto conserva el suyo')
+    assert.equal(splitMethods.response.body.payments[0].method, 'CASH', 'el pago de adelanto usa su propio metodo')
+    console.log('REPAIR CREATION FINANCE PASSED: zero/partial/full advance, editable total, cost payment method saved and independent from the advance, payment history, settlement, cash, validations, rollback, business isolation, legacy costs and report deduplication across periods')
   } finally {
     await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${triggerName} ON "CashMovement"`)
     await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${triggerName}()`)

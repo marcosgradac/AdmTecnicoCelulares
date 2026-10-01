@@ -386,6 +386,8 @@ const createRepairSchema = initialRepairFinanceSchema.extend({
 }).superRefine((data, context) => {
   if (data.advanceAmount > data.total) context.addIssue({ code: 'custom', path: ['advanceAmount'], message: 'El adelanto no puede superar el total al cliente' })
   if (data.advanceAmount > 0 && !data.advanceMethod) context.addIssue({ code: 'custom', path: ['advanceMethod'], message: 'Seleccioná el medio de pago del adelanto' })
+  // El gasto inicial es un egreso propio: con costo cargando necesita su medio de pago.
+  if (data.partsCost > 0 && !data.partsCostMethod) context.addIssue({ code: 'custom', path: ['partsCostMethod'], message: 'Seleccioná el medio de pago del gasto' })
   if (data.advanceAmount > 0 && data.status === RepairStatus.CANCELLED) context.addIssue({ code: 'custom', path: ['status'], message: 'Una reparación cancelada no admite adelantos' })
 })
 app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) => {

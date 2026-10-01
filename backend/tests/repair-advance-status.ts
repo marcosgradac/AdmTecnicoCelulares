@@ -334,7 +334,7 @@ async function main() {
     assert.equal(intact.status, 'DELIVERED', 'ninguna sonda ajena modificó la reparación')
     assert.equal(intact.paid, 0, 'ninguna sonda ajena registró un pago')
     // 17/18/19/20. Tracking público: funciona, no filtra costos y muestra el negocio real.
-    const tracked = await createRepair({ total: 60000, advanceAmount: 30000, advanceMethod: 'CASH', partsCost: 20000, laborCharge: 40000 })
+    const tracked = await createRepair({ total: 60000, advanceAmount: 30000, advanceMethod: 'CASH', partsCost: 20000, partsCostMethod: 'CASH', laborCharge: 40000 })
     await prisma.repair.update({ where: { id: tracked.id }, data: { status: 'REPAIRING' } })
     const publicRead = async (token: string) => {
       const response = await fetch(`${base}/tracking/${token}`)

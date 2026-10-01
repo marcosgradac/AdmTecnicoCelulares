@@ -9,7 +9,15 @@ const ts = require('../node_modules/typescript')
 function harness(file, exportName, props = {}, services = {}) {
   const slots = [], effects = [], timers = new Map()
   let cursor = 0, dirty = true, tree
-  const react = {
+  const reactCallbacks = new Map()
+const react = {
+    // useCallback memoriza por dependencias, igual que React: si la lista no cambia,
+    // devuelve la misma función y el useEffect que la usa puede estabilizarse.
+    useCallback(fn, deps = []) {
+      const key = JSON.stringify(deps)
+      if (!reactCallbacks.has(key)) reactCallbacks.set(key, fn)
+      return reactCallbacks.get(key)
+    },
     useState(initial) {
       const i = cursor++
       if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial
@@ -34,10 +42,21 @@ function harness(file, exportName, props = {}, services = {}) {
         if (name === 'axios') return { isAxiosError: e => !!e.isAxiosError }
         if (name.endsWith('/services/repairs')) return services
         if (name.endsWith('/utils/format')) return { formatMoney: value => `$${value}`, formatDate: value => value }
+        // La página de detalle pide sesión, navegación y permisos: se simulan en la frontera.
+        if (name.endsWith('/auth/AuthContext')) return { useAuth: () => ({ user: { role: 'OWNER', permissions: [] } }) }
+        if (name === 'react-router-dom') return { useNavigate: () => () => {}, useParams: () => ({ id: 'r1' }) }
+        if (name.endsWith('/auth/permissions')) return { canAccess: () => true }
+        if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {} }
+        // La página usa la configuración real de estados: se carga en el mismo sandbox sin React.
+        if (name.endsWith('/config/repairStatus')) return loadConfig()
+        if (name.endsWith('/types')) return loadTypes()
         return new Proxy({}, { get: (_, key) => key })
       },
       setTimeout: fn => { const id = timers.size + 1; timers.set(id, fn); return id },
       clearTimeout: id => timers.delete(id),
+      // La página arma enlaces de seguimiento y WhatsApp con el origen del navegador.
+      window: { location: { origin: 'https://taller.test' }, open: () => {} },
+      navigator: { clipboard: { writeText: async () => {} } },
     },
   )
   const Component = exports[exportName]
@@ -53,6 +72,31 @@ function harness(file, exportName, props = {}, services = {}) {
   return { services, settle, root: () => tree }
 }
 
+// Los arrays nacen en el sandbox de vm: se comparan por valor, no por identidad de realm.
+// Se carga el módulo de configuración en el mismo sandbox, sin React.
+let configCache
+function loadConfig() {
+  if (configCache) return configCache
+  const exports = {}
+  vm.runInNewContext(
+    ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../src/config/repairStatus.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports, require: name => (name === '@mui/icons-material' ? new Proxy({}, { get: () => 'Icon' }) : new Proxy({}, { get: (_, key) => key })) },
+  )
+  return (configCache = exports)
+}
+
+// Los tipos reales (isStatusNote) deciden si una entrada del historial es una corrección.
+let typesCache
+function loadTypes() {
+  if (typesCache) return typesCache
+  const exports = {}
+  vm.runInNewContext(
+    ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../src/types/index.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports, require: () => new Proxy({}, { get: (_, key) => key }) },
+  )
+  return (typesCache = exports)
+}
+
 function collect(node, predicate, found = []) {
   if (!node || typeof node !== 'object') return found
   if (predicate(node)) found.push(node)
@@ -64,20 +108,13 @@ const buttonsOf = root => collect(root, n => n.type === 'Button')
 const repair = (status, payments = []) => ({
   id: 'r1', number: 1001, device: 'Samsung A14', status, total: 60000, paid: 30000,
   warrantyEnabled: true, warrantyDurationDays: 30, payments,
+  clientId: 'c1', clientName: 'Cliente', phone: '1133334444',
 })
 
 async function main() {
 
 // 1. El flujo visible no ofrece BUDGET / APPROVED / TESTING, y los históricos avanzan
-//    como su equivalente. Se carga el módulo de configuración en el mismo sandbox sin React.
-function loadConfig() {
-  const exports = {}
-  vm.runInNewContext(
-    ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../src/config/repairStatus.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
-    { exports, require: name => (name === '@mui/icons-material' ? new Proxy({}, { get: () => 'Icon' }) : new Proxy({}, { get: (_, key) => key })) },
-  )
-  return exports
-}
+//    como su equivalente.
 const config = loadConfig()
 // Los arrays nacen en el sandbox de vm: se comparan por valor, no por identidad de realm.
 assert.equal(config.repairFlow.join(','), 'received,review,waiting_part,repairing,ready,delivered', 'el flujo visible son seis pasos')
@@ -167,6 +204,58 @@ assert.equal(advanceUpdates[0].id, 'r1')
 assert.equal(advanceUpdates[0].input.amount, 30000, 'guarda el importe corregido')
 assert.equal(advanceUpdates[0].input.method, 'TRANSFER', 'guarda el medio de pago')
 
-console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo y límites del adelanto')
+// 5. El historial no duplica pagos: cada Payment genera exactamente un evento.
+//    Renderiza la página de detalle y cuenta los rótulos del bloque «Historial».
+async function historyOf(payments, history = []) {
+  const detail = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
+    getRepair: async () => ({ ...repair('received', payments), clientId: 'c1', clientName: 'Cliente', history }),
+    getClientOptions: async () => [],
+  })
+  await detail.settle()
+  const root = detail.root()
+  const card = collect(root, node => node.type === 'CardContent' && node.props.children?.some?.(child => child?.props?.children === 'Historial'))
+  assert.equal(card.length, 1, 'la tarjeta de historial esta una sola vez')
+  const text = JSON.stringify(card[0])
+  const count = label => (text.match(new RegExp(`"${label}"`, 'g')) ?? []).length
+  return {
+    text,
+    countAdvance: () => count('Adelanto recibido'),
+    countPayment: () => count('Pago recibido'),
+    countCorrection: () => count('Adelanto corregido'),
+    countReview: () => count('Pago de revisión'),
+  }
+}
+// Un solo adelanto => un solo evento «Adelanto recibido».
+const singleAdvance = await historyOf([{ id: 'p1', amount: 30000, method: 'CASH', isAdvance: true, createdAt: '2026-09-29T10:00:00Z' }])
+assert.equal(singleAdvance.countAdvance(), 1, 'un Payment de adelanto produce exactamente un evento')
+// Dos pagos distintos => dos eventos (no cuatro).
+const twoPayments = await historyOf([
+  { id: 'p1', amount: 30000, method: 'CASH', isAdvance: true, createdAt: '2026-09-29T10:00:00Z' },
+  { id: 'p2', amount: 30000, method: 'CASH', createdAt: '2026-10-02T10:00:00Z' },
+])
+assert.equal(twoPayments.countAdvance(), 1, 'el adelanto aparece una vez')
+assert.equal(twoPayments.countPayment(), 1, 'el pago normal aparece una vez')
+// Un adelanto corregido deja su evento y, aparte, el de la corrección.
+const corrected = await historyOf(
+  [{ id: 'p1', amount: 30000, method: 'CASH', isAdvance: true, createdAt: '2026-09-29T10:00:00Z' }],
+  [{ id: 'h1', previousStatus: 'received', newStatus: 'received', internalNote: 'Adelanto corregido de $20.000 a $30.000', createdAt: '2026-10-01T10:00:00Z' }],
+)
+assert.equal(corrected.countAdvance(), 1, 'la corrección no duplica el adelanto')
+assert.ok(corrected.text.includes('Adelanto corregido de $20.000 a $30.000'), 'la corrección del adelanto se muestra aparte')
+
+// 6. «Corregir adelanto» queda solo en «Resumen de pago», no en «Costos y ganancia».
+const detailPage = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
+  getRepair: async () => ({ ...repair('received', [{ id: 'p1', amount: 30000, method: 'CASH', isAdvance: true, createdAt: '2026-09-29T10:00:00Z' }]), clientId: 'c1', clientName: 'Cliente' }),
+  getClientOptions: async () => [],
+})
+await detailPage.settle()
+const pageText = JSON.stringify(detailPage.root())
+const advanceButtons = collect(detailPage.root(), node => node.type === 'Button' && typeof node.props.children === 'string' && node.props.children.startsWith('Corregir adelanto'))
+assert.deepEqual(advanceButtons.map(node => node.props.children), ['Corregir adelanto inicial'],
+  'solo queda el botón de «Resumen de pago»')
+assert.ok(pageText.includes('Costos y ganancia'), 'la tarjeta de costos sigue visible')
+assert.ok(!pageText.includes('"Corregir adelanto"'), 'la tarjeta de costos ya no ofrece corregir el adelanto')
+
+console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y un único botón para corregir el adelanto')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

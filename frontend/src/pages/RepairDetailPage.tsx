@@ -121,7 +121,6 @@ export function RepairDetailPage() {
   const canCorrectAdvance = canAccess(user, 'repairs.viewFinancials') && !isSpecial
   const historyEvents: Array<{ id: string; date?: string; label: string; amount?: number }> = []
   for (const payment of [...(repair.payments ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) historyEvents.push({ id: `payment-${payment.id}`, date: payment.createdAt, label: payment.cancellationReview ? 'Pago de revisión' : payment.isAdvance ? 'Adelanto recibido' : 'Pago recibido', amount: payment.amount })
-  for (const payment of [...(repair.payments ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) historyEvents.push({ id: `payment-${payment.id}`, date: payment.createdAt, label: payment.cancellationReview ? 'Pago de revisión' : payment.isAdvance ? 'Adelanto recibido' : 'Pago recibido', amount: payment.amount })
   if (repair.status === 'cancelled') {
     const cancelledAt = repair.cancelledAt ?? (repair.history ?? []).find(item => item.newStatus === 'cancelled')?.createdAt ?? repair.updatedAt
     historyEvents.push({ id: 'cancelled', date: cancelledAt, label: 'Reparación cancelada' })
@@ -145,7 +144,7 @@ export function RepairDetailPage() {
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
     {canAccess(user, 'repairs.viewFinancials') && repair.status !== 'cancelled' && <Card sx={{ mb: 2.2 }}><CardContent>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} mb={2}><Typography variant="h2">Costos y ganancia</Typography>{canCorrectAdvance && <Button size="small" variant="outlined" onClick={() => setAdvanceOpen(true)}>Corregir adelanto</Button>}</Stack>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} mb={2}><Typography variant="h2">Costos y ganancia</Typography></Stack>
       <Grid container spacing={2}>
         <Grid size={{ xs: 6, md: 3 }}><Info label="Costo / gasto de la reparación" value={formatMoney(repairCost)} /></Grid>
         <Grid size={{ xs: 6, md: 3 }}><Info label="Mano de obra cobrada" value={formatMoney(repair.laborCharge ?? 0)} /></Grid>

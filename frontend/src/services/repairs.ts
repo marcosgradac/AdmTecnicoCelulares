@@ -60,6 +60,8 @@ export interface CreateRepairInput {
   notes?: string
   total: number
   partsCost?: number
+  /** Obligatorio cuando partsCost > 0: es el medio de pago del egreso, no el del adelanto. */
+  partsCostMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
   laborCharge?: number
   advanceAmount?: number
   advanceMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'

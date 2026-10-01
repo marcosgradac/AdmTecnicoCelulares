@@ -5,6 +5,10 @@ import { z } from 'zod'
 export const repairMoney = z.number().int().min(0).max(2_147_483_647)
 export const initialRepairFinanceSchema = z.object({
   partsCost: repairMoney.default(0),
+  // El gasto inicial y el adelanto son dos movimientos distintos de Caja: cada uno tiene su
+  // propio medio de pago. Un costo sin método informado se guarda con `method` en NULL y Caja
+  // lo muestra como "Sin medio informado": nunca se inventa cómo se pagó.
+  partsCostMethod: z.nativeEnum(PaymentMethod).optional(),
   laborCharge: repairMoney.default(0),
   total: repairMoney.default(0),
   advanceAmount: repairMoney.default(0),
@@ -26,14 +30,16 @@ export async function recordInitialRepairFinance(
   tx: Prisma.TransactionClient,
   repair: { id: string; businessId: string; number: number; clientId: string; partsCost: number; createdAt: Date },
   clientName: string,
-  input: Pick<z.infer<typeof initialRepairFinanceSchema>, 'advanceAmount' | 'advanceMethod'>,
+  input: Pick<z.infer<typeof initialRepairFinanceSchema>, 'advanceAmount' | 'advanceMethod' | 'partsCostMethod'>,
 ) {
   const { id: repairId, businessId, number, clientId, createdAt } = repair
   let initialCostMovementId: string | undefined
   if (repair.partsCost > 0) {
+    // El gasto inicial guarda su propio medio de pago, independiente del adelanto. Sin método
+    // informado el movimiento queda con `method` en NULL y Caja muestra "Sin medio informado".
     const movement = await tx.cashMovement.create({ data: {
       businessId, repairId, clientName, type: 'EXPENSE', origin: 'REPAIR',
-      description: `Costo inicial reparación #${number}`, amount: repair.partsCost, createdAt,
+      description: `Costo inicial reparación #${number}`, amount: repair.partsCost, method: input.partsCostMethod, createdAt,
     } })
     initialCostMovementId = movement.id
   }
