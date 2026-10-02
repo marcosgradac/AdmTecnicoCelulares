@@ -25,6 +25,12 @@ function harness(file, exportName, props = {}, viewport = {}) {
   const exports = {}
   const modules = {}
   const compile = target => ts.transpileModule(fs.readFileSync(target, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
+  // Los tokens se cargan de verdad: si el degradé cambia, la prueba lo ve.
+  const tokenExports = {}
+  vm.runInNewContext(
+    ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../src/theme/tokens.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports: tokenExports, require: () => ({}) },
+  )
   const sandbox = {
     exports,
     require(name) {
@@ -39,7 +45,7 @@ function harness(file, exportName, props = {}, viewport = {}) {
         },
       })
       if (name === '@mui/icons-material') return new Proxy({}, { get: (_, key) => String(key) })
-      if (name.endsWith('/theme/tokens')) return { TABLE_BORDER: '#EEF0F5' }
+      if (name.endsWith('/theme/tokens')) return tokenExports
       if (name.endsWith('/utils/format')) return {
         formatMoney: value => `$${value}`,
         formatShortDate: value => String(value).slice(0, 10),
@@ -272,7 +278,9 @@ async function main() {
     await bare.settle()
     const [title] = titles(bare.root())
     assert.equal(title?.props?.children, 'Otros movimientos', 'el título es exactamente "Otros movimientos"')
-    assert.equal(title?.props?.color, 'primary.main', 'y usa el color principal de TecnoDesk')
+    assert.equal(title?.props?.sx?.color, '#5B3FD6', 'y usa el degradé TecnoDesk con fallback violeta')
+    assert.equal(title?.props?.sx?.backgroundClip, 'text', 'el degradé se recorta al texto')
+    assert.equal(title?.props?.sx?.WebkitTextFillColor, 'transparent', 'y no tapa las letras con un color sólido')
     assert.equal(looseTable(bare.root()).length, 1, 'sin movimientos la tabla sigue dibujándose')
     const text = JSON.stringify(bare.root())
     assert.ok(text.includes('No hay movimientos manuales para mostrar.'), 'y con el empty state adentro')

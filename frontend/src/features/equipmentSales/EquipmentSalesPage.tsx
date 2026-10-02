@@ -12,6 +12,7 @@ import { formatMoney } from '../../utils/format'
 import { EquipmentDeviceList } from './EquipmentDeviceList'
 import { EquipmentEditor, EquipmentSaleDrawer } from './EquipmentDrawers'
 import { equipmentError, statusColors, statusLabels } from './equipmentPresentation'
+import { GRADIENT_TEXT_SX } from '../../theme/tokens'
 
 export function EquipmentSalesPage() {
   const { user } = useAuth()
@@ -62,7 +63,7 @@ export function EquipmentSalesPage() {
       <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Ganancia realizada" value={summary ? formatMoney(summary.realizedProfit) : '—'} icon={<TrendingUpRounded />} tone={summary && summary.realizedProfit < 0 ? 'warning' : 'success'} /></Grid>
     </Grid>
     <Card><CardContent>
-      <Stack direction="row" spacing={1} alignItems="center" mb={2}><PhoneIphoneRounded color="primary" /><Typography variant="h2" sx={{ flex: 1 }}>Tus equipos</Typography><Chip size="small" label={`${total} equipos`} /></Stack>
+      <Stack direction="row" spacing={1} alignItems="center" mb={2}><PhoneIphoneRounded color="primary" /><Box sx={{ flex: 1 }}><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Tus equipos</Typography></Box><Chip size="small" label={`${total} equipos`} /></Stack>
       <Stack direction={{ xs: 'column', md: 'row' }} flexWrap="wrap" gap={1} mb={2.5} aria-label="Flujo del equipo" sx={{ p: 1.5, bgcolor: '#F7F8FC', borderRadius: 3 }}>{(Object.keys(statusLabels) as EquipmentStatus[]).map((status, index) => <Stack key={status} direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}><Typography variant="caption" color="text.secondary" fontWeight={700}>{index + 1}.</Typography><Chip size="small" variant="outlined" color={statusColors[status]} label={statusLabels[status]} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: statusColors[status] === 'default' ? 'text.secondary' : `${statusColors[status]}.dark` }} />{index < 3 && <ArrowForwardRounded sx={{ fontSize: 15, color: 'text.disabled' }} />}</Stack>)}</Stack>
       <FilterBar onClear={search ? () => { setSearch(''); setFilters({ search: '', page: 0 }) } : undefined}>
         <TextField fullWidth size="small" label="Buscar por marca o modelo" value={search} onChange={event => setSearch(event.target.value)} slotProps={{ htmlInput: { maxLength: 120 }, input: { startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> } }} />

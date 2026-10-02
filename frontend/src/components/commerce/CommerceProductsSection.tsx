@@ -7,6 +7,7 @@ import { getCommerceProducts, type CommerceProduct } from '../../services/commer
 import { ListPagination } from '../admin/AdminPatterns'
 import { UiState } from '../common/UiState'
 import { CommerceProductsTable } from './CommerceProductsTable'
+import { GRADIENT_TEXT_SX } from '../../theme/tokens'
 
 /** La tabla general pagina contra la API: nunca se traen los productos de golpe. */
 const PAGE_SIZE = 10
@@ -64,7 +65,7 @@ export function CommerceProductsSection({ canManage, onNewProduct, onEditProduct
     <Card sx={{ mt: 3 }}>
       <CardContent>
         <Box sx={{ mb: 2.5 }}>
-          <Typography variant="h2">Productos</Typography>
+          <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Productos</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Administrá el stock, costos y precios de todos tus productos.
           </Typography>

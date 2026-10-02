@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Box, Table, TableCell, TableContainer, TableRow, Typography, useMediaQuery, useTheme } from '@mui/material'
-import { TABLE_BORDER } from '../../theme/tokens'
+import { GRADIENT_TEXT_SX, TABLE_BORDER } from '../../theme/tokens'
 
 /**
  * Tokens visuales compartidos por las dos tablas de cada Caja: la principal ("Últimos
@@ -73,7 +73,7 @@ export const cashOriginName = (origin?: string) => origin ? CASH_ORIGIN_LABELS[o
 export const CashTablePanel = ({ title, description, hint, children, footer }: { title: string; description?: string; hint?: string; children: ReactNode; footer?: ReactNode }) =>
   <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.paper', overflow: 'hidden' }}>
     <Box sx={{ px: 2.5, pt: 2, pb: description || hint ? 1 : 1.5 }}>
-      <Typography variant="h2" color="primary.main">{title}</Typography>
+      <Typography variant="h2" sx={GRADIENT_TEXT_SX}>{title}</Typography>
       {description && <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>{description}</Typography>}
       {hint && <Typography variant="caption" color="text.secondary" sx={{ mt: .25, display: 'block' }}>{hint}</Typography>}
     </Box>
@@ -98,7 +98,7 @@ export const CashEmptyRow = ({ colSpan, title, description }: { colSpan: number;
 
 /** Título de sección dentro de una caja: mismo color y jerarquía en las cuatro. */
 export const CashSectionTitle = ({ children }: { children: ReactNode }) =>
-  <Typography variant="h2" color="primary.main">{children}</Typography>
+  <Typography variant="h2" sx={GRADIENT_TEXT_SX}>{children}</Typography>
 
 /** ¿Estamos en mobile? Lo comparten las dos tablas para caer en tarjetas a la vez. */
 export const useCashMobile = () => useMediaQuery(useTheme().breakpoints.down('md'))

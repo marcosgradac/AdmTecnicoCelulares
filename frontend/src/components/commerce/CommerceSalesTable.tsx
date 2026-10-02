@@ -9,7 +9,7 @@ import { formatMoney, formatShortDate, formatShortTime } from '../../utils/forma
 import { ListPagination } from '../admin/AdminPatterns'
 import { RowActionsMenu } from '../common/RowActionsMenu'
 import { UiState } from '../common/UiState'
-import { TABLE_BORDER } from '../../theme/tokens'
+import { GRADIENT_TEXT_SX, TABLE_BORDER } from '../../theme/tokens'
 
 const PAGE_SIZE = 10
 /** Texto solo para lectores de pantalla en columnas sin encabezado visible. */
@@ -71,7 +71,7 @@ export function CommerceSalesTable({ revision, canManage, onCancelled }: { revis
   return (
     <Card sx={{ mt: 3 }}>
       <CardContent>
-        <Typography variant="h2" sx={{ mb: 0.5 }}>Últimas ventas</Typography>
+        <Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, mb: 0.5 }}>Últimas ventas</Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
           Historial de ventas del comercio. Cancelar una venta restaura el stock y deja la reversión registrada en Caja.
         </Typography>

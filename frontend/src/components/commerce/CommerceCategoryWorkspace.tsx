@@ -14,6 +14,7 @@ import { RowActionsMenu } from '../common/RowActionsMenu'
 import { CommerceProductsTable } from './CommerceProductsTable'
 import { categoryIcon } from './categoryIcons'
 import { UiState } from '../common/UiState'
+import { GRADIENT_TEXT_SX } from '../../theme/tokens'
 
 interface Props {
   category: CommerceCategory
@@ -111,7 +112,7 @@ export function CommerceCategoryWorkspace({
       <Card>
         <CardContent>
           <Box sx={{ mb: 2.5 }}>
-            <Typography variant="h2">Productos</Typography>
+            <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Productos</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
               {debouncedSearch.trim() ? `Resultados para «${debouncedSearch.trim()}»` : 'Listado completo con stock, costos y márgenes por unidad.'}
             </Typography>

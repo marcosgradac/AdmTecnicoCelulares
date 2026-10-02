@@ -17,7 +17,7 @@ import { formatMoney } from '../../utils/format'
 import { ListPagination } from '../admin/AdminPatterns'
 import { UiState } from '../common/UiState'
 import { categoryIcon } from './categoryIcons'
-import { TABLE_BORDER } from '../../theme/tokens'
+import { GRADIENT_TEXT_SX, TABLE_BORDER } from '../../theme/tokens'
 
 export type CartItem = { product: CommerceProduct; quantity: number }
 
@@ -305,7 +305,7 @@ export function CommercePointOfSale({
               <Box sx={{ width: 36, height: 36, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: '10px', bgcolor: t => alpha(t.palette.primary.main, 0.08), color: 'primary.main' }}>
                 <PointOfSaleRounded sx={{ fontSize: 20 }} />
               </Box>
-              <Typography variant="h2" sx={{ fontSize: '1.05rem', lineHeight: 1.2 }}>Productos</Typography>
+              <Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, fontSize: '1.05rem', lineHeight: 1.2 }}>Productos</Typography>
             </Stack>
 
             <TextField

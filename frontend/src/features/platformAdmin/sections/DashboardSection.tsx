@@ -1,6 +1,7 @@
 import { CheckCircleRounded, GroupsRounded, PaymentsRounded, RocketLaunchRounded, StorefrontRounded, TrendingUpRounded } from '@mui/icons-material'
 import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
 import { StatCard } from '../../../components/common/StatCard'
+import { GRADIENT_TEXT_SX } from '../../../theme/tokens'
 import { formatARS, formatDate } from '../../billing/billing.utils'
 import { getAdminDashboard, type AccountAccess } from '../platformAdmin.api'
 import { usePlatformResource } from '../platformAdmin.hooks'
@@ -42,7 +43,7 @@ export function DashboardSection({ refreshToken, onOpenBusiness }: { refreshToke
       <Card><CardContent>
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1.5}>
           <Box>
-            <Typography variant="h3">Necesitan atención</Typography>
+            <Typography variant="h3" sx={GRADIENT_TEXT_SX}>Necesitan atención</Typography>
             <Typography variant="body2" color="text.secondary" mt={.5}>Cuentas por vencer, en período de gracia o bloqueadas.</Typography>
           </Box>
           <Stack direction="row" gap={1} flexWrap="wrap">
@@ -58,7 +59,7 @@ export function DashboardSection({ refreshToken, onOpenBusiness }: { refreshToke
         </Stack>
       </CardContent></Card>
       <Card><CardContent>
-        <Typography variant="h3">Negocios recientes</Typography>
+        <Typography variant="h3" sx={GRADIENT_TEXT_SX}>Negocios recientes</Typography>
         <Typography variant="body2" color="text.secondary" mt={.5}>Últimos negocios registrados.</Typography>
         <Stack spacing={1.5} mt={2.5}>
           {data.recentBusinesses.length ? data.recentBusinesses.map(business => (

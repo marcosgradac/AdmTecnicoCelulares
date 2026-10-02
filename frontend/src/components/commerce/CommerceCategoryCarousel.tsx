@@ -6,6 +6,7 @@ import type { CommerceCategory } from '../../services/commerce'
 import { CategoryCard } from './CategoryCard'
 import { CircularCategoryCarousel } from './CircularCategoryCarousel'
 import { useAdaptiveRow } from './useAdaptiveRow'
+import { GRADIENT_TEXT_SX } from '../../theme/tokens'
 
 interface Props {
   categories: CommerceCategory[]
@@ -44,7 +45,7 @@ export function CommerceCategoryCarousel({
     <Card sx={{ mb: 3 }}>
       <CardContent>
         <Box minWidth={0} sx={{ mb: 1.5 }}>
-          <Typography variant="h2">Categorías</Typography>
+          <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Categorías</Typography>
           <Typography variant="body2" color="text.secondary">Organizá tus productos y administrá su inventario.</Typography>
         </Box>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mb: 2.5 }}>
