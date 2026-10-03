@@ -144,6 +144,8 @@ model Repair {
 
   @@index([businessId])
   @@unique([businessId, number])
+  // Mismo índice que crea la migración 20261003120000_tracking_expiry en SQLite.
+  @@index([trackingExpiresAt])
 }
 
 model Payment {

@@ -254,6 +254,10 @@ model Repair {
   @@index([businessId, trackingCreatedAt])
   @@index([businessId, createdAt])
   @@index([businessId, status, createdAt])
+  // Índice de apoyo para las consultas que revisan el vencimiento del enlace
+  // público. Es el mismo que crea la migración 20261003120000_tracking_expiry:
+  // "Repair_trackingExpiresAt_idx" es el nombre que Prisma deriva de esta línea.
+  @@index([trackingExpiresAt])
 }
 
 model WarrantyClaim {
