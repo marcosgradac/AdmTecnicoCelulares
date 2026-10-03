@@ -1073,6 +1073,129 @@ test('16. Un controllerchange sin applyUpdate NO recarga', async () => {
 })
 
 // ---------------------------------------------------------------------------
+// 17-18. Enlaces de seguimiento cortos (utilidad central del frontend)
+// ---------------------------------------------------------------------------
+
+// Se carga con el mismo `loadModule` que usa el resto del archivo: transpila el
+// TypeScript y lo evalúa en un sandbox, sin bundler.
+const trackingLink = loadModule('src/utils/trackingLink.ts')
+const { buildTrackingLink, buildLegacyTrackingLink, clientSlug, TRACKING_LINK_PREFIX, TRACKING_LEGACY_PREFIX, MAX_CLIENT_SLUG_LENGTH } =
+  trackingLink
+
+test('17. El enlace nuevo usa /s/nombre-cliente/token', () => {
+  const link = buildTrackingLink('K8p4Lm2Qx7Rt9QaB', 'Juan Pérez', 'https://tecnodeskpro.com')
+  assert.equal(link, 'https://tecnodeskpro.com/s/juan-perez/K8p4Lm2Qx7Rt9QaB')
+  assert.equal(TRACKING_LINK_PREFIX, '/s')
+})
+
+test('18. El slug quita tildes y normaliza el nombre', () => {
+  const casos = [
+    ['José Gómez', 'jose-gomez'],
+    ['María del Valle', 'maria-del-valle'],
+    ['Juan Pérez', 'juan-perez'],
+    ['JUAN PEREZ', 'juan-perez'],
+    ['  Ana  María  López ', 'ana-maria-lopez'],
+    ['Juan-Pérez', 'juan-perez'],
+    ["O'Brien", 'o-brien'],
+    ['!!!', 'cliente'],
+    ['', 'cliente'],
+    ['   ', 'cliente'],
+    [null, 'cliente'],
+    [undefined, 'cliente'],
+  ]
+  for (const [entrada, esperado] of casos) {
+    assert.equal(clientSlug(entrada), esperado, `slug de ${JSON.stringify(entrada)}`)
+  }
+})
+
+test('19. El slug no tiene guiones en los bordes y respeta el tope', () => {
+  assert.equal(clientSlug('---José---'), 'jose')
+  assert.equal(clientSlug('...Gómez...'), 'gomez')
+  const largo = clientSlug('Bartholomew Alexander Featherstonehaugh Montgomery')
+  assert.ok(largo.length <= MAX_CLIENT_SLUG_LENGTH, `excede el tope: ${largo.length}`)
+  assert.ok(!largo.startsWith('-'), 'no debe empezar en guion')
+  assert.ok(!largo.endsWith('-'), 'no debe terminar en guion')
+})
+
+test('20. Sin token no hay enlace: no se fabrica una URL con "undefined"', () => {
+  assert.equal(buildTrackingLink(null, 'Juan', 'https://tecnodeskpro.com'), null)
+  assert.equal(buildTrackingLink(undefined, 'Juan', 'https://tecnodeskpro.com'), null)
+  assert.equal(buildTrackingLink('', 'Juan', 'https://tecnodeskpro.com'), null)
+  // Un token sin nombre igual da un enlace usable, con el slug de reserva.
+  assert.equal(
+    buildTrackingLink('K8p4Lm2Qx7Rt9QaB', '', 'https://tecnodeskpro.com'),
+    'https://tecnodeskpro.com/s/cliente/K8p4Lm2Qx7Rt9QaB',
+  )
+})
+
+test('21. El enlace viejo /seguimiento/:token se conserva para los ya compartidos', () => {
+  const viejo = buildLegacyTrackingLink(
+    'b7bbc7aa9d76cedb875352f31595afe181dfa7ce75599c98b77a13de0e321d0a',
+    'https://tecnodeskpro.com',
+  )
+  assert.equal(
+    viejo,
+    'https://tecnodeskpro.com/seguimiento/b7bbc7aa9d76cedb875352f31595afe181dfa7ce75599c98b77a13de0e321d0a',
+  )
+  assert.equal(TRACKING_LEGACY_PREFIX, '/seguimiento')
+  // El token viejo de 64 hex no se acorta ni se toca.
+  assert.equal(viejo.split('/').pop().length, 64)
+})
+
+test('22. El token es el único secreto: el slug nunca se envía al backend', () => {
+  const pagina = fs.readFileSync(path.resolve(ROOT, 'src/pages/TrackingPage.tsx'), 'utf8')
+  const llamadas = pagina.match(/getTrackingRepair\([^)]*\)/g) ?? []
+  assert.ok(llamadas.length > 0, 'debe llamar a getTrackingRepair')
+  for (const llamada of llamadas) {
+    assert.match(llamada, /getTrackingRepair\(token/, 'sólo se envía el token')
+    assert.doesNotMatch(llamada, /clientSlug/, 'nunca el slug')
+  }
+  // Y el backend busca exclusivamente por token.
+  const server = fs.readFileSync(path.resolve(ROOT, '../backend/src/server.ts'), 'utf8')
+  assert.match(server, /findUnique\(\{ where: \{ trackingToken:/, 'la búsqueda es por token')
+})
+
+test('23. La app declara las dos rutas de seguimiento', () => {
+  const source = fs.readFileSync(path.resolve(ROOT, 'src/App.tsx'), 'utf8')
+  const nueva = source.match(/<Route path="\/s\/:clientSlug\/:token" element=\{<(\w+)\/>\}/)
+  const vieja = source.match(/<Route path="\/seguimiento\/:token" element=\{<(\w+)\/>\}/)
+  assert.ok(nueva, 'la ruta /s/:clientSlug/:token debe existir')
+  assert.ok(vieja, 'la ruta /seguimiento/:token debe seguir existiendo')
+  assert.equal(nueva[1], vieja[1], 'ambas rutas usan la misma TrackingPage')
+})
+
+test('24. La pantalla de vencido es distinta y no filtra datos', () => {
+  const source = fs.readFileSync(path.resolve(ROOT, 'src/pages/TrackingPage.tsx'), 'utf8')
+  assert.match(source, /setError\('expired'\)/, 'el 410 se traduce a la pantalla de vencido')
+  assert.match(source, /TRACKING_EXPIRED/, 'debe reconocer el código de vencimiento')
+  assert.ok(source.includes('Este seguimiento finalizó'))
+  assert.ok(source.includes('comunicate con el servicio técnico'))
+  assert.ok(source.includes('Seguimiento no encontrado'), 'el 404 sigue con su mensaje')
+})
+
+test('25. Ninguna pantalla construye el link a mano', () => {
+  // La regla es que el formato del enlace vive en un solo lugar. Estas pantallas
+  // están escritas en un estilo muy compacto, así que el patrón tolera que haya o
+  // no un espacio después de la coma.
+  const llamadaCentral = /buildTrackingLink\(repair\.trackingToken,\s*repair\.clientName\)/
+  for (const page of ['RepairsPage.tsx', 'RepairDetailPage.tsx']) {
+    const source = fs.readFileSync(path.resolve(ROOT, 'src/pages', page), 'utf8')
+    assert.doesNotMatch(source, /\/seguimiento\/\$\{/, `${page} arma el link a mano`)
+    assert.doesNotMatch(source, /\/s\/\$\{/, `${page} arma el link a mano`)
+    assert.match(source, llamadaCentral, `${page} debe usar la utilidad central`)
+  }
+})
+
+test('26. El service worker deja /s/* fuera de caché, como /seguimiento', async () => {
+  const sw = await runServiceWorker()
+  // Mismo tratamiento que el enlace viejo: es una página de negocio.
+  assert.equal(sw.fetchRequest({ url: 'https://tecnodeskpro.com/s/juan-perez/K8p4Lm2Qx7Rt9QaB', method: 'GET', mode: 'navigate', destination: 'document' }), false)
+  assert.equal(sw.fetchRequest({ url: 'https://tecnodeskpro.com/s/juan-perez/K8p4Lm2Qx7Rt9QaB', method: 'GET', mode: 'cors', destination: '' }), false)
+  assert.equal(sw.fetchRequest({ url: 'https://tecnodeskpro.com/seguimiento/tokenViejo', method: 'GET', mode: 'navigate', destination: 'document' }), false)
+  assert.deepEqual(sw.writes, [], 'no debe escribirse nada en caché')
+})
+
+// ---------------------------------------------------------------------------
 
 async function main() {
   let failures = 0

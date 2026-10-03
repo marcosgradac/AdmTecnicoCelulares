@@ -56,7 +56,12 @@ export default function App(){return <><ScrollToTop/><InstallPrompt/><UpdateNoti
   <Route path="/" element={<PublicLandingLayout/>}><Route index element={<LandingPage/>}/></Route>
   <Route path="/login" element={<LoginPage/>}/><Route path="/register" element={<RegisterPage/>}/><Route path="/registro" element={<Navigate to="/register" replace/>}/>
   <Route path="/olvide-mi-contrasena" element={<ForgotPasswordPage/>}/><Route path="/restablecer-contrasena" element={<ResetPasswordPage/>}/>
-  <Route path="/seguimiento/:token" element={<TrackingPage/>}/><Route path="/terminos-y-condiciones" element={<RouteFallback><TermsPageLazy/></RouteFallback>}/><Route path="/terminos" element={<Navigate to="/terminos-y-condiciones" replace/>}/><Route path="/politica-de-privacidad" element={<RouteFallback><PrivacyPageLazy/></RouteFallback>}/><Route path="/privacidad" element={<Navigate to="/politica-de-privacidad" replace/>}/>
+  {/* Las dos rutas de seguimiento existen y llevan a la misma página: `/s/:clientSlug/:token`
+      es el formato nuevo, y `/seguimiento/:token` sigue ahí para los enlaces ya compartidos.
+      El slug es visual: `TrackingPage` consulta al backend únicamente por el token. */}
+  <Route path="/s/:clientSlug/:token" element={<TrackingPage/>}/>
+  <Route path="/seguimiento/:token" element={<TrackingPage/>}/>
+  <Route path="/terminos-y-condiciones" element={<RouteFallback><TermsPageLazy/></RouteFallback>}/><Route path="/terminos" element={<Navigate to="/terminos-y-condiciones" replace/>}/><Route path="/politica-de-privacidad" element={<RouteFallback><PrivacyPageLazy/></RouteFallback>}/><Route path="/privacidad" element={<Navigate to="/politica-de-privacidad" replace/>}/>
   <Route element={<ProtectedRoute/>}>
     <Route path="/admin" element={<AppShell/>}>
       <Route index element={<PermissionGuard ownerOnly><DashboardRoute/></PermissionGuard>}/><Route path="reparaciones" element={<PermissionGuard permission="repairs.view"><RepairsPage/></PermissionGuard>}/><Route path="reparaciones/nueva" element={<PermissionGuard permission="repairs.create"><Navigate to="/admin/reparaciones?new=1" replace/></PermissionGuard>}/><Route path="reparaciones/:id" element={<PermissionGuard permission="repairs.view"><RepairDetailPage/></PermissionGuard>}/>

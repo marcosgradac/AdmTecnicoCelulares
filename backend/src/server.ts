@@ -5,12 +5,21 @@ import helmet from 'helmet'
 import bcrypt from 'bcryptjs'
 import jwt, { type SignOptions } from 'jsonwebtoken'
 import { z } from 'zod'
-import { randomBytes } from 'node:crypto'
 import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
 import { advanceCorrectionNote, correctInitialRepairAdvance, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, RepairFinanceError } from './modules/repairs/repair-finance'
 import { assertStatusChange, deliveredLockedMessage, deliveryDates, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
+import { generateTrackingToken } from './modules/tracking/tracking-token'
+import {
+  classifyTracking,
+  isLegitimateTrackingLookup,
+  isTrackingExpired,
+  trackingExpiryFrom,
+  TRACKING_EXPIRED_CODE,
+  TRACKING_EXPIRED_MESSAGE,
+  trackingExpiredError,
+} from './modules/tracking/tracking-expiry'
 import { emptyLoose, linkedWhereFor, looseCashMovements, looseColumns, looseWhereFor, repairCashGroups, toLooseBlock } from './modules/cash/cash-groups.service'
 import { cashPeriodWhere, DEFAULT_CASH_PERIOD, isCashPeriod } from './modules/cash/cash-period'
 import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
@@ -136,7 +145,7 @@ app.use('/api/auth/password-change', passwordChangeRouter)
 
 const publicRepairSelect = {
   id: true, number: true, deviceBrand: true, deviceModel: true, issue: true,
-  status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
+  status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true, trackingExpiresAt: true,
   estimatedDeliveryDate: true, createdAt: true, updatedAt: true,
   business: { select: { id: true, name: true, logoUrl: true } },
   statusHistory: { where: { publicMessage: { not: null } }, select: { newStatus: true, publicMessage: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
@@ -157,11 +166,23 @@ app.get('/api/tracking/:token', publicTrackingLimiter, async (req, res) => {
       }
     }
     const repair = await prisma.repair.findUnique({ where: { trackingToken: String(req.params.token) }, select: publicRepairSelect })
-    if (!repair?.trackingEnabled) {
+    // El token ES el secreto. El orden importa: primero se busca por token, después
+    // se mira si el enlace sigue habilitado, y sólo al final se evalúa el vencimiento.
+    const state = classifyTracking(repair)
+    if (state === 'not-found' || state === 'disabled' || !repair) {
+      // No se distingue entre "no existe" y "existe pero deshabilitado": responder distinto
+      // confirmaría que el token fue real alguna vez.
       trackingRisk.miss(ip)
       return res.status(404).json({ success: false, message: 'Seguimiento no encontrado' })
     }
-    trackingRisk.clear(ip)
+    // Un token válido y vencido NO es un intento de enumeración: es un cliente que abre
+    // su propio enlace meses después. Contarlo como fallo lo penalizaría sin motivo.
+    if (isLegitimateTrackingLookup(state)) trackingRisk.clear(ip)
+    if (state === 'expired') {
+      // 410 y no 404: el enlace existió y terminó. El mensaje es genérico y no devuelve
+      // ningún dato de la reparación ni del cliente.
+      return res.status(410).json({ success: false, code: TRACKING_EXPIRED_CODE, message: TRACKING_EXPIRED_MESSAGE })
+    }
     return res.json({ ...repair, business: { name: repair.business.name, logoUrl: publicBusinessLogoUrl(repair.business.id, repair.business.logoUrl) }, clientId: '', imei: null, color: null, diagnosis: null, notes: null, client: { id: '', name: '', phone: null, createdAt: repair.createdAt } })
   } catch { return res.status(500).json({ success: false, message: 'Error obteniendo seguimiento' }) }
 })
@@ -334,7 +355,7 @@ app.use('/api/settings', settingsRouter)
 const includeRepair = { client: true, device: true, payments: true, statusHistory: { orderBy: { createdAt: 'desc' as const } }, photos: true, warrantyClaims: { orderBy: { createdAt: 'desc' as const } } } as const
 const repairListSelect = {
   id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, imei: true, color: true, issue: true,
-  diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true,
+  diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true, trackingExpiresAt: true,
   cancelledAt: true, cancellationPaidAmount: true, cancellationReviewFee: true, cancellationReviewPaid: true, cancellationRefundAmount: true,
   cancellationRefundMethod: true, cancellationRefundMovementId: true,
   estimatedDeliveryDate: true, warrantyEnabled: true, warrantyDurationDays: true, warrantyStartedAt: true,
@@ -411,7 +432,9 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
       const deliveredAt = data.status === RepairStatus.DELIVERED ? new Date() : null
       const warrantyStartedAt = data.warrantyEnabled && deliveredAt ? deliveredAt : null
       const warrantyExpiresAt = warrantyStartedAt && data.warrantyDurationDays ? new Date(warrantyStartedAt.getTime() + data.warrantyDurationDays * 86_400_000) : null
-      const created = await tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, partsCost: data.partsCost, laborCharge: data.laborCharge, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? randomBytes(32).toString('hex') : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt } })
+      // Si la reparación nace entregada, el enlace vence con la misma regla de siempre.
+      const trackingExpiresAt = trackingExpiryFrom(deliveredAt, data.warrantyEnabled)
+      const created = await tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, partsCost: data.partsCost, laborCharge: data.laborCharge, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? generateTrackingToken() : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, trackingExpiresAt, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt } })
       await recordInitialRepairFinance(tx, created, client.name, data)
       return tx.repair.findUniqueOrThrow({ where: { id: created.id }, include: includeRepair })
     }, { timeout: 15_000 })
@@ -458,7 +481,16 @@ const statusFailure = (res: Response, error: unknown, fallback: string) => {
  */
 const applyStatusChange = async (
   tx: Prisma.TransactionClient,
-  current: { id: string; status: RepairStatus; deliveredAt: Date | null; warrantyEnabled: boolean; warrantyDurationDays: number | null; warrantyStartedAt: Date | null; warrantyExpiresAt: Date | null },
+  current: {
+    id: string
+    status: RepairStatus
+    deliveredAt: Date | null
+    warrantyEnabled: boolean
+    warrantyDurationDays: number | null
+    warrantyStartedAt: Date | null
+    warrantyExpiresAt: Date | null
+    trackingExpiresAt: Date | null
+  },
   target: RepairStatus,
   messages: z.infer<typeof statusMessagesSchema>,
   userId: string,
@@ -529,10 +561,13 @@ app.post('/api/repairs/:id/delivery/correction', requireRole('OWNER'), async (re
       if (current.status !== RepairStatus.DELIVERED) throw statusError(409, 'La reparación no está entregada: no hay nada que corregir.')
       const claims = await tx.warrantyClaim.count({ where: { repairId: current.id, businessId: auth.businessId } })
       if (claims > 0) throw statusError(409, 'La reparación tiene reclamos de garantía asociados. No se puede deshacer la entrega porque dejaría la cobertura sin origen.')
+      // Se borra también el vencimiento del seguimiento: si la entrega fue un error, el
+      // enlace vuelve a quedar activo y sin fecha límite, igual que una reparación que
+      // nunca se entregó. `trackingEnabled` NO se toca, así que el mismo link revive.
       // Compare-and-swap sobre el estado: dos correcciones simultáneas no pueden aplicadas dos veces.
       const claimed = await tx.repair.updateMany({
         where: { id: current.id, businessId: auth.businessId, status: RepairStatus.DELIVERED },
-        data: { status: RepairStatus.READY, deliveredAt: null, warrantyStartedAt: null, warrantyExpiresAt: null },
+        data: { status: RepairStatus.READY, deliveredAt: null, warrantyStartedAt: null, warrantyExpiresAt: null, trackingExpiresAt: null },
       })
       if (claimed.count !== 1) throw statusError(409, 'La entrega ya fue corregida por otra operación')
       await tx.repairStatusHistory.create({ data: {
@@ -781,10 +816,18 @@ app.get('/api/repairs/:id/history', async (req, res) => {
 
 app.post('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {
   try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 409).json({ success: false, message: error instanceof Error ? error.message : 'Límite alcanzado' }) }
-  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
+  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true, status: true, trackingExpiresAt: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  const trackingToken = randomBytes(32).toString('hex')
-  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true, trackingCreatedAt: new Date() }, select: { trackingToken: true, trackingEnabled: true } }))
+  // Regenerar el enlace NO puede ser la forma de saltear el vencimiento: si el período ya
+  // terminó, un token nuevo tampoco serviría de nada y sólo crearía la ilusión de que revive.
+  if (isTrackingExpired(repair.trackingExpiresAt)) {
+    const error = trackingExpiredError()
+    return res.status(error.statusCode).json({ success: false, code: error.code, message: error.message })
+  }
+  const trackingToken = generateTrackingToken()
+  // `trackingExpiresAt` NO se toca: si la reparación ya está entregada y dentro del período,
+  // el token nuevo hereda exactamente el mismo vencimiento, sin extenderlo ni acortarlo.
+  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true, trackingCreatedAt: new Date() }, select: { trackingToken: true, trackingEnabled: true, trackingExpiresAt: true } }))
 })
 
 app.patch('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {

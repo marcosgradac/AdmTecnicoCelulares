@@ -1,0 +1,40 @@
+-- Vencimiento del enlace público de seguimiento.
+--
+-- Misma decisión que en PostgreSQL: el enlace deja de funcionar pasado un tiempo
+-- desde la entrega, con una regla fija que NO depende de la duración de la
+-- garantía: 3 días sin garantía, 7 días con garantía.
+--
+-- La fecha se persiste en vez de calcularse en cada request para que editar la
+-- garantía después no cambie retroactivamente cuándo vence un enlace ya entregado.
+-- Se agrega como columna nullable porque mientras la reparación no está entregada el
+-- enlace no vence y el valor queda en NULL.
+--
+-- POR QUÉ AQUÍ NO HAY BACKFILL (a diferencia de PostgreSQL)
+--
+-- El backfill necesita leer `deliveredAt`, y en SQLite esa columna NO EXISTE: la
+-- migración 20260927180000_warranty_claim_expenses_delivery recreó la tabla "Repair"
+-- completa (RedefineTables) y en esa definición nueva "deliveredAt" quedó fuera, tanto
+-- del CREATE TABLE como del INSERT que copia los datos. `prisma/sqlite/schema.prisma`
+-- sí la declara: es una inconsistencia de la cadena de migraciones, no del modelo.
+--
+-- Se decidió NO agregar la columna desde acá, por dos razones concretas:
+--
+--  1. SQLite no tiene `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` ni ninguna forma de
+--     DDL condicional. Agregarla rompe las bases que YA la tienen (las construidas
+--     desde el schema con `prisma db push`), con "duplicate column name: deliveredAt",
+--     y eso aborta la migración ENTERA: no se crea ni el índice ni la columna nueva.
+--  2. En una base creada por la cadena —el único camino que usa este repo— la columna
+--     no existe, y por lo tanto NO hay fechas de entrega que recuperar: esos datos se
+--     perdieron en la migración de garantías de 2026, no en esta.
+--
+-- O sea: agregar la columna no rescataría ni un solo dato y sí rompería instalaciones.
+-- El backfill de las reparaciones ya entregadas queda para PostgreSQL, que es la base
+-- de producción y donde `deliveredAt` sí existe y está poblada.
+--
+-- En SQLite, toda entrega nueva sella `trackingExpiresAt` desde la aplicación
+-- (`deliveryDates`), así que la regla se aplica sin migración previa. Las instalaciones
+-- SQLite con reparaciones entregadas quedan sin `trackingExpiresAt`, es decir, sus
+-- enlaces siguen vigentes: es el estado previo a esta política, nunca un error.
+ALTER TABLE "Repair" ADD COLUMN "trackingExpiresAt" DATETIME;
+
+CREATE INDEX "Repair_trackingExpiresAt_idx" ON "Repair"("trackingExpiresAt");

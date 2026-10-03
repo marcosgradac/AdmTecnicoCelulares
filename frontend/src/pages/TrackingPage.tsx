@@ -16,20 +16,36 @@ import tecnodeskMark from '../assets/brand/tecnodesk-mark.png'
 /** Nombre del negocio dueño de la reparación. Nunca el nombre personal del propietario. */
 const businessName = (repair: Repair) => repair.business?.name?.trim() || 'TecnoDesk'
 
+/** Estado de error de la consulta pública, distinguido para poder explicar bien cada caso. */
+type TrackingError = 'not-found' | 'expired'
+
+/** Mensaje y título de la pantalla de enlace vencido. No revela ningún dato de la reparación. */
+const EXPIRED_TITLE = 'Este seguimiento finalizó'
+const EXPIRED_DESCRIPTION =
+  'El dispositivo fue entregado y este enlace de seguimiento ya venció. Si necesitás asistencia, comunicate con el servicio técnico.'
+
 export function TrackingPage() {
+  // El slug del cliente no se usa para nada: sólo el token identifica la reparación.
   const { token } = useParams()
   const [repair, setRepair] = useState<Repair | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<TrackingError | null>(null)
   const [challenge, setChallenge] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const [challengeResetKey, setChallengeResetKey] = useState(0)
   const load = (captchaToken?: string) => {
     if (!token) return
-    setLoading(true); setError(false)
+    setLoading(true); setError(null)
     void getTrackingRepair(token, captchaToken).then(value => { setRepair(value); setChallenge(false) }).catch(requestError => {
-      if (axios.isAxiosError<{ code?: string }>(requestError) && requestError.response?.data?.code === 'TURNSTILE_REQUIRED') setChallenge(true)
-      else setError(true)
+      if (axios.isAxiosError<{ code?: string }>(requestError)) {
+        // 410: el enlace existió y terminó. 404: no existe, o ya no está habilitado.
+        if (requestError.response?.status === 410 || requestError.response?.data?.code === 'TRACKING_EXPIRED') {
+          setError('expired')
+          return
+        }
+        if (requestError.response?.data?.code === 'TURNSTILE_REQUIRED') { setChallenge(true); return }
+      }
+      setError('not-found')
     }).finally(() => setLoading(false))
   }
   useEffect(() => {
@@ -39,7 +55,9 @@ export function TrackingPage() {
   }, [token])
   if (loading) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><UiState loading /></Box>
   if (challenge) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><Container maxWidth="xs"><Stack spacing={2} textAlign="center"><Alert severity="info">Necesitamos verificar esta consulta antes de mostrar el seguimiento.</Alert><TurnstileWidget onToken={setTurnstileToken} resetKey={challengeResetKey} /><Button variant="contained" disabled={!turnstileToken} onClick={() => { load(turnstileToken); setTurnstileToken(''); setChallengeResetKey(value => value + 1) }}>Continuar</Button></Stack></Container></Box>
-  if (error || !repair) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><UiState title="Seguimiento no encontrado" description="Revisá que el enlace sea correcto o consultá al servicio técnico." /></Box>
+  // Enlace vencido: pantalla propia, sin ningún dato de la reparación ni del cliente.
+  if (error === 'expired') return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><UiState title={EXPIRED_TITLE} description={EXPIRED_DESCRIPTION}/></Box>
+  if (error === 'not-found' || !repair) return <Box minHeight="100vh" display="grid" sx={{ placeItems: 'center' }}><UiState title="Seguimiento no encontrado" description="Revisá que el enlace sea correcto o consultá al servicio técnico." /></Box>
   const current = canonicalStatusConfig(repair.status).order
   const currentStep = canonicalStatusConfig(repair.status).label
   const saldo = Math.max(0, repair.total - repair.paid)

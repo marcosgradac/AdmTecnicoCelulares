@@ -78,8 +78,11 @@ function isApiRequest(url) {
  * Se comparan segmentos completos, no subcadenas: `/seguimiento/abc123` es la
  * página pública de seguimiento de un cliente, mientras que un asset llamado
  * `tracking-something.js` no tiene por qué quedar fuera de la caché.
+ *
+ * `s` cubre el formato de enlace nuevo `/s/:clientSlug/:token`. Es el mismo
+ * seguimiento público, así que se excluye exactamente igual que el viejo.
  */
-const BUSINESS_ROUTE_SEGMENTS = new Set(['seguimiento', 'tracking'])
+const BUSINESS_ROUTE_SEGMENTS = new Set(['seguimiento', 'tracking', 's'])
 
 function isExcluded(url) {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return true

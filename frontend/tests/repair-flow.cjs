@@ -50,6 +50,9 @@ const react = {
         // La página usa la configuración real de estados: se carga en el mismo sandbox sin React.
         if (name.endsWith('/config/repairStatus')) return loadConfig()
         if (name.endsWith('/types')) return loadTypes()
+        // La construcción del enlace de seguimiento es lógica real del repo: se carga
+        // el módulo de verdad, con el mismo origen que simula `window` acá abajo.
+        if (name.endsWith('/utils/trackingLink')) return loadTrackingLink()
         return new Proxy({}, { get: (_, key) => key })
       },
       setTimeout: fn => { const id = timers.size + 1; timers.set(id, fn); return id },
@@ -95,6 +98,24 @@ function loadTypes() {
     { exports, require: () => new Proxy({}, { get: (_, key) => key }) },
   )
   return (typesCache = exports)
+}
+
+/**
+ * Carga el módulo real de enlaces de seguimiento.
+ *
+ * Se ejecuta en su propio sandbox con el mismo origen que usa el harness, para que
+ * `buildTrackingLink(token, nombre)` sin origen explícito produzca una URL absoluta
+ * igual que en el navegador. Se simula `window` porque el módulo lo consulta.
+ */
+let trackingLinkCache
+function loadTrackingLink() {
+  if (trackingLinkCache) return trackingLinkCache
+  const exports = {}
+  vm.runInNewContext(
+    ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../src/utils/trackingLink.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports, window: { location: { origin: 'https://taller.test' } } },
+  )
+  return (trackingLinkCache = exports)
 }
 
 function collect(node, predicate, found = []) {

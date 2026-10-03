@@ -1,4 +1,5 @@
 import { RepairStatus } from '@prisma/client'
+import { trackingExpiryFrom } from '../tracking/tracking-expiry'
 
 /**
  * Flujo visible de una reparación.
@@ -76,25 +77,49 @@ export const assertStatusChange = (current: RepairStatus, target: RepairStatus) 
 
 const DAY_MS = 86_400_000
 
-export interface WarrantyDates { deliveredAt: Date | null; warrantyStartedAt: Date | null; warrantyExpiresAt: Date | null }
+export interface WarrantyDates {
+  deliveredAt: Date | null
+  warrantyStartedAt: Date | null
+  warrantyExpiresAt: Date | null
+  /** Vencimiento del enlace público de seguimiento. Ver `tracking-expiry`. */
+  trackingExpiresAt: Date | null
+}
 
 /**
  * Entregar sella la fecha de entrega e inicia la garantía una sola vez: volver a entregar
  * la misma reparación no reinicia un período ya calculado. Corregir la entrega borra las
  * fechas, así que la entrega siguiente sí arranca un período nuevo.
+ *
+ * El vencimiento del enlace de seguimiento va en el mismo lugar y por la misma razón que
+ * el resto de las fechas: se calcula una vez y se persiste. Volver a entregar no renueva
+ * un enlace que ya estaba por vencer, ni cambia el plazo si después se edita la garantía.
  */
 export const deliveryDates = (
-  current: { deliveredAt: Date | null; warrantyEnabled: boolean; warrantyDurationDays: number | null; warrantyStartedAt: Date | null; warrantyExpiresAt: Date | null },
+  current: {
+    deliveredAt: Date | null
+    warrantyEnabled: boolean
+    warrantyDurationDays: number | null
+    warrantyStartedAt: Date | null
+    warrantyExpiresAt: Date | null
+    trackingExpiresAt: Date | null
+  },
   target: RepairStatus,
   now = new Date(),
 ): WarrantyDates => {
   if (target !== RepairStatus.DELIVERED) {
-    return { deliveredAt: current.deliveredAt, warrantyStartedAt: current.warrantyStartedAt, warrantyExpiresAt: current.warrantyExpiresAt }
+    return {
+      deliveredAt: current.deliveredAt,
+      warrantyStartedAt: current.warrantyStartedAt,
+      warrantyExpiresAt: current.warrantyExpiresAt,
+      trackingExpiresAt: current.trackingExpiresAt,
+    }
   }
   const deliveredAt = current.deliveredAt ?? now
   const warrantyStartedAt = current.warrantyEnabled ? current.warrantyStartedAt ?? deliveredAt : current.warrantyStartedAt
   const warrantyExpiresAt = warrantyStartedAt && current.warrantyDurationDays
     ? current.warrantyExpiresAt ?? new Date(warrantyStartedAt.getTime() + current.warrantyDurationDays * DAY_MS)
     : current.warrantyExpiresAt
-  return { deliveredAt, warrantyStartedAt, warrantyExpiresAt }
+  // Igual que las warranties: `??` para no recalcular un vencimiento ya fijado.
+  const trackingExpiresAt = current.trackingExpiresAt ?? trackingExpiryFrom(deliveredAt, current.warrantyEnabled)
+  return { deliveredAt, warrantyStartedAt, warrantyExpiresAt, trackingExpiresAt }
 }

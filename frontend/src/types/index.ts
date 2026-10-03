@@ -64,6 +64,11 @@ export interface Repair {
   updatedAt: string
   trackingToken?: string
   trackingEnabled?: boolean
+  /**
+   * Vencimiento del enlace público, o `null` mientras la reparación no está
+   * entregada. Lo devuelve el backend ya calculado: la interfaz no lo recalcula.
+   */
+  trackingExpiresAt?: string | null
   estimatedDeliveryDate?: string
   warrantyEnabled?: boolean
   warrantyDurationDays?: number

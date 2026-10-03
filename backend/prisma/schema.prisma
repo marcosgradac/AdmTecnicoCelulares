@@ -221,6 +221,15 @@ model Repair {
   trackingToken         String?               @unique
   trackingEnabled       Boolean               @default(false)
   trackingCreatedAt     DateTime?
+  /**
+   * Vencimiento del enlace público de seguimiento.
+   *
+   * Se calcula UNA vez al entregar (3 días sin garantía, 7 con garantía) y se
+   * guarda, para que editar la garantía después no cambie retroactivamente
+   * cuándo vence un enlace ya entregado. `null` mientras la reparación no está
+   * entregada: ese enlace no vence.
+   */
+  trackingExpiresAt     DateTime?
   deliveredAt           DateTime?
   warrantyEnabled       Boolean               @default(false)
   warrantyDurationDays  Int?

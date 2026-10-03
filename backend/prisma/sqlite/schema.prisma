@@ -130,6 +130,11 @@ model Repair {
   cancellationRefundMethod PaymentMethod?
   cancellationRefundMovementId String?
   trackingToken String       @unique @default(cuid())
+  /**
+   * Vencimiento del enlace público de seguimiento: 3 días sin garantía, 7 con
+   * garantía, calculado una sola vez al entregar. `null` si no está entregada.
+   */
+  trackingExpiresAt DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   client        Client       @relation(fields: [clientId], references: [id])

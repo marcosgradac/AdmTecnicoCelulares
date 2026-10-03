@@ -42,6 +42,8 @@ const EXCLUDED_PATH_PREFIXES = [
   '/olvide-mi-contrasena',
   '/restablecer-contrasena',
   '/seguimiento',
+  // Formato nuevo de enlace público: `/s/:clientSlug/:token`.
+  '/s',
 ]
 
 function isExcludedPath(pathname: string): boolean {
