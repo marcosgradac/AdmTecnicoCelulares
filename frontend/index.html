@@ -2,11 +2,18 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#075CFF" />
-    <link rel="icon" type="image/png" href="/tecnodesk-mark.png" />
-    <link rel="apple-touch-icon" href="/tecnodesk-mark.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/tecnodesk-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <!-- Safari iOS no lee el manifest para el nombre del icono de inicio: usa estas etiquetas. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="TecnoDesk" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>TecnoDesk | Gestión técnica</title>
     <meta name="description" content="Administrá reparaciones, clientes, presupuestos, pagos y compartí un seguimiento profesional con cada cliente." />
     <meta property="og:title" content="TecnoDesk | Gestión técnica" />

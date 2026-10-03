@@ -23,6 +23,8 @@ import { TrackingPage } from './pages/TrackingPage'
 import { PlatformAdminGuard } from './features/platformAdmin/PlatformAdminGuard'
 import { SupportPage } from './features/settings/SupportPage'
 import { NoModulesPage } from './pages/NoModulesPage'
+import { InstallPrompt } from './pwa/InstallPrompt'
+import { UpdateNotice } from './pwa/UpdateNotice'
 
 // Landing, auth, tracking and the daily repair/client screens stay in the main bundle.
 // The modules below are large and only reached by a minority of sessions, so they are
@@ -50,7 +52,7 @@ const RouteFallback=({children}:{children:ReactNode})=>
   <Suspense fallback={<Box minHeight={240} display="grid" sx={{placeItems:'center'}}><CircularProgress size={28}/></Box>}>{children}</Suspense>
 const DashboardRoute=()=> <Suspense fallback={<Box minHeight={240} display="grid" sx={{placeItems:'center'}}><CircularProgress size={28}/></Box>}><DashboardPage/></Suspense>
 
-export default function App(){return <><ScrollToTop/><Routes>
+export default function App(){return <><ScrollToTop/><InstallPrompt/><UpdateNotice/><Routes>
   <Route path="/" element={<PublicLandingLayout/>}><Route index element={<LandingPage/>}/></Route>
   <Route path="/login" element={<LoginPage/>}/><Route path="/register" element={<RegisterPage/>}/><Route path="/registro" element={<Navigate to="/register" replace/>}/>
   <Route path="/olvide-mi-contrasena" element={<ForgotPasswordPage/>}/><Route path="/restablecer-contrasena" element={<ResetPasswordPage/>}/>
