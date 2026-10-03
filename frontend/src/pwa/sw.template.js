@@ -11,19 +11,41 @@
  * desactualizada creyéndola actual. Por eso las peticiones a la API se dejan
  * pasar de largo sin `respondWith`: nunca entran a la caché.
  *
- * Solo se cachean assets estáticos, que son inmutables (el nombre del archivo
- * incluye el hash del contenido) y sirven para que la app abra al instante.
+ * Solo se cachean assets estáticos que sabemos inmutables: los que emite Vite en
+ * `/assets/` con el hash del contenido en el nombre, y los archivos de marca
+ * listados abajo. No se cachea "cualquier imagen del mismo origen": una imagen
+ * subida por el usuario o servida por el backend puede cambiar de contenido sin
+ * cambiar de URL, y cache-first serviría una versión vieja para siempre.
  *
- * Estrategia de actualización: `skipWaiting` NO se llama solo. El worker queda
+ * ESTRATEGIA DE ACTUALIZACIÓN: `skipWaiting` NO se llama solo. El worker queda
  * esperando y la aplicación lo promueve SOLO cuando el usuario pulsa "Actualizar
  * ahora". Nunca hay recarga automática: un `requestIdleCallback` no puede saber
  * si hay una reparación, un cliente o un pago a medio cargar, y perder ese
  * trabajo en silencio sería inaceptable.
+ *
+ * VERSIONADO (por qué este archivo es un template y no un `public/sw.js`):
+ *
+ * El navegador solo considera que hay un worker nuevo si el contenido del
+ * script cambia. Si `sw.js` fuera idéntico entre dos releases, Vite no lo
+ * tocaría, `registration.update()` descargaría el mismo archivo y no habría
+ * `updatefound`: el aviso "Hay una nueva versión disponible" nunca aparecería.
+ *
+ * Por eso `BUILD_ID` no se escribe a mano: el build lo reemplaza por el SHA del
+ * commit (ver `scripts/sw-build-id.mjs`). Dos commits, dos `sw.js`, dos
+ * workers distintos. Y como el BUILD_ID también nombra las cachés, la versión
+ * nueva conserva sus propias cachés y borra las de la anterior.
  */
 
-const VERSION = 'v1'
-const PRECACHE = `tecnodesk-precache-${VERSION}`
-const RUNTIME = `tecnodesk-runtime-${VERSION}`
+/**
+ * Identificador del release. NO editar a mano.
+ *
+ * En build se sustituye por el SHA del commit. En desarrollo se sustituye por
+ * `dev`, que no cambia nunca: en local no interesa detectar versiones nuevas y
+ * un id fijo evita recargas y limpiezas de caché en cada arranque.
+ */
+const BUILD_ID = '__TECNODESK_BUILD_ID__'
+const PRECACHE = `tecnodesk-precache-${BUILD_ID}`
+const RUNTIME = `tecnodesk-runtime-${BUILD_ID}`
 
 /**
  * Modo desarrollo: se activa con `/sw.js?dev=1` (ver el registro en la app).
@@ -65,17 +87,43 @@ function isExcluded(url) {
   return segments.some(segment => BUSINESS_ROUTE_SEGMENTS.has(segment))
 }
 
-/** Assets estáticos de la app: los que genera Vite con hash en el nombre. */
-function isStaticAsset(url, destination) {
-  if (destination === 'document') return false
-  return (
-    destination === 'script' ||
-    destination === 'style' ||
-    destination === 'font' ||
-    destination === 'image' ||
-    destination === 'worker' ||
-    /\.(?:js|mjs|css|woff2?|ttf|otf|png|jpe?g|gif|webp|avif|svg|ico)$/i.test(url.pathname)
-  )
+/**
+ * Archivos de marca que se precachean. Son de `public/`, así que su nombre NO
+ * lleva hash: cambian de contenido en el mismo lugar. Aun así se precachean
+ * (son pocos y chicos) y no se vuelven a cachear en runtime.
+ */
+const PRECACHE_URLS = [
+  '/site.webmanifest',
+  '/apple-touch-icon.png',
+  '/tecnodesk-192.png',
+  '/tecnodesk-512.png',
+  '/tecnodesk-maskable-192.png',
+  '/tecnodesk-maskable-512.png',
+  '/favicon.ico',
+]
+
+/**
+ * Assets que el runtime cache puede guardar: SOLO los que sabemos inmutables.
+ *
+ * Se aceptan dos clases, y ninguna más:
+ *
+ *  1. Lo que emite Vite en `/assets/` con el hash del contenido en el nombre
+ *     (`RepairsPage-BDP-Baqw.js`). Si el contenido cambia, Vite genera otro
+ *     nombre, así que la URL identifica una versión exacta.
+ *  2. Los `PRECACHE_URLS` de arriba.
+ *
+ * Lo que antes pasaba: cualquier imagen, fuente o script del mismo origen
+ * entraba por extensión. Eso incluía fotos subidas por el usuario y archivos
+ * servidos por el backend, que pueden cambiar de contenido sin cambiar de URL.
+ * Con cache-first, eso significa servir para siempre una versión vieja. Ahora
+ * lo no reconocido pasa de largo a la red, que es siempre lo correcto cuando
+ * no sabemos si un recurso puede mutar.
+ */
+const HASHED_ASSET_PATH = /^\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/
+
+function isStaticAsset(url) {
+  if (PRECACHE_URLS.includes(url.pathname)) return true
+  return HASHED_ASSET_PATH.test(url.pathname)
 }
 
 self.addEventListener('install', event => {
@@ -86,17 +134,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches
       .open(PRECACHE)
-      .then(cache =>
-        cache.addAll([
-          '/site.webmanifest',
-          '/apple-touch-icon.png',
-          '/tecnodesk-192.png',
-          '/tecnodesk-512.png',
-          '/tecnodesk-maskable-192.png',
-          '/tecnodesk-maskable-512.png',
-          '/favicon.ico',
-        ]),
-      )
+      .then(cache => cache.addAll(PRECACHE_URLS))
       .catch(() => undefined),
   )
 })
@@ -167,10 +205,9 @@ self.addEventListener('fetch', event => {
     return
   }
 
-  // 4) Assets estáticos con hash en el nombre: cache-first. Si el contenido
-  //    cambia, Vite genera otro nombre de archivo, así que la entrada vieja
-  //    nunca se confunde con la nueva.
-  if (request.url.startsWith(self.location.origin) && isStaticAsset(url, request.destination)) {
+  // 4) Solo assets inmutables: `/assets/` con hash de Vite y los `PRECACHE_URLS`.
+  //    Cache-first. Lo que no cae en esa regla sigue por red sin interceptar.
+  if (request.url.startsWith(self.location.origin) && isStaticAsset(url)) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request)

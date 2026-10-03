@@ -17,8 +17,30 @@ const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
 const ts = require('../node_modules/typescript')
+const { pathToFileURL } = require('node:url')
 
 const ROOT = path.resolve(__dirname, '..')
+
+/**
+ * Marcador y render se importan del MÓDULO REAL que usa el build, no se
+ * reimplementan acá: si el plugin cambia, estas pruebas lo detectan.
+ *
+ * El módulo es ESM y el test es CommonJS, así que se carga con `import()`
+ * dinámico. Se envuelve en una promesa para no ensuciar cada prueba con `await`.
+ */
+const buildIdModule = import(pathToFileURL(path.resolve(ROOT, 'scripts/sw-build-id.mjs')).href)
+
+/** Resuelve el módulo cuando la prueba ya es asíncrona. */
+const withBuildIdModule = buildIdModule
+
+/**
+ * Carpeta temporal FUERA del repositorio.
+ *
+ * Hace falta porque `git rev-parse` busca hacia arriba: cualquier carpeta del
+ * proyecto, incluso `node_modules`, encuentra el `.git` de la raíz y devuelve el
+ * SHA. Para probar el caso "no hay repositorio" hay que salirse del repo.
+ */
+const cwdFueraDelRepo = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'tecnodesk-sw-'))
 
 /**
  * Carga un módulo TypeScript en un sandbox, igual que repair-flow.cjs: sin
@@ -330,10 +352,16 @@ test('7. En iOS standalone no se ofrece instalar', () => {
  * registra cada escritura. No se reimplementa la lógica: se corre el mismo
  * archivo que se publica.
  */
-function runServiceWorker() {
-  const source = fs.readFileSync(path.resolve(ROOT, 'public/sw.js'), 'utf8')
+async function runServiceWorker({ buildId = 'test-build-id' } = {}) {
+  // Se lee el TEMPLATE y se inyecta el BUILD_ID con el MISMO `renderServiceWorker`
+  // que usa el build. Así la prueba ejercita el archivo que se publica y, a la
+  // vez, verifica que la sustitución funcione de verdad.
+  const { renderServiceWorker } = await withBuildIdModule
+  const template = fs.readFileSync(path.resolve(ROOT, 'src/pwa/sw.template.js'), 'utf8')
+  const source = renderServiceWorker(template, buildId)
   const writes = []
   const handlers = new Map()
+  const deletedCaches = []
 
   const caches = {
     open: async name => ({
@@ -345,8 +373,18 @@ function runServiceWorker() {
       match: async () => undefined,
     }),
     match: async () => undefined,
-    keys: async () => ['tecnodesk-precache-v1', 'tecnodesk-runtime-v1', 'tecnodesk-precache-v0'],
-    delete: async () => true,
+    // Cachés de una versión anterior: la activate actual debe borrarlas y
+    // conservar las suyas.
+    keys: async () => [
+      `tecnodesk-precache-${buildId}`,
+      `tecnodesk-runtime-${buildId}`,
+      'tecnodesk-precache-v1',
+      'tecnodesk-runtime-v1',
+    ],
+    delete: async name => {
+      deletedCaches.push(name)
+      return true
+    },
   }
 
   let skippedWaiting = false
@@ -374,6 +412,7 @@ function runServiceWorker() {
   return {
     handlers,
     writes,
+    deletedCaches,
     didSkipWaiting: () => skippedWaiting,
     /** Dispara el handler de fetch y devuelve si interceptó la petición. */
     fetchRequest(request) {
@@ -387,11 +426,24 @@ function runServiceWorker() {
       })
       return responded
     },
+    /** Igual que `fetchRequest`, pero devuelve la promesa de `respondWith`. */
+    async fetchAndSettle(request) {
+      let settled = null
+      handlers.get('fetch')({
+        request,
+        respondWith(promise) {
+          settled = promise
+        },
+        waitUntil() {},
+      })
+      await settled
+      return settled
+    },
   }
 }
 
-test('8. El service worker no cachea ninguna petición a /api/*', () => {
-  const sw = runServiceWorker()
+test('8. El service worker no cachea ninguna petición a /api/*', async () => {
+  const sw = await runServiceWorker()
   assert.ok(sw.handlers.get('fetch'), 'el worker debe registrar un handler de fetch')
 
   const API_URLS = [
@@ -421,8 +473,8 @@ test('8. El service worker no cachea ninguna petición a /api/*', () => {
 
   assert.deepEqual(sw.writes, [], `no debe escribirse nada en caché, se escribió: ${JSON.stringify(sw.writes)}`)
 })
-test('8b. Tampoco cachea otros verbos ni datos de negocio', () => {
-  const sw = runServiceWorker()
+test('8b. Tampoco cachea otros verbos ni datos de negocio', async () => {
+  const sw = await runServiceWorker()
   const noCache = [
     { url: 'https://tecnodeskpro.com/api/reparaciones', method: 'POST' },
     { url: 'https://tecnodeskpro.com/api/caja', method: 'PUT' },
@@ -436,7 +488,7 @@ test('8b. Tampoco cachea otros verbos ni datos de negocio', () => {
 })
 
 test('8c. Sí cachea los assets estáticos de la app', async () => {
-  const sw = runServiceWorker()
+  const sw = await runServiceWorker()
   const responded = sw.fetchRequest({
     url: 'https://tecnodeskpro.com/assets/index-a1b2c3d4.js',
     method: 'GET',
@@ -450,19 +502,100 @@ test('8c. Sí cachea los assets estáticos de la app', async () => {
   assert.match(sw.writes[0].url, /assets\/index-a1b2c3d4\.js$/)
 })
 
-test('8d. El worker activa la versión nueva al recibir SKIP_WAITING', () => {
-  const sw = runServiceWorker()
+test('8d. El worker activa la versión nueva al recibir SKIP_WAITING', async () => {
+  const sw = await runServiceWorker()
   assert.ok(sw.handlers.get('message'), 'debe escuchar mensajes para activar la versión nueva')
   sw.handlers.get('message')({ data: { type: 'SKIP_WAITING' } })
   assert.equal(sw.didSkipWaiting(), true, 'la app debe poder promover el worker nuevo')
 })
 
 test('8e. La activación borra las cachés de versiones anteriores', async () => {
-  const sw = runServiceWorker()
+  const sw = await runServiceWorker({ buildId: 'release-nuevo' })
   const pending = []
   sw.handlers.get('activate')({ waitUntil: promise => pending.push(promise) })
   await Promise.all(pending)
   assert.ok(pending.length > 0, 'activate debe completar sus tareas')
+
+  // Conserva las suyas y borra las de la versión vieja.
+  assert.equal(
+    sw.deletedCaches.includes('tecnodesk-precache-release-nuevo'),
+    false,
+    'no debe borrar su propia caché de precache',
+  )
+  assert.equal(
+    sw.deletedCaches.includes('tecnodesk-runtime-release-nuevo'),
+    false,
+    'no debe borrar su propia caché de runtime',
+  )
+  assert.deepEqual(
+    [...sw.deletedCaches].sort(),
+    ['tecnodesk-precache-v1', 'tecnodesk-runtime-v1'],
+    'solo debe borrar las cachés de otras versiones',
+  )
+})
+
+test('8f. Las cachés se nombran con el BUILD_ID del release', async () => {
+  const sw = await runServiceWorker({ buildId: 'abc123def456' })
+
+  // El precache se abre con el nombre del release...
+  const install = []
+  sw.handlers.get('install')({ waitUntil: promise => install.push(promise) })
+  await Promise.all(install)
+
+  // ...y un asset con hash se guarda en la caché de runtime de ese mismo release.
+  await sw.fetchAndSettle({
+    url: 'https://tecnodeskpro.com/assets/index-a1b2c3d4.js',
+    method: 'GET',
+    mode: 'same-origin',
+    destination: 'script',
+  })
+  assert.equal(sw.writes.length, 1)
+  assert.equal(
+    sw.writes[0].cache,
+    'tecnodesk-runtime-abc123def456',
+    'la caché de runtime debe llevar el BUILD_ID, no una versión fija',
+  )
+})
+
+test('8g. El runtime cache solo guarda assets con hash o del precache', async () => {
+  const sw = await runServiceWorker()
+
+  // Se cachean: assets de Vite con hash, y los archivos de marca del precache.
+  const yes = [
+    'https://tecnodeskpro.com/assets/index-a1b2c3d4.js',
+    'https://tecnodeskpro.com/assets/DashboardPage-DOdXiVqb.js',
+    'https://tecnodeskpro.com/assets/logo-Baqw1234.png',
+    'https://tecnodeskpro.com/tecnodesk-192.png',
+    'https://tecnodeskpro.com/site.webmanifest',
+  ]
+  for (const url of yes) {
+    assert.equal(
+      sw.fetchRequest({ url, method: 'GET', mode: 'same-origin', destination: '' }),
+      true,
+      `debería cachearse: ${url}`,
+    )
+  }
+
+  // NO se cachean: imágenes que pueden cambiar sin cambiar de URL. Antes estas
+  // entraban por extensión y quedaban cacheadas para siempre.
+  const no = [
+    'https://tecnodeskpro.com/uploads/foto-cliente.jpg',
+    'https://tecnodeskpro.com/avatars/marco.png',
+    'https://tecnodeskpro.com/api/uploads/foto.webp',
+    'https://tecnodeskpro.com/docs/manual.pdf',
+    // Sin hash en el nombre: no se puede saber si es inmutable.
+    'https://tecnodeskpro.com/assets/logo.png',
+    // Con hash pero fuera de /assets: no es de Vite.
+    'https://tecnodeskpro.com/logo-abcd1234.png',
+  ]
+  for (const url of no) {
+    assert.equal(
+      sw.fetchRequest({ url, method: 'GET', mode: 'same-origin', destination: '' }),
+      false,
+      `no debe cachearse: ${url}`,
+    )
+  }
+  assert.deepEqual(sw.writes, [])
 })
 
 // ---------------------------------------------------------------------------
@@ -731,6 +864,212 @@ test('Los iconos se generan desde el logo oficial, no desde otro logo del repo',
     /SOURCE\s*=\s*resolve\(ROOT,\s*'public\/tecnodesk-mark\.png'\)/,
     'los iconos no deben derivarse del logo antiguo del repo',
   )
+})
+
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// 10. El service worker cambia en cada release (BUILD_ID automático)
+// ---------------------------------------------------------------------------
+
+test('10. El worker es un template con marcador, no un sw.js fijo en public/', () => {
+  // Si volviera a estar en `public/`, Vite lo copiaría tal cual y dos releases
+  // darían el mismo archivo: el navegador nunca lo vería como nuevo.
+  assert.equal(
+    fs.existsSync(path.resolve(ROOT, 'public/sw.js')),
+    false,
+    'public/sw.js no debe existir: se genera en el build desde el template',
+  )
+
+  const template = fs.readFileSync(path.resolve(ROOT, 'src/pwa/sw.template.js'), 'utf8')
+  assert.match(
+    template,
+    /const BUILD_ID = '__TECNODESK_BUILD_ID__'/,
+    'el template debe declarar el marcador que el build reemplaza',
+  )
+
+  // Y no debe quedar con una versión fija escrita a mano.
+  assert.doesNotMatch(
+    template,
+    /const VERSION\s*=\s*'v\d+'/,
+    'no debe haber una versión escrita a mano que nadie recuerde cambiar',
+  )
+})
+
+test('11. Dos BUILD_ID distintos generan dos sw.js distintos', async () => {
+  const { renderServiceWorker } = await withBuildIdModule
+  const template = fs.readFileSync(path.resolve(ROOT, 'src/pwa/sw.template.js'), 'utf8')
+
+  const shaA = 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678'
+  const shaB = 'f0e9d8c7b6a5948372615f4e3d2c1b0a99887766'
+  const releaseA = renderServiceWorker(template, shaA)
+  const releaseB = renderServiceWorker(template, shaB)
+
+  assert.notEqual(releaseA, releaseB, 'dos releases deben producir workers distintos')
+  assert.ok(releaseA.includes(`const BUILD_ID = '${shaA}'`), 'el SHA debe quedar escrito en el worker')
+  assert.ok(releaseB.includes(`const BUILD_ID = '${shaB}'`))
+  assert.equal(releaseA.includes('__TECNODESK_BUILD_ID__'), false, 'el marcador no puede sobrevivir')
+  assert.equal(releaseB.includes('__TECNODESK_BUILD_ID__'), false, 'el marcador no puede sobrevivir')
+
+  // Idénticos salvo por el id: la diferencia la causa el BUILD_ID, no otra cosa.
+  assert.equal(
+    releaseA.replaceAll(shaA, 'ID'),
+    releaseB.replaceAll(shaB, 'ID'),
+    'el worker solo debe cambiar por el BUILD_ID',
+  )
+})
+
+test('12. El BUILD_ID sale del commit, no de una constante ni de la fecha', async () => {
+  const { resolveBuildId, hashContent, DEV_BUILD_ID } = await withBuildIdModule
+
+  // 1) Vercel manda el SHA del commit.
+  assert.equal(
+    resolveBuildId({ environment: { VERCEL_GIT_COMMIT_SHA: 'vercel-sha-1234' } }),
+    'vercel-sha-1234',
+    'en Vercel se usa VERCEL_GIT_COMMIT_SHA',
+  )
+  // 2) GitHub Actions, por si algún día cambia el hosting.
+  assert.equal(resolveBuildId({ environment: { GITHUB_SHA: 'github-sha-5678' } }), 'github-sha-5678')
+  // 3) Con ambas presentes, gana la del hosting activo.
+  assert.equal(
+    resolveBuildId({ environment: { VERCEL_GIT_COMMIT_SHA: 'v', GITHUB_SHA: 'g' } }),
+    'v',
+    'debe tener prioridad VERCEL_GIT_COMMIT_SHA',
+  )
+
+  // 4) Sin variables, cae al HEAD del repo: 40 hex, nunca una fecha.
+  const fromGit = resolveBuildId({ environment: {}, cwd: path.resolve(ROOT, '..') })
+  assert.match(fromGit, /^[0-9a-f]{40}$/, `el fallback local debe ser el SHA de HEAD, se obtuvo: ${fromGit}`)
+
+  // 5) Sin repo ni CI: hash del contenido, que sigue siendo determinista.
+  assert.equal(
+    resolveBuildId({ environment: {}, cwd: cwdFueraDelRepo, contentHash: 'contenido123' }),
+    'contenido123',
+  )
+  assert.equal(hashContent('abc'), hashContent('abc'), 'el hash debe ser estable')
+  assert.notEqual(hashContent('abc'), hashContent('abd'), 'el hash debe cambiar con el contenido')
+
+  // 6) Nada de `Date.now()`: el id de un release no puede depender del reloj.
+  assert.notEqual(resolveBuildId({ environment: {} }), 'v1', 'el id no debe ser una constante fija')
+  assert.equal(DEV_BUILD_ID, 'dev', 'en desarrollo el id es fijo a propósito')
+})
+
+test('13. El plugin escribe dist/sw.js y no toca los archivos del repo', async () => {
+  const { serviceWorkerPlugin } = await import(
+    pathToFileURL(path.resolve(ROOT, 'scripts/vite-plugin-service-worker.mjs')).href
+  )
+  const plugin = serviceWorkerPlugin({ root: ROOT, environment: { VERCEL_GIT_COMMIT_SHA: 'abc123' } })
+  assert.equal(plugin.name, 'tecnodesk:service-worker')
+
+  const templatePath = path.resolve(ROOT, 'src/pwa/sw.template.js')
+  const templateBefore = fs.readFileSync(templatePath, 'utf8')
+
+  const emitted = []
+  plugin.buildStart.call({
+    emitFile: descriptor => emitted.push(descriptor),
+    info: () => undefined,
+    warn: () => undefined,
+  })
+
+  assert.equal(emitted.length, 1, 'debe emitir exactamente un archivo')
+  assert.equal(emitted[0].fileName, 'sw.js', 'debe publicarse como /sw.js, que es lo que registra la app')
+  assert.ok(emitted[0].source.includes("const BUILD_ID = 'abc123'"), 'debe llevar el BUILD_ID del release')
+  assert.equal(emitted[0].source.includes('__TECNODESK_BUILD_ID__'), false)
+
+  // Lo importante: el build NO escribe sobre el source. El template se lee y se
+  // transforma en memoria, así que `git status` sigue limpio.
+  assert.equal(
+    fs.readFileSync(templatePath, 'utf8'),
+    templateBefore,
+    'el template del repo no debe ser modificado por el build',
+  )
+  assert.ok(templateBefore.includes('__TECNODESK_BUILD_ID__'), 'el template conserva su marcador')
+  assert.equal(
+    fs.existsSync(path.resolve(ROOT, 'public/sw.js')),
+    false,
+    'el build no debe dejar un sw.js generado dentro de public/',
+  )
+})
+
+test('14. Sin SHA ni repositorio, el build avisa en vez de fallar en silencio', async () => {
+  const { serviceWorkerPlugin } = await import(
+    pathToFileURL(path.resolve(ROOT, 'scripts/vite-plugin-service-worker.mjs')).href
+  )
+  // Peor caso: sin variables de entorno y sin repositorio donde buscar.
+  const warnings = []
+  const emitted = []
+  const plugin = serviceWorkerPlugin({
+    root: ROOT,
+    environment: {},
+    gitRoot: cwdFueraDelRepo,
+  })
+  plugin.buildStart.call({
+    emitFile: descriptor => emitted.push(descriptor),
+    info: () => undefined,
+    warn: message => warnings.push(message),
+  })
+
+  assert.equal(emitted.length, 1, 'igual debe publicar el worker, no romperse')
+  assert.equal(warnings.length, 1, 'debe advertir que el id no es confiable')
+  assert.match(warnings[0], /VERCEL_GIT_COMMIT_SHA/, 'la advertencia debe explicar qué revisar')
+  assert.ok(
+    emitted[0].source.includes("const BUILD_ID = 'sin-build-id'"),
+    'y el id publicado queda visible para poder detectarlo',
+  )
+})
+
+test('15. Con un BUILD_ID nuevo, el aviso aparece sin recargar sola', async () => {
+  // Este es el motivo de todo lo anterior: si `sw.js` no cambiara entre
+  // releases, nunca habría `updatefound` y el aviso no aparecería nunca.
+  const { renderServiceWorker } = await withBuildIdModule
+  const template = fs.readFileSync(path.resolve(ROOT, 'src/pwa/sw.template.js'), 'utf8')
+  const releaseAnterior = renderServiceWorker(template, 'release-anterior')
+  const releaseNuevo = renderServiceWorker(template, 'release-nuevo')
+  assert.notEqual(releaseAnterior, releaseNuevo, 'dos releases producen workers distintos')
+
+  // Y con el worker nuevo instalado, el flujo completo se mantiene.
+  const env = createServiceWorkerEnvironment()
+  const controller = createTestController(env)
+  await settle()
+
+  env.finishInstall()
+
+  assert.equal(controller.getState().available, true, 'debe avisar que hay una versión nueva')
+  assert.equal(env.reloads.length, 0, 'y NO debe recargar por detectarla')
+  assert.equal(env.messages.length, 0, 'ni debe promoverse sola')
+
+  // Recién con el clic se promueve y se recarga, una sola vez.
+  controller.applyUpdate()
+  assert.equal(env.messages.length, 1, 'el clic es lo único que manda SKIP_WAITING')
+  env.changeController()
+  assert.equal(env.reloads.length, 1, 'después del cambio de control recarga una vez')
+  env.changeController()
+  assert.equal(env.reloads.length, 1, 'y nunca más de una vez')
+})
+
+test('16. Un controllerchange sin applyUpdate NO recarga', async () => {
+  // La garantía clave: `controllerchange` puede dispararse porque OTRA pestaña
+  // reclamó el control. Sin el clic del usuario, la app no debe recargarse.
+  const env = createServiceWorkerEnvironment()
+  const controller = createTestController(env)
+  await settle()
+
+  env.finishInstall()
+  assert.equal(controller.getState().available, true)
+  assert.equal(env.reloads.length, 0)
+
+  // Cambio de control sin que el usuario haya tocado nada.
+  env.changeController()
+  assert.equal(env.reloads.length, 0, 'un controllerchange sin applyUpdate NO debe recargar')
+
+  // Con el clic: promote manda el mensaje y el cambio de control recarga una vez.
+  controller.applyUpdate()
+  assert.equal(env.messages.length, 1)
+  assert.equal(env.messages[0].type, 'SKIP_WAITING')
+  env.changeController()
+  assert.equal(env.reloads.length, 1, 'tras el clic sí recarga')
+  env.changeController()
+  assert.equal(env.reloads.length, 1, 'y solo una vez')
 })
 
 // ---------------------------------------------------------------------------
