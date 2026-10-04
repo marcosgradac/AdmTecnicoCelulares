@@ -1,7 +1,7 @@
 import { AdminVisualScope } from '../admin/AdminVisualScope'
 import { useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AppBar, Avatar, Box, Drawer, Fab, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { AppBar, Avatar, Box, CircularProgress, Drawer, Fab, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, Inventory2Rounded, LockRounded, LogoutRounded, MenuRounded, PeopleRounded, PhoneIphoneRounded, PointOfSaleRounded, SettingsRounded, StorefrontRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
@@ -32,7 +32,7 @@ const commercePaths = new Set(['/admin/comercio', '/admin/punto-de-venta'])
 
 function AppShellContent() {
   const { user, logout } = useAuth()
-  const { commerceEnabled } = useSubscription()
+  const { commerceEnabled, loading: subscriptionLoading, renewalMode } = useSubscription()
   const [open, setOpen] = useState(false)
   const theme = useTheme()
   const mobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -43,8 +43,19 @@ function AppShellContent() {
   const initials = user?.fullName.split(/\s+/).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'U'
   const businessInitials = user?.business.name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0)).join('').toUpperCase() || 'TD'
   const roleLabel = user?.role === 'OWNER' ? 'Propietario' : 'Técnico'
+  const RENEWAL_PATH = '/admin/suscripcion'
 
-  const visibleNavItems = navItems.filter(item => (!item.ownerOnly || user?.role === 'OWNER') && (!item.permission || canAccess(user, item.permission)))
+  // Mientras no sabemos si la cuenta está vencida no se dibuja el sistema normal: si después
+  // resulta bloqueada, el usuario nunca llegó a ver Reparaciones o Clientes.
+  if (user?.role === 'OWNER' && subscriptionLoading) return <Box className={styles.shell}><Box sx={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}><CircularProgress /></Box></Box>
+
+  // Suscripción vencida: la única pantalla alcanzable es la de renovación. No hay loop porque el
+  // destino es exactamente la ruta en la que ya estaría.
+  if (renewalMode && location.pathname !== RENEWAL_PATH) return <Navigate to={RENEWAL_PATH} replace />
+
+  const visibleNavItems = renewalMode
+    ? navItems.filter(item => item.path === RENEWAL_PATH)
+    : navItems.filter(item => (!item.ownerOnly || user?.role === 'OWNER') && (!item.permission || canAccess(user, item.permission)))
 
   const drawer = <Box className={styles.drawer}>
     <Box className={styles.brand}><BrandLogo compact className={styles.logoMark} /><BrandLogo className={styles.logoFull} /></Box>
@@ -63,11 +74,11 @@ function AppShellContent() {
       {mobile && <IconButton aria-label="Abrir menú" onClick={() => setOpen(true)}><MenuRounded /></IconButton>}
       {mobile ? <Box className={styles.mobileBrand}><BrandLogo /></Box> : <Box><Typography variant="caption" color="text.secondary">Espacio de trabajo</Typography><Typography fontWeight={700} fontSize={14}>{navItems.find(item => selected(item.path))?.label ?? 'Mi perfil'}</Typography></Box>}
       <Box flex={1} />
-      <Box className={styles.businessAccess} role="button" tabIndex={0} aria-label="Abrir Mi negocio" onClick={() => go('/admin/configuracion#negocio')} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') go('/admin/configuracion#negocio') }}><Avatar src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'contain' } }}>{businessInitials}</Avatar><Box className={styles.businessAccessText}><Typography component="span" className={styles.businessAccessName}>{user?.business.name}</Typography><Typography component="span" className={styles.businessAccessLabel}>Administrador</Typography></Box><ChevronRightRounded className={styles.businessAccessArrow} /></Box>
+      {!renewalMode && <Box className={styles.businessAccess} role="button" tabIndex={0} aria-label="Abrir Mi negocio" onClick={() => go('/admin/configuracion#negocio')} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') go('/admin/configuracion#negocio') }}><Avatar src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'contain' } }}>{businessInitials}</Avatar><Box className={styles.businessAccessText}><Typography component="span" className={styles.businessAccessName}>{user?.business.name}</Typography><Typography component="span" className={styles.businessAccessLabel}>Administrador</Typography></Box><ChevronRightRounded className={styles.businessAccessArrow} /></Box>}
     </Toolbar></AppBar>
-    <ProfileCompletionDialog /><TrialStartedDialog /><GuidedTutorial />
+    <ProfileCompletionDialog /><TrialStartedDialog />{!renewalMode && <GuidedTutorial />}
     <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><AdminVisualScope enabled={/^\/admin\/(reparaciones(?:\/|$)|clientes$|caja$|comercio$|punto-de-venta$|venta-equipos$|empleados$|garantias$|perfil$|sin-modulos$)/.test(location.pathname)}><Outlet /></AdminVisualScope></Box></Box>
-    {mobile && canAccess(user, 'repairs.create') && <Fab data-tutorial="new-repair" color="primary" aria-label="Crear nueva reparación" className={styles.repairFab} onClick={() => go('/admin/reparaciones/nueva')}><BuildRounded /></Fab>}
+    {!renewalMode && mobile && canAccess(user, 'repairs.create') && <Fab data-tutorial="new-repair" color="primary" aria-label="Crear nueva reparación" className={styles.repairFab} onClick={() => go('/admin/reparaciones/nueva')}><BuildRounded /></Fab>}
   </Box>
 }
 

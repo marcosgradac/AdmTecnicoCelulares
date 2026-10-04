@@ -23,10 +23,10 @@ import {
 } from './modules/tracking/tracking-expiry'
 import { emptyLoose, linkedWhereFor, looseCashMovements, looseColumns, looseWhereFor, repairCashGroups, toLooseBlock } from './modules/cash/cash-groups.service'
 import { cashPeriodWhere, DEFAULT_CASH_PERIOD, isCashPeriod } from './modules/cash/cash-period'
-import { authenticate, authOf, requirePermission, requireRole, type AuthData } from './middlewares/auth'
+import { authenticate, authOf, isRenewalMode, requirePermission, requireRole, type AuthData } from './middlewares/auth'
 import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
-import { requireSubscriptionWriteAccess } from './modules/billing/billing.middleware'
+import { requireSubscriptionAccess } from './modules/billing/billing.middleware'
 import { addDays, assertFeatureAccess, getBusinessAccessStatus } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
@@ -284,7 +284,8 @@ app.post('/api/auth/login', loginIpLimiter, async (req, res) => {
     if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'BUSINESS_BLOCKED', audience: user.role, deletionToken: issueAccountDeletionToken(user) })
     if (user.platformRole !== 'SUPER_ADMIN') {
       const access = await getBusinessAccessStatus(user.businessId)
-      if (access?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role, deletionToken: issueAccountDeletionToken(user) })
+      // El OWNER con vencimiento automático entra en modo renovación: sesión normal, acceso sólo a Billing.
+      if (access?.shouldBlock && !isRenewalMode(user.role, access)) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role, deletionToken: issueAccountDeletionToken(user) })
     }
     const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.json({ token, user: userResponse(user) })
@@ -351,7 +352,7 @@ app.use('/api', authenticatedApiLimiter)
 app.use('/api', limitAuthenticatedWrites)
 app.use('/api/billing', billingRouter)
 app.use('/api/platform-admin', platformAdminRouter)
-app.use('/api', requireSubscriptionWriteAccess)
+app.use('/api', requireSubscriptionAccess)
 app.use('/api/commerce', commerceRouter)
 app.use('/api/equipment-sales', equipmentSalesRouter)
 app.use('/api/dashboard', dashboardRouter)

@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "verify:brands": "node scripts/verify-device-brands.mjs",
     "test:repair-flow": "node tests/repair-flow.cjs",
+    "test:expired-owner-renewal-ui": "node tests/expired-owner-renewal-ui.cjs",
     "test:account-deletion": "node tests/account-deletion.cjs",
     "test:cash-groups": "node tests/cash-groups.cjs",
     "test:encoding": "node tests/encoding.cjs",

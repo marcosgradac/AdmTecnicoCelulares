@@ -4,7 +4,7 @@ import type { Subscription } from './billing.types'
 import { useAuth } from '../../auth/AuthContext'
 import { api } from '../../services/api'
 
-const Context = createContext<{ subscription: Subscription | null; commerceEnabled: boolean; loading: boolean; refresh: () => Promise<void> } | null>(null)
+const Context = createContext<{ subscription: Subscription | null; commerceEnabled: boolean; loading: boolean; renewalMode: boolean; refresh: () => Promise<void> } | null>(null)
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
@@ -23,7 +23,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } catch { setSubscription(null); setCommerceEnabled(false) }
   }, [user?.id, user?.role])
   useEffect(() => { void refresh().finally(() => setLoading(false)) }, [refresh])
-  const value = useMemo(() => ({ subscription, commerceEnabled, loading, refresh }), [subscription, commerceEnabled, loading, refresh])
+  // El backend responde 200 en /billing/subscription incluso con la cuenta bloqueada, así que el
+  // modo renovación se decide acá con el estado real de acceso del OWNER.
+  const renewalMode = user?.role === 'OWNER' && subscription?.access.status === 'BLOCKED'
+  const value = useMemo(() => ({ subscription, commerceEnabled, loading, renewalMode, refresh }), [subscription, commerceEnabled, loading, renewalMode, refresh])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
 export const useSubscription = () => {

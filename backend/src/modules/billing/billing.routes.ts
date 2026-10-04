@@ -30,6 +30,9 @@ billingRouter.post('/payments', async (req, res) => {
   const businessId = authOf(req).businessId
   const [plan, subscription] = await Promise.all([prisma.plan.findFirst({ where: { code: parsed.data.planCode, isActive: true } }), ensureSubscription(businessId)])
   if (!plan) return res.status(404).json({ success: false, message: 'Plan no disponible' })
+  // Un pago pendiente ya informado se revisa antes de aceptar otro: evita doble carga por doble clic.
+  const alreadyPending = await prisma.paymentSubmission.findFirst({ where: { businessId, status: 'PENDING' }, select: { id: true } })
+  if (alreadyPending) return res.status(409).json({ success: false, code: 'PAYMENT_ALREADY_PENDING', message: 'Ya tenés un pago pendiente de verificación.' })
   const payment = await prisma.paymentSubmission.create({ data: { subscriptionId: subscription.id, businessId, planCode: plan.code, expectedAmount: plan.priceARS, reportedAmount: parsed.data.reportedAmount, payerName: parsed.data.payerName, transferDate: parsed.data.transferDate, reference: parsed.data.reference || null, notes: parsed.data.notes || null } })
   return res.status(201).json(payment)
 })

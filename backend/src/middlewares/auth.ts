@@ -21,6 +21,13 @@ const unauthorized = (res: Response, message = 'No autorizado') =>
 
 export const authOf = (req: Request) => req.auth as AuthData
 
+/**
+ * Modo renovación: sólo el OWNER con bloqueo AUTOMÁTICO (suscripción vencida) conserva sesión.
+ * El bloqueo MANUAL del Super Admin y cualquier otro rol siguen bloqueados.
+ */
+export const isRenewalMode = (role: UserRole, access: AccountAccessStatus | null | undefined) =>
+  Boolean(access?.shouldBlock) && access?.blockType === 'AUTOMATIC' && role === 'OWNER'
+
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : ''
   if (!token) return unauthorized(res)
@@ -40,7 +47,9 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     req.accountAccess = user.platformRole === 'SUPER_ADMIN'
       ? null
       : user.business.subscription ? await getAccountAccessStatus(user.business.subscription) : null
-    if (req.accountAccess?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
+    // Una suscripción vencida sola (bloqueo AUTOMÁTICO) deja entrar al OWNER en modo renovación:
+    // conserva su sesión normal pero sólo para Billing. El bloqueo MANUAL del Super Admin no se saltea.
+    if (req.accountAccess?.shouldBlock && !isRenewalMode(user.role, req.accountAccess)) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
     req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, permissions: permissionsFor(user.role, user.permissions) }
     next()
   } catch {

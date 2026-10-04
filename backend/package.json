@@ -50,6 +50,7 @@
     "test:landing-demo": "tsx tests/landing-demo.ts",
     "bootstrap:admin": "tsx src/scripts/bootstrap-super-admin.ts",
     "typecheck": "tsc --noEmit",
+    "test:expired-owner-renewal": "tsx tests/expired-owner-renewal.ts",
     "test:repair-financial-visibility": "tsx tests/repair-financial-visibility.ts",
     "test:supabase-public-access": "node tests/supabase-public-access.mjs",
     "build": "tsc",
