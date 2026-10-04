@@ -41,6 +41,9 @@ async function main() {
     } })
     const owner = tokenFor(await user('OWNER', false)), authorized = tokenFor(await user('TECHNICIAN', true))
     const technician = tokenFor(await user('TECHNICIAN', false)), outsider = tokenFor(await user('OWNER', true, other.id))
+    const noViewUser = await user('TECHNICIAN', false)
+    await prisma.user.update({ where: { id: noViewUser.id }, data: { permissions: [] } })
+    const noView = tokenFor(noViewUser)
     const client = await prisma.client.create({ data: { businessId: business.id, name: 'Client' } })
     const input = { clientId: client.id, deviceBrand: 'Test', deviceModel: 'Phone', issue: 'Broken screen', total: 10000, warrantyEnabled: true, warrantyDurationDays: 30 }
     const created = await call(owner, 'POST', '/repairs', { ...input, partsCost: 2000, partsCostMethod: 'CASH', laborCharge: 5000, advanceAmount: 1000, advanceMethod: 'TRANSFER' })
@@ -57,6 +60,9 @@ async function main() {
       assert.equal(detail.body.payments[0].amount, 1500); assert.ok(detail.body.payments[0].cashMovementId)
       assert.ok(JSON.stringify(detail.body.statusHistory).includes('Adelanto corregido de'))
       assert.equal((await call(token, 'GET', `/repairs/${id}/payments`)).body.length, 1)
+      const history = await call(token, 'GET', `/repairs/${id}/history`)
+      assert.equal(history.status, 200)
+      assert.ok(JSON.stringify(history.body).includes('Adelanto corregido de'))
     }
     console.log('A/B/H PASS: owner and authorized technician retain detail and payments')
     const detail = await call(technician, 'GET', `/repairs/${id}`)
@@ -65,6 +71,11 @@ async function main() {
     assert.ok(detail.body.statusHistory.some((item: any) => item.internalNote === 'Diagnóstico operativo'))
     const history = await call(technician, 'GET', `/repairs/${id}/history`)
     assert.equal(history.status, 200); assert.ok(!JSON.stringify(history.body).includes('Adelanto corregido de'))
+    assert.ok(history.body.some((item: any) => item.internalNote === 'Diagnóstico operativo'))
+    for (const path of ['/repairs', `/repairs/${id}`, `/repairs/${id}/payments`, `/repairs/${id}/history`]) {
+      assert.equal((await call(noView, 'GET', path)).status, 403, `Technician without permissions: ${path}`)
+    }
+    console.log('History permission PASS: owner/view allowed, no view denied, financial notes redacted and operational notes retained')
     const list = await call(technician, 'GET', '/repairs'); assert.equal(list.status, 200); list.body.items.forEach(safe)
     console.log('C PASS: operational detail/list/history without protected fields')
     assert.equal((await call(technician, 'GET', `/repairs/${id}/payments`)).status, 403)

@@ -815,7 +815,7 @@ app.get('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials')
   return res.json(await prisma.payment.findMany({ where: { repairId: repair.id, businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } }))
 })
 
-app.get('/api/repairs/:id/history', async (req, res) => {
+app.get('/api/repairs/:id/history', requirePermission('repairs.view'), async (req, res) => {
   const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(repairHistoryResponse(authOf(req), await prisma.repairStatusHistory.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } })))
