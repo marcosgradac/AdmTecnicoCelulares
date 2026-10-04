@@ -30,6 +30,9 @@ try {
   await postgres.start()
   client = postgres.getPgClient('postgres', '127.0.0.1')
   await client.connect()
+  const version = (await client.query('SHOW server_version_num')).rows[0].server_version_num
+  assert.ok(Number(version) >= 170000, `MAINTAIN test requires PostgreSQL 17+, got ${version}`)
+  console.log(`PostgreSQL ${version}: MAINTAIN supported`)
   const url = `postgresql://postgres:${password}@127.0.0.1:${port}/postgres?schema=public`
   prisma = new PrismaClient({ datasourceUrl: url })
 
@@ -74,10 +77,10 @@ try {
     try { return await client.query(sql) } finally { await client.query('RESET ROLE') }
   }
   for (const role of ['anon', 'authenticated']) {
-    for (const permission of crud) assert.equal(await privilege(role, 'public.acl_existing', permission), true)
+    for (const permission of [...crud, 'MAINTAIN']) assert.equal(await privilege(role, 'public.acl_existing', permission), true)
     assert.equal((await asRole(role, 'SELECT * FROM public.acl_existing')).rowCount, 1)
   }
-  console.log('A PASS: both public roles have CRUD and can read before migration')
+  console.log('A PASS: both public roles have CRUD and MAINTAIN and can read before migration')
 
   const rls = async () => (await client.query("SELECT oid, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relnamespace = 'public'::regnamespace ORDER BY oid")).rows
   const rlsBefore = await rls()
@@ -85,7 +88,7 @@ try {
   await client.query(migration) // Idempotent.
   assert.deepEqual(await rls(), rlsBefore)
   for (const role of ['anon', 'authenticated']) {
-    for (const permission of [...crud, 'TRUNCATE', 'REFERENCES', 'TRIGGER']) assert.equal(await privilege(role, 'public.acl_existing', permission), false)
+    for (const permission of [...crud, 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) assert.equal(await privilege(role, 'public.acl_existing', permission), false)
     assert.equal(await privilege(role, 'public.acl_view', 'SELECT'), false)
     assert.equal(await privilege(role, 'public._prisma_migrations', 'SELECT'), false)
     for (const sql of ['SELECT * FROM public.acl_existing', "INSERT INTO public.acl_existing VALUES (2, 'denied')", "UPDATE public.acl_existing SET value = 'denied'", 'DELETE FROM public.acl_existing']) {
@@ -95,7 +98,7 @@ try {
     assert.equal((await client.query("SELECT has_function_privilege($1, 'public.acl_function()', 'EXECUTE') AS allowed", [role])).rows[0].allowed, false)
     assert.equal((await client.query("SELECT has_schema_privilege($1, 'public', 'USAGE') AS allowed", [role])).rows[0].allowed, true)
   }
-  console.log('B PASS: effective privileges and real CRUD denied; view, sequence, function and migration history protected')
+  console.log('B PASS: effective privileges including MAINTAIN and real CRUD denied; view, sequence, function and migration history protected')
 
   await prisma.$executeRawUnsafe("INSERT INTO public.acl_existing VALUES (2, 'prisma')")
   assert.equal((await prisma.$queryRawUnsafe('SELECT * FROM public.acl_existing WHERE id = 2')).length, 1)
@@ -106,7 +109,7 @@ try {
 
   await client.query('CREATE TABLE public.acl_future (id integer); CREATE SEQUENCE public.acl_future_sequence;')
   for (const role of ['anon', 'authenticated']) {
-    for (const permission of crud) assert.equal(await privilege(role, 'public.acl_future', permission), false)
+    for (const permission of [...crud, 'MAINTAIN']) assert.equal(await privilege(role, 'public.acl_future', permission), false)
     assert.equal((await client.query("SELECT has_sequence_privilege($1, 'public.acl_future_sequence', 'USAGE, SELECT, UPDATE') AS allowed", [role])).rows[0].allowed, false)
   }
   for (const table of ['public.acl_existing', 'public.acl_future']) {

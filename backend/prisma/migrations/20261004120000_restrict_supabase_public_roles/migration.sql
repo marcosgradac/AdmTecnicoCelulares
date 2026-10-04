@@ -56,6 +56,9 @@ BEGIN
       SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE CASE WHEN n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'f') THEN
         has_table_privilege(api_role.oid, c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+          -- MAINTAIN exists from PostgreSQL 17; preserve older local compatibility.
+          OR CASE WHEN current_setting('server_version_num')::integer >= 170000 THEN
+            has_table_privilege(api_role.oid, c.oid, 'MAINTAIN') ELSE false END
           OR has_any_column_privilege(api_role.oid, c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')
         ELSE false END
     ) OR EXISTS (
