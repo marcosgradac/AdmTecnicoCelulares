@@ -25,7 +25,10 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
   const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : ''
   if (!token) return unauthorized(res)
   try {
-    const payload = jwt.verify(token, jwtSecret) as AuthData
+    const verified = jwt.verify(token, jwtSecret)
+    // Capability JWTs (deletion, password-change, etc.) are never ordinary Bearer sessions.
+    if (typeof verified !== 'object' || Object.prototype.hasOwnProperty.call(verified, 'purpose')) return unauthorized(res, 'Token de propósito específico no válido para esta API')
+    const payload = verified as unknown as AuthData
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true, permissions: true, business: { select: { isActive: true, subscription: true } } },

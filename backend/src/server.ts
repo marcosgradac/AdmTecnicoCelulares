@@ -31,6 +31,7 @@ import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { passwordChangeRouter } from './modules/auth/password-change.routes'
 import { accountRouter } from './modules/account/account.routes'
+import { issueAccountDeletionToken } from './modules/account/account-deletion.auth'
 import { reportsRouter } from './modules/reports/reports.routes'
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 import { permissionsFor } from './config/permissions'
@@ -279,10 +280,10 @@ app.post('/api/auth/login', loginIpLimiter, async (req, res) => {
     }
     loginRisk.clear(email)
     if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
-    if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'BUSINESS_BLOCKED', audience: user.role })
+    if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'BUSINESS_BLOCKED', audience: user.role, deletionToken: issueAccountDeletionToken(user) })
     if (user.platformRole !== 'SUPER_ADMIN') {
       const access = await getBusinessAccessStatus(user.businessId)
-      if (access?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
+      if (access?.shouldBlock) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role, deletionToken: issueAccountDeletionToken(user) })
     }
     const token = signToken({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion })
     return res.json({ token, user: userResponse(user) })

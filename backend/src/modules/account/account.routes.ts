@@ -1,11 +1,12 @@
 import { Router } from 'express'
 import { ipKeyGenerator, rateLimit } from 'express-rate-limit'
 import { z } from 'zod'
-import { authenticate, authOf } from '../../middlewares/auth'
+import { authOf } from '../../middlewares/auth'
+import { authenticateAccountDeletion } from './account-deletion.auth'
 import { AccountDeletionError, deleteOwnerAccount, ownerOnlyMessage, platformAccountMessage } from './account-deletion.service'
 
 export const accountRouter = Router()
-accountRouter.use(authenticate)
+accountRouter.use(authenticateAccountDeletion)
 accountRouter.use((req, res, next) => {
   const auth = authOf(req)
   if (auth.platformRole === 'SUPER_ADMIN') return res.status(403).json({ success: false, message: platformAccountMessage })

@@ -96,6 +96,72 @@ async function main() {
       assert.deepEqual(errors, []); check('no browser runtime errors')
       await context.close()
     }
+    for (const [audience, code] of [['TECHNICIAN', 'SUBSCRIPTION_BLOCKED'], ['OWNER', 'SUBSCRIPTION_BLOCKED'], ['OWNER', 'BUSINESS_BLOCKED']]) {
+      const blockedContext = await browser.newContext()
+      const restrictedToken = 'deletion-only-memory-token-' + code
+      const blockedRequests = []
+      let deletionCalls = 0
+      await blockedContext.route('**/api/**', async route => {
+        const req = route.request(), path = new URL(req.url()).pathname
+        blockedRequests.push(path)
+        const fulfill = (status, data) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) })
+        if (path === '/api/health') return fulfill(200, { ok: true })
+        if (path === '/api/auth/login') return fulfill(403, { success: false, code, audience, message: 'Tu cuenta está temporalmente bloqueada', ...(audience === 'OWNER' ? { deletionToken: restrictedToken } : {}) })
+        if (path === '/api/account') {
+          deletionCalls++
+          assert.equal(req.method(), 'DELETE')
+          assert.equal(req.headers().authorization, 'Bearer ' + restrictedToken, 'restricted Authorization must not be overwritten by normal-session interceptor')
+          assert.deepEqual(req.postDataJSON(), { password: 'CurrentPassword123!', confirmation: 'ELIMINAR MI CUENTA' })
+          if (deletionCalls === 1) return fulfill(400, { success: false, message: 'La contraseña actual es incorrecta.' })
+          return fulfill(200, { success: true, message: 'Tu cuenta fue eliminada permanentemente.' })
+        }
+        return fulfill(401, { success: false, message: 'No autorizado' })
+      })
+      const blockedPage = await blockedContext.newPage()
+      await blockedPage.goto(origin + '/login')
+      await blockedPage.getByLabel('Email').fill('blocked@example.com')
+      await blockedPage.getByLabel(/^Contraseña/).fill('CurrentPassword123!')
+      await blockedPage.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+      const blockedTitle = audience === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'Acceso temporalmente suspendido'
+      await blockedPage.getByRole('heading', { name: blockedTitle, exact: true }).waitFor()
+      const deletionButton = blockedPage.getByRole('button', { name: 'Eliminar mi cuenta y negocio', exact: true })
+      if (audience === 'TECHNICIAN') {
+        assert.equal(await deletionButton.count(), 0); check('blocked TECHNICIAN cannot access deletion UI')
+        await blockedContext.close(); continue
+      }
+      assert.equal(await blockedPage.evaluate(() => localStorage.getItem('cellufix_access_token')), null)
+      const stored = await blockedPage.evaluate(() => JSON.stringify([Object.entries(localStorage), Object.entries(sessionStorage)]))
+      assert.ok(!stored.includes(restrictedToken)); assert.ok(!blockedRequests.includes('/api/settings'))
+      // A reload before deleting must lose the capability and require fresh credentials.
+      await blockedPage.reload()
+      assert.equal(await deletionButton.count(), 0)
+      await blockedPage.getByLabel('Email').fill('blocked@example.com')
+      await blockedPage.getByLabel(/^Contraseña/).fill('CurrentPassword123!')
+      await blockedPage.getByRole('button', { name: 'Iniciar sesión', exact: true }).click()
+      await blockedPage.getByRole('heading', { name: blockedTitle, exact: true }).waitFor()
+      await deletionButton.click()
+      const blockedDialog = blockedPage.getByRole('dialog')
+      await blockedDialog.getByText('Esta acción no se puede deshacer.', { exact: true }).waitFor()
+      const blockedSubmit = blockedDialog.getByRole('button', { name: 'Eliminar permanentemente', exact: true })
+      assert.ok(await blockedSubmit.isDisabled())
+      await blockedDialog.getByLabel('Contraseña actual').fill('CurrentPassword123!')
+      await blockedDialog.getByLabel('Escribí ELIMINAR MI CUENTA para continuar').fill('ELIMINAR MI CUENTA')
+      // Simulate stale conventional storage; explicit purpose authorization must still win.
+      await blockedPage.evaluate(() => { localStorage.setItem('cellufix_access_token', 'stale-normal-token'); localStorage.setItem('tecnodesk_tutorial_premium-v2_owner-ui-test', 'data') })
+      await blockedSubmit.click()
+      await blockedDialog.getByText('La contraseña actual es incorrecta.', { exact: true }).waitFor()
+      assert.ok(blockedPage.url().endsWith('/login')); check(code + ': same irreversible Dialog, token only in memory, no normal access')
+      await blockedSubmit.click()
+      await blockedPage.getByText('Tu cuenta fue eliminada permanentemente.', { exact: true }).waitFor()
+      assert.equal(await blockedPage.getByRole('dialog').count(), 0)
+      assert.equal(await blockedPage.evaluate(() => localStorage.getItem('cellufix_access_token')), null)
+      assert.equal(await blockedPage.evaluate(() => localStorage.getItem('tecnodesk_tutorial_premium-v2_owner-ui-test')), null)
+      assert.ok(!blockedRequests.some(path => path.includes('logout'))); check(code + ': deletion-only success clears data and displays notice without dashboard/logout HTTP')
+      await blockedPage.reload()
+      assert.equal(await deletionButton.count(), 0); await blockedPage.getByLabel('Email').waitFor()
+      check(code + ': reload discards capability and requires credentials again')
+      await blockedContext.close()
+    }
     const trackingContext = await browser.newContext()
     const trackingRequests = []
     await trackingContext.route('**/api/**', async route => {

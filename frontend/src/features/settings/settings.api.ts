@@ -9,4 +9,7 @@ export const requestPasswordCode = async (turnstileToken?: string) => (await api
 export const verifyPasswordCode = async (code: string) => (await api.post<{ success: true; verificationToken: string }>('/auth/password-change/verify', { code })).data
 export const confirmPasswordChange = async (verificationToken: string, newPassword: string, confirmPassword: string) => (await api.post<{ success: true; message: string }>('/auth/password-change/confirm', { verificationToken, newPassword, confirmPassword })).data
 export const logoutOtherSessions = async () => (await api.post('/settings/logout-other-sessions')).data
-export const deleteAccount = async (password: string, confirmation: string) => (await api.delete<{ success: true; message: string }>('/account', { data: { password, confirmation } })).data
+export const deleteAccount = async (password: string, confirmation: string, deletionToken?: string) => (await api.delete<{ success: true; message: string }>('/account', {
+  data: { password, confirmation },
+  ...(deletionToken ? { headers: { Authorization: `Bearer ${deletionToken}` } } : {}),
+})).data

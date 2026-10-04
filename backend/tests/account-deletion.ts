@@ -38,6 +38,23 @@ async function main() {
     }
     return result
   }
+  const ownedRows = (data: Record<string, unknown>, model: string, businessId: string): any[] => {
+    const rows = data[model] as any[]
+    if (model === 'Business') return rows.filter(row => row.id === businessId)
+    if (model === 'PasswordResetToken') return rows.filter(row => (data.User as any[]).some(u => u.businessId === businessId && u.id === row.userId))
+    if (['RepairStatusHistory', 'RepairPhoto', 'RepairPart'].includes(model)) return rows.filter(row => (data.Repair as any[]).some(r => r.businessId === businessId && r.id === row.repairId))
+    if (model === 'CommerceSaleLine') return rows.filter(row => (data.CommerceSale as any[]).some(s => s.businessId === businessId && s.id === row.saleId))
+    return rows.filter(row => row.businessId === businessId)
+  }
+  const assertFullPurge = async (beforePurge: Record<string, unknown>, businessId: string) => {
+    const afterPurge = await snapshot()
+    for (const model of tenantModels) {
+      const deleted = ownedRows(beforePurge, model, businessId)
+      assert.ok(deleted.length > 0, model + ' blocked owner fixture exists')
+      assert.deepEqual(afterPurge[model], (beforePurge[model] as any[]).filter(row => !deleted.some(d => d.id === row.id)), model + ' physically removed, all other tenants unchanged')
+    }
+    assert.deepEqual(afterPurge.Plan, beforePurge.Plan); assert.deepEqual(afterPurge.BillingSettings, beforePurge.BillingSettings)
+  }
   const tenant = async (name: string) => {
     const business = await prisma.business.create({ data: { name, slug: randomUUID() } })
     const businessId = business.id, now = new Date()
@@ -114,7 +131,7 @@ async function main() {
     const removedCounts: Record<string, number> = {}
     for (const model of tenantModels) {
       const oldRows = intact[model] as any[]
-      const cRows = oldRows.filter(row => row.id === c.business.id || row.businessId === c.business.id || (model === 'PasswordResetToken' && (intact.User as any[]).some(u => u.businessId === c.business.id && u.id === row.userId)) || (['RepairStatusHistory', 'RepairPhoto', 'RepairPart'].includes(model) && row.repairId === c.repair.id) || (model === 'CommerceSaleLine' && (intact.CommerceSale as any[]).some(s => s.businessId === c.business.id && s.id === row.saleId)))
+      const cRows = ownedRows(intact, model, c.business.id)
       assert.ok(cRows.length > 0, model + ' fixture exists')
       assert.deepEqual(after[model], oldRows.filter(row => !cRows.some(deleted => deleted.id === row.id)), model + ' only C physically removed')
       removedCounts[model] = (after[model] as any[]).filter(row => cRows.some(deleted => deleted.id === row.id)).length
@@ -171,6 +188,85 @@ async function main() {
     const ipLimited = await request('DELETE', '/api/account', sign(currentOwner), body, '192.0.2.20')
     assert.equal(ipLimited.status, 429); assert.ok(ipLimited.data.message)
     assert.deepEqual(await snapshot(), rateBefore); check('twenty attempts/IP/15min across users, no data changed')
+
+    const blocked = await tenant('Blocked subscription owner')
+    await prisma.subscription.update({ where: { businessId: blocked.business.id }, data: { status: 'SUSPENDED', manuallyBlockedAt: new Date(), manualBlockReason: 'TEST', accessExpiresAt: new Date(Date.now() - 10 * 86400000) } })
+    const login = (email: string, currentPassword = password) => request('POST', '/api/auth/login', undefined, { email, password: currentPassword }, '192.0.2.60')
+    const blockedLogin = await login(blocked.owner.email)
+    assert.equal(blockedLogin.status, 403); assert.equal(blockedLogin.data.code, 'SUBSCRIPTION_BLOCKED')
+    assert.equal(blockedLogin.data.token, undefined); assert.equal(blockedLogin.data.user, undefined)
+    assert.equal(typeof blockedLogin.data.deletionToken, 'string', 'blocked OWNER needs deletion-only capability')
+    const deletionToken = blockedLogin.data.deletionToken as string
+    const claims = jwt.verify(deletionToken, process.env.JWT_SECRET!) as jwt.JwtPayload
+    assert.equal(claims.purpose, 'account-deletion'); assert.equal(claims.userId, blocked.owner.id); assert.equal(claims.businessId, blocked.business.id)
+    assert.equal(claims.tokenVersion, blocked.owner.tokenVersion); assert.equal(claims.exp! - claims.iat!, 600)
+    assert.equal(claims.role, undefined); check('blocked OWNER login issues only purpose-bound 10-minute token, no normal session')
+    const blockedBefore = await snapshot()
+    for (const path of ['/api/auth/me', '/api/settings', '/api/profile', '/api/repairs', '/api/clients', '/api/billing/subscription', '/api/platform-admin/businesses']) {
+      assert.equal((await request('GET', path, deletionToken)).status, 401, 'purpose token cannot authenticate ' + path)
+    }
+    assert.equal((await request('POST', '/api/settings/logout-other-sessions', deletionToken, {})).status, 401)
+    assert.equal((await request('GET', '/api/account', deletionToken)).status, 401)
+    assert.equal((await request('POST', '/api/account', deletionToken, body)).status, 401)
+    assert.equal((await request('DELETE', '/api/account/other', deletionToken, body)).status, 401)
+    assert.deepEqual(await snapshot(), blockedBefore); check('purpose token rejected by all tested normal reads/writes')
+    assert.equal((await request('GET', '/api/auth/me', blocked.token)).status, 403); check('normal JWT still respects subscription block')
+    const pieces = deletionToken.split('.'); pieces[2] = (pieces[2][0] === 'a' ? 'b' : 'a') + pieces[2].slice(1)
+    assert.equal((await request('DELETE', '/api/account', pieces.join('.'), body)).status, 401); check('tampered purpose token rejected')
+    const restrictedClaims = { purpose: 'account-deletion', userId: blocked.owner.id, businessId: blocked.business.id, tokenVersion: blocked.owner.tokenVersion }
+    const signRestricted = (changes: Record<string, unknown> = {}, expiresIn = 600) => jwt.sign({ ...restrictedClaims, ...changes }, process.env.JWT_SECRET!, { expiresIn })
+    assert.equal((await request('DELETE', '/api/account', signRestricted({}, -1), body)).status, 401); check('expired purpose token rejected')
+    for (const changes of [{ businessId: b.business.id }, { userId: b.owner.id }, { tokenVersion: blocked.owner.tokenVersion + 1 }, { purpose: 'password-change' }]) {
+      assert.equal((await request('DELETE', '/api/account', signRestricted(changes), body)).status, 401)
+    }
+    assert.deepEqual(await snapshot(), blockedBefore); check('purpose, user/business binding and tokenVersion revalidated')
+    assert.equal((await request('DELETE', '/api/account', jwt.sign(restrictedClaims, process.env.JWT_SECRET!), body)).status, 401)
+    assert.equal((await request('DELETE', '/api/account', signRestricted({}, 3600), body)).status, 401); check('purpose capability requires expiration and cannot exceed ten minutes')
+    for (const [data, label] of [[{ ...body, password: 'Wrong current password' }, 'password'], [{ ...body, confirmation: 'eliminar mi cuenta' }, 'phrase']] as const) {
+      assert.equal((await request('DELETE', '/api/account', deletionToken, data)).status, 400)
+      assert.deepEqual(await snapshot(), blockedBefore); check('purpose token still requires exact ' + label + ', nothing deleted')
+    }
+    const blockedTechnicianLogin = await login(blocked.tech.email)
+    assert.equal(blockedTechnicianLogin.status, 403); assert.equal(blockedTechnicianLogin.data.audience, 'TECHNICIAN')
+    assert.equal(blockedTechnicianLogin.data.deletionToken, undefined); assert.equal(blockedTechnicianLogin.data.token, undefined)
+    assert.equal((await request('DELETE', '/api/account', signRestricted({ userId: blocked.tech.id }), body)).status, 403); check('blocked TECHNICIAN receives no deletion capability; forged role cannot authorize')
+    await prisma.user.update({ where: { id: blocked.tech.id }, data: { role: 'OWNER' } })
+    const blockedMultiBefore = await snapshot()
+    assert.equal((await request('DELETE', '/api/account', deletionToken, body)).status, 409)
+    assert.deepEqual(await snapshot(), blockedMultiBefore); check('multiple owners also block purpose-token purge')
+    await prisma.user.update({ where: { id: blocked.tech.id }, data: { role: 'TECHNICIAN' } })
+    const beforeBlockedPurge = await snapshot()
+    assert.equal((await request('DELETE', '/api/account', deletionToken, body)).status, 200)
+    await assertFullPurge(beforeBlockedPurge, blocked.business.id); check('blocked subscription owner: full physical purge, other tenants and globals intact')
+    assert.equal((await request('GET', `/api/tracking/${blocked.repair.trackingToken}`)).status, 404)
+    assert.equal((await request('DELETE', '/api/account', deletionToken, body)).status, 401); check('purged restricted token invalid and tracking 404')
+
+    const businessBlocked = await tenant('Business blocked owner')
+    await prisma.business.update({ where: { id: businessBlocked.business.id }, data: { isActive: false } })
+    const businessLogin = await login(businessBlocked.owner.email)
+    assert.equal(businessLogin.status, 403); assert.equal(businessLogin.data.code, 'BUSINESS_BLOCKED')
+    assert.equal(businessLogin.data.token, undefined); assert.equal(typeof businessLogin.data.deletionToken, 'string')
+    assert.equal((await request('GET', '/api/settings', businessLogin.data.deletionToken)).status, 401)
+    assert.equal((await request('GET', '/api/settings', businessBlocked.token)).status, 403)
+    const beforeBusinessPurge = await snapshot()
+    assert.equal((await request('DELETE', '/api/account', businessLogin.data.deletionToken, body)).status, 200)
+    await assertFullPurge(beforeBusinessPurge, businessBlocked.business.id); check('BUSINESS_BLOCKED owner deletes entire tenant without normal access')
+
+    const expiredOwner = await tenant('Trial expired owner')
+    await prisma.subscription.update({ where: { businessId: expiredOwner.business.id }, data: { trialEndsAt: new Date(Date.now() - 20 * 86400000), accessExpiresAt: new Date(Date.now() - 20 * 86400000) } })
+    const expiredLogin = await login(expiredOwner.owner.email)
+    assert.equal(expiredLogin.status, 403); assert.equal(expiredLogin.data.code, 'SUBSCRIPTION_BLOCKED'); assert.equal(typeof expiredLogin.data.deletionToken, 'string')
+    check('expired trial also provides only deletion capability')
+    await prisma.user.update({ where: { id: expiredOwner.owner.id }, data: { platformRole: 'SUPER_ADMIN' } })
+    const specialAdminBefore = await snapshot()
+    assert.equal((await request('DELETE', '/api/account', expiredLogin.data.deletionToken, body)).status, 403)
+    assert.deepEqual(await snapshot(), specialAdminBefore); check('purpose middleware rereads platformRole, SUPER_ADMIN cannot delete')
+    const superLogin = await login(expiredOwner.owner.email)
+    assert.equal(superLogin.status, 200); assert.equal(superLogin.data.deletionToken, undefined)
+    assert.equal((await request('DELETE', '/api/account', superLogin.data.token, body)).status, 403); check('SUPER_ADMIN never receives deletion token and normal token remains forbidden')
+    const activeLogin = await login(b.owner.email)
+    assert.equal(activeLogin.status, 200); assert.equal(activeLogin.data.deletionToken, undefined)
+    assert.equal((await request('GET', '/api/auth/me', activeLogin.data.token)).status, 200); check('active OWNER login still creates ordinary working session')
     const evidenceDirectory = resolve(__dirname, '../../artifacts/account-deletion')
     mkdirSync(evidenceDirectory, { recursive: true })
     writeFileSync(resolve(evidenceDirectory, 'db-evidence.json'), JSON.stringify({ database: '127.0.0.1:55439/account_deletion_test', deletedBusinessId: c.business.id, preservedBusinessId: b.business.id, remainingRowsForDeletedIds: removedCounts, preservedSnapshotsIdentical: true, globalsIdentical: true, totalRollbackVerified: true, concurrentStatuses: results.map(r => r.status), reusedEmailRegistrationStatus: registered.status, checksPassed: passed }, null, 2) + '\n')

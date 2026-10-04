@@ -1,12 +1,15 @@
 # Informe de eliminación permanente — 3 de octubre de 2026
 
-Implementación completa y local, exclusiva para OWNER. Sin soft delete, recuperación ni solicitudes pendientes.
+Implementación exclusiva para OWNER, incluido el propietario con negocio o suscripción bloqueados. Sin soft delete, recuperación ni solicitudes pendientes.
 
 ## Rama y base
 
 - Rama: `feature/permanent-account-deletion`.
-- SHA base y HEAD final: `61f06e97a7394250cd1406f256e824fe3cb83484`.
-- Todo el cambio está sin commit. No se trabajó directamente sobre main.
+- SHA base de main: `61f06e97a7394250cd1406f256e824fe3cb83484`.
+- Primer commit implementado y publicado: `03c310b1b70ce33ca238b0ff9f9df60ae669a98a`.
+- El segundo commit contiene la corrección para OWNER bloqueados y este informe actualizado.
+  Su SHA exacto se informa después del commit/push; puede obtenerse con `git rev-parse feature/permanent-account-deletion`.
+- Los dos commits pertenecen exclusivamente a esta rama. Sin merge ni pull request automático.
 
 ## Relaciones, FKs y orden de purge
 
@@ -58,7 +61,8 @@ Plan y BillingSettings nunca se borran ni se actualizan por este endpoint.
 
 Express y axios soportan este body; no se necesitó un POST alternativo.
 
-- authenticate obligatorio; se conserva la validación de sesión/acceso actual del proyecto.
+- Middleware exclusivo de eliminación: una sesión normal conserva todas las validaciones de
+  authenticate, incluidas las de negocio/suscripción; también acepta la capacidad restringida descrita abajo.
 - Validación estricta del body: no acepta businessId, userId ni campos extra.
 - La frase se compara literalmente: sin trim, sin normalización ni equivalencia de mayúsculas.
 - bcrypt.compare contra passwordHash actual, leído dentro de la transacción.
@@ -69,6 +73,21 @@ Express y axios soportan este body; no se necesitó un POST alternativo.
 - Éxito: 200 después de completar y confirmar la transacción.
 - Segunda operación concurrente: 401/404/409 controlado; la prueba verifica exactamente un éxito.
 - Errores FK/transacción: 409 genérico, sin stack ni SQL/contraseñas en la respuesta.
+
+### OWNER bloqueado: capacidad restringida
+
+Después de verificar email y contraseña, login conserva el 403 BUSINESS_BLOCKED o
+SUBSCRIPTION_BLOCKED y agrega únicamente `deletionToken` para OWNER activo, platformRole USER,
+sin deletedAt. No devuelve user ni token de sesión convencional.
+El JWT HS256 dura 600 segundos y lleva purpose=account-deletion, userId, businessId y tokenVersion.
+No se emite a TECHNICIAN ni SUPER_ADMIN.
+
+authenticate rechaza explícitamente cualquier JWT con purpose antes de buscar el usuario.
+La capacidad sólo se acepta para DELETE /api/account: firma, expiración obligatoria, duración
+máxima de diez minutos y correspondencia actual de usuario/negocio/tokenVersion se verifican
+en el middleware separado. Se releen actividad, deletedAt, role y platformRole desde DB.
+Únicamente este flujo puede omitir el bloqueo de negocio/suscripción; las APIs normales lo mantienen.
+El servicio de purge y su transacción permanecen iguales y vuelven a validar identidad, rol y contraseña.
 
 ## Roles
 
@@ -92,6 +111,13 @@ Contraseña obligatoria; frase exacta habilita el submit. Ref síncrona evita do
 Spinner, campos y botones deshabilitados, Escape y backdrop bloqueados mientras corre.
 Un error controlado conserva la sesión y permite reintentar.
 
+En login bloqueado, OWNER con capacidad vigente ve una acción discreta para abrir el mismo
+AccountDeletionDialog MUI usado en Configuración. El token restringido permanece exclusivamente
+en state de LoginPage; no se escribe en AuthContext, localStorage ni sessionStorage.
+Recargar o elegir otra cuenta descarta la capacidad y requiere ingresar credenciales de nuevo.
+La petición DELETE envía su Authorization explícito; el interceptor no lo reemplaza con un JWT
+convencional obsoleto. TECHNICIAN no ve la acción y el bloqueo del dashboard sigue vigente.
+
 Éxito elimina token, AuthContext, indicador de trial y tutorial local; navega a login con
 `Tu cuenta fue eliminada permanentemente.` No llama a logout HTTP.
 Storage propaga la invalidación a otras tabs. Generación y token impiden que respuestas auth tardías
@@ -103,7 +129,7 @@ Base usada exclusivamente: PostgreSQL local `127.0.0.1:55439/account_deletion_te
 La nueva suite rechaza otra base/host/puerto antes de importar servidor o Prisma.
 Se dejaron fixtures locales para inspección; no hubo deletes globales de limpieza.
 
-- 45 comprobaciones backend. Fixtures con todos los modelos del schema; guard de cobertura falla
+- 63 comprobaciones backend. Fixtures con todos los modelos del schema; guard de cobertura falla
   si aparece un modelo nuevo que aún no fue mapeado.
 - Business A se elimina; snapshots completos de B y otros tenants permanecen idénticos,
   incluidos IDs, todos los campos y timestamps. Cada entidad del tenant eliminado desaparece.
@@ -117,12 +143,23 @@ Se dejaron fixtures locales para inspección; no hubo deletes globales de limpie
 - GET /api/tracking/:token después del purge: 404, sin Repair ni trackingToken conservado.
 - Revalidación de tokenVersion dentro de la transacción, contraseña cambiada y body con businessId ajeno.
 - Límites de usuario entre distintas IPs y límite de IP entre usuarios diferentes: 429 sin borrar datos.
+- OWNER suspendido, trial vencido y Business inactivo obtienen sólo capacidad restringida.
+  Purge físico completo de tenants bloqueados, con todos los snapshots ajenos y globales intactos.
+- Capacidad rechazada en auth/me, settings, profile, repairs, clients, billing, platform-admin
+  y logout-other-sessions. JWT normal de un OWNER bloqueado continúa recibiendo 403.
+- Firma alterada, expiración vencida/ausente/excesiva, purpose distinto, user/business incompatibles
+  y tokenVersion obsoleto: 401. Contraseña/frase incorrectas: 400 y snapshot idéntico.
+- TECHNICIAN y SUPER_ADMIN no reciben capacidad; cambios de rol y múltiples OWNER se releen.
+  Tras el purge la capacidad queda inválida y tracking devuelve 404. Login normal activo sigue funcionando.
 
-10 comprobaciones frontend sobre React/MUI reales en Edge headless, con solo HTTP simulado:
+17 comprobaciones frontend sobre React/MUI reales en Edge headless, con solo HTTP simulado:
 visibilidad por rol, advertencia, frase exacta, doble clic, spinner/Escape/backdrop, error/reintento,
 éxito/limpieza/mensaje y dos tabs con auth tardío, ausencia de errores runtime, ambos formatos de tracking.
 Las rutas SPA `/seguimiento/:token` y `/s/:slug/:token` consumen /api/tracking/:token;
 con 404 muestran Seguimiento no encontrado y ningún dato tenant-owned.
+Se prueban también ambos códigos de bloqueo OWNER, TECHNICIAN bloqueado sin botón,
+token sólo en memoria, recarga antes del borrado que exige login nuevo, Authorization restringido
+frente a storage obsoleto, error/reintento, limpieza y aviso sin entrar al dashboard.
 
 ## Comandos de regresión
 
@@ -145,7 +182,7 @@ Todos terminaron con exit code 0 en su verificación final:
 | npm run test:equipment-sales | PASS, PostgreSQL/SQLite |
 | npm run test:cash-groups | PASS |
 | npm run test:simplified-repairs | PASS |
-| npm run test:account-deletion | PASS, 45 comprobaciones |
+| npm run test:account-deletion | PASS, 63 comprobaciones |
 
 | Frontend | Resultado |
 |---|---|
@@ -154,7 +191,7 @@ Todos terminaron con exit code 0 en su verificación final:
 | npm run test:encoding | PASS |
 | npm run test:repair-flow | PASS |
 | npm run test:pwa | PASS |
-| npm run test:account-deletion | PASS, 10 comprobaciones de navegador |
+| npm run test:account-deletion | PASS, 17 comprobaciones de navegador |
 
 Incidencias resueltas de entorno: db:generate inicialmente encontró la DLL bloqueada por la API local;
 pasó al cerrarla. Commerce/equipment inicialmente necesitaban Plan INITIAL/PROFESSIONAL, ausentes
@@ -175,18 +212,22 @@ Modificados:
 
 - backend/package.json
 - backend/src/server.ts
+- backend/src/middlewares/auth.ts
 - frontend/package.json
 - frontend/src/auth/AuthContext.tsx
 - frontend/src/features/settings/SettingsPage.tsx
 - frontend/src/features/settings/settings.api.ts
 - frontend/src/pages/LoginPage.tsx
+- frontend/src/services/api.ts
 
 Agregados:
 
 - backend/src/modules/account/account-deletion.service.ts
+- backend/src/modules/account/account-deletion.auth.ts
 - backend/src/modules/account/account.routes.ts
 - backend/tests/account-deletion.ts
 - frontend/src/features/settings/AccountDeletionSection.tsx
+- frontend/src/features/settings/AccountDeletionDialog.tsx
 - frontend/tests/account-deletion.cjs
 - docs/superpowers/specs/2026-10-03-permanent-account-deletion-design.md
 - docs/superpowers/plans/2026-10-03-permanent-account-deletion.md
@@ -196,11 +237,15 @@ No schema ni migraciones nuevas/históricas modificadas. Sin dependencias adicio
 
 ## Revisión y estado final
 
-Revisión independiente de código y segunda revisión del arreglo de sesión: sin hallazgos pendientes.
+Revisión independiente del cambio restringido para OWNER bloqueado: sin hallazgos bloqueantes.
+Las pruebas nuevas se verificaron primero en rojo sobre el comportamiento anterior y después en verde.
 git diff --check: PASS. git status --short -uall se incluye junto al diff en artifacts/account-deletion.
-El diff completo incluye archivos nuevos sin necesidad de stage/commit.
+El diff de la corrección respecto del primer commit incluye los archivos nuevos.
 
-Confirmado: sin commit, push, merge ni deploy; sin tocar Supabase producción, Render o Vercel.
+Commit y push de la rama autorizados para revisión remota. Sin merge ni deploy manual;
+sin tocar Supabase producción, Render o Vercel manualmente. El primer push creó automáticamente
+un Vercel Preview mediante Git Integration, permitido por el usuario; no es producción.
+El siguiente push también puede disparar esa integración, sin intervención manual.
 Client.updatedAt intacto en schema/código; los timestamps de otro tenant son idénticos según los snapshots.
 Solo se utilizaron base y servidores locales de prueba. No se enviaron emails reales: transporte fake
 o stub de Turnstile limitado a los tests.

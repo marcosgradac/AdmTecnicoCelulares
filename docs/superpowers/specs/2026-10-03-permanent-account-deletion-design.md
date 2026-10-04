@@ -1,18 +1,31 @@
 # Eliminación permanente de cuenta y negocio
 
 Base: `61f06e97a7394250cd1406f256e824fe3cb83484`. Rama: `feature/permanent-account-deletion`.
-Diseño aprobado por el usuario: implementación local, sin commit/push/merge/deploy ni servicios de producción.
+Diseño aprobado por el usuario. Implementación inicial en `03c310b1b70ce33ca238b0ff9f9df60ae669a98a`.
+Corrección posterior y commit/push de esta rama autorizados para revisión; sin merge ni deploy manual.
+No acceder a servicios de producción.
 Solo OWNER; TECHNICIAN recibe 403. No cambiar schema, migraciones ni Client.updatedAt.
 
 ## Contrato y seguridad
 
 `DELETE /api/account`, body `{ password, confirmation }`. Express y axios soportan body DELETE.
-authenticate obligatorio; volver a leer User dentro de la transacción, verificar tokenVersion, actividad,
+Middleware exclusivo: sesión normal mediante authenticate o JWT restringido account-deletion.
+Volver a leer User dentro de la transacción, verificar tokenVersion, actividad,
 businessId, rol y platformRole. SUPER_ADMIN: 403 con mensaje solicitado. TECHNICIAN: 403.
 Frase literal `ELIMINAR MI CUENTA`, sin trim ni normalización. bcrypt.compare con passwordHash actual.
 400 para frase/body/contraseña inválidos. Más de un OWNER activo (isActive y deletedAt null): 409.
 Rate limit: cinco solicitudes por usuario cada 15 minutos y veinte por IP cada 15 minutos.
 200 solo después del commit de la transacción. Errores FK/concurrencia: 409 controlado, sin stack.
+
+Para OWNER USER activo con BUSINESS_BLOCKED/SUBSCRIPTION_BLOCKED, login verifica contraseña y
+conserva 403, pero entrega deletionToken HS256 de diez minutos con purpose, userId, businessId,
+tokenVersion, iat y exp; sin sesión normal. authenticate rechaza cualquier JWT con purpose.
+El middleware restringido sólo permite DELETE /api/account y valida firma, duración/expiración y
+usuario/tenant/version/actividad/roles actuales en DB; el servicio vuelve a verificarlos.
+El bloqueo de suscripción/negocio permanece para todas las demás APIs y sesiones normales.
+LoginPage guarda esta capacidad sólo en memoria y muestra al OWNER el mismo Dialog MUI de
+eliminación. Recargar exige volver a ingresar credenciales. TECHNICIAN y SUPER_ADMIN no reciben
+capacidad. Contraseña actual, frase, rate limit, transacción y purge mantienen el contrato anterior.
 
 ## Mapa completo del schema PostgreSQL
 
