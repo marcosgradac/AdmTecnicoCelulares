@@ -116,7 +116,7 @@ platformAdminRouter.get('/subscriptions', async (req, res) => {
 })
 
 platformAdminRouter.get('/subscriptions/:id', async (req, res) => {
-  const row = await prisma.subscription.findUnique({ where: { id: req.params.id }, include: { plan: true, business: { include: { users: { orderBy: { createdAt: 'asc' } } } }, payments: { include: { plan: true }, orderBy: { createdAt: 'desc' } }, } })
+  const row = await prisma.subscription.findUnique({ where: { id: req.params.id }, include: { plan: true, business: { include: { users: { select: { role: true, email: true }, orderBy: { createdAt: 'asc' } } } }, payments: { include: { plan: true }, orderBy: { createdAt: 'desc' } }, } })
   if (!row) return res.status(404).json({ success: false, message: 'Suscripción no encontrada' })
   return res.json({ ...row, usage: await subscriptionUsage(row.businessId) })
 })

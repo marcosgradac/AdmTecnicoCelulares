@@ -89,7 +89,7 @@ export interface AdminSubscriptionRow extends AdminSubscription { business: { id
 
 export interface AdminSubscriptionDetail extends AdminSubscriptionBase {
   plan: AdminPlan
-  business: { id: string; name: string; phone: string | null; isActive: boolean; createdAt: string; users: AdminBusinessUser[] }
+  business: { id: string; name: string; phone: string | null; isActive: boolean; createdAt: string; users: Array<{ role: 'OWNER' | 'TECHNICIAN'; email: string }> }
   payments: AdminPayment[]
   usage: SubscriptionUsage
 }

@@ -44,6 +44,7 @@
     "test:performance-access": "tsx tests/performance-access.ts",
     "test:subscription-lifecycle": "node --env-file=.env ./node_modules/tsx/dist/cli.mjs tests/subscription-lifecycle.ts",
     "test:platform-admin-actions": "tsx tests/platform-admin-subscription-actions.ts",
+    "test:platform-admin-user-redaction": "tsx tests/platform-admin-user-redaction.ts",
     "demo:load": "tsx src/scripts/load-business-demo.ts",
     "test:business-demo": "tsx tests/business-demo.ts",
     "test:landing-demo": "tsx tests/landing-demo.ts",
