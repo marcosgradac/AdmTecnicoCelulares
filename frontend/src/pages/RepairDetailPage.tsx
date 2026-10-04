@@ -29,6 +29,7 @@ const messageFrom = (error: unknown, fallback: string) =>
 export function RepairDetailPage() {
   const { user } = useAuth()
   const canRegisterPayment = canAccess(user, 'payments:create')
+  const canViewFinancials = canAccess(user, 'repairs.viewFinancials')
   const { id } = useParams()
   const navigate = useNavigate()
   const [repair, setRepair] = useState<Repair | null>(null)
@@ -122,7 +123,7 @@ export function RepairDetailPage() {
   const initialAdvance = (repair.payments ?? []).filter(item => item.isAdvance && !item.cancellationReview).reduce((sum, item) => sum + item.amount, 0)
   const canCorrectAdvance = canAccess(user, 'repairs.viewFinancials') && !isSpecial
   const historyEvents: Array<{ id: string; date?: string; label: string; amount?: number }> = []
-  for (const payment of [...(repair.payments ?? [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) historyEvents.push({ id: `payment-${payment.id}`, date: payment.createdAt, label: payment.cancellationReview ? 'Pago de revisión' : payment.isAdvance ? 'Adelanto recibido' : 'Pago recibido', amount: payment.amount })
+  for (const payment of [...(canViewFinancials ? repair.payments ?? [] : [])].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) historyEvents.push({ id: `payment-${payment.id}`, date: payment.createdAt, label: payment.cancellationReview ? 'Pago de revisión' : payment.isAdvance ? 'Adelanto recibido' : 'Pago recibido', amount: payment.amount })
   if (repair.status === 'cancelled') {
     const cancelledAt = repair.cancelledAt ?? (repair.history ?? []).find(item => item.newStatus === 'cancelled')?.createdAt ?? repair.updatedAt
     historyEvents.push({ id: 'cancelled', date: cancelledAt, label: 'Reparación cancelada' })
@@ -133,6 +134,7 @@ export function RepairDetailPage() {
   }
   for (const item of repair.history ?? []) {
     if (item.newStatus === 'cancelled') continue
+    if (!canViewFinancials && item.internalNote?.startsWith('Adelanto corregido de $')) continue
     // Una corrección del adelanto registra el mismo estado de origen y destino: se muestra
     // con su nota interna («Adelanto corregido de $20.000 a $30.000»), no como un paso.
     historyEvents.push(isStatusNote(item)

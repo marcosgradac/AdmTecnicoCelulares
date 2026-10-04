@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStatus } from '@prisma/client'
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
+import { canViewRepairFinancials, clientRepairSelect, repairHistoryResponse, repairResponse } from './modules/repairs/repair-response'
 import { advanceCorrectionNote, correctInitialRepairAdvance, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, RepairFinanceError } from './modules/repairs/repair-finance'
 import { assertStatusChange, deliveredLockedMessage, deliveryDates, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
 import { generateTrackingToken } from './modules/tracking/tracking-token'
@@ -394,13 +395,13 @@ app.get('/api/repairs', requirePermission('repairs.view'), async (req, res) => {
       prisma.repair.findMany({ where, select: repairListSelect, orderBy: [{ createdAt: order }, { id: order }], skip: (page - 1) * pageSize, take: pageSize }),
       prisma.repair.count({ where }),
     ])
-    return res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
+    return res.json({ items: items.map(item => repairResponse(authOf(req), item)), total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) })
   }
   catch { return res.status(500).json({ success: false, message: 'Error obteniendo reparaciones' }) }
 })
 app.get('/api/repairs/:id', requirePermission('repairs.view'), async (req, res) => {
   const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: includeRepair })
-  return repair ? res.json(repair) : res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+  return repair ? res.json(repairResponse(authOf(req), repair)) : res.status(404).json({ success: false, message: 'Reparación no encontrada' })
 })
 
 const createRepairSchema = initialRepairFinanceSchema.extend({
@@ -443,7 +444,7 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
       await recordInitialRepairFinance(tx, created, client.name, data)
       return tx.repair.findUniqueOrThrow({ where: { id: created.id }, include: includeRepair })
     }, { timeout: 15_000 })
-    return res.status(201).json(repair)
+    return res.status(201).json(repairResponse(authOf(req), repair))
   } catch (error) {
     const status = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
     return res.status(status).json({ success: false, message: error instanceof Error && status !== 500 ? error.message : 'Error creando reparación' })
@@ -464,7 +465,7 @@ app.patch('/api/repairs/:id', requirePermission('repairs.update'), async (req, r
   if (parsed.data.total < current.paid) return res.status(400).json({ success: false, message: 'El total no puede ser menor que el importe pagado' })
   if (parsed.data.clientId && !await prisma.client.findFirst({ where: { id: parsed.data.clientId, businessId, deletedAt: null } })) return res.status(400).json({ success: false, message: 'El cliente seleccionado fue eliminado o no está disponible.' })
   const repair = await prisma.repair.update({ where: { id: current.id }, data: { ...parsed.data, imei: parsed.data.imei || null, color: parsed.data.color || null, diagnosis: parsed.data.diagnosis || null, notes: parsed.data.notes || null }, include: includeRepair })
-  return res.json(repair)
+  return res.json(repairResponse(authOf(req), repair))
 })
 const statusMessagesSchema = z.object({ publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() })
 const advanceStatus = 'advance' as const
@@ -519,7 +520,7 @@ const statusStepRoute = (action: typeof advanceStatus | typeof rewindStatus) => 
       assertStatusChange(current.status, target)
       return applyStatusChange(tx, current, target, parsed.data, auth.userId)
     }, { timeout: 15_000 })
-    return res.json(result)
+    return res.json(repairResponse(authOf(req), result))
   } catch (error) {
     return statusFailure(res, error, 'No pudimos actualizar el estado')
   }
@@ -540,7 +541,7 @@ app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), 
       assertStatusChange(current.status, parsed.data.status)
       return applyStatusChange(tx, current, parsed.data.status, parsed.data, auth.userId)
     }, { timeout: 15_000 })
-    return res.json(result)
+    return res.json(repairResponse(authOf(req), result))
   } catch (error) {
     return statusFailure(res, error, 'No pudimos actualizar el estado')
   }
@@ -581,7 +582,7 @@ app.post('/api/repairs/:id/delivery/correction', requireRole('OWNER'), async (re
       } })
       return tx.repair.findFirst({ where: { id: current.id, businessId: auth.businessId }, include: includeRepair })
     }, { timeout: 15_000 })
-    return res.json(result)
+    return res.json(repairResponse(authOf(req), result))
   } catch (error) {
     return statusFailure(res, error, 'No pudimos corregir la entrega')
   }
@@ -613,7 +614,7 @@ app.patch('/api/repairs/:id/advance', requirePermission('repairs.viewFinancials'
       }
       return tx.repair.findFirst({ where: { id: current.id, businessId: auth.businessId }, include: includeRepair })
     }, { timeout: 15_000 })
-    return res.json(result)
+    return res.json(repairResponse(authOf(req), result))
   } catch (error) {
     if (error instanceof RepairFinanceError) return res.status(error.statusCode).json({ success: false, message: error.message })
     return statusFailure(res, error, 'No pudimos corregir el adelanto')
@@ -636,6 +637,7 @@ app.post('/api/repairs/:id/cancel', requirePermission('repairs.changeStatus'), a
       if (!current) throw cancellationError(404, 'Reparación no encontrada')
       if (current.status === RepairStatus.CANCELLED) throw cancellationError(409, 'La reparación ya fue cancelada')
       const reviewFee = parsed.data.reviewFee
+      if ((current.paid > 0 || reviewFee > 0) && !canViewRepairFinancials(auth)) throw cancellationError(403, 'No tenés permisos para liquidar pagos o devoluciones de una cancelación')
       // El saldo por revisión y la devolución nunca coexisten: el segundo depende de cuál de los dos montos es mayor.
       const refundAmount = Math.max(0, current.paid - reviewFee)
       const reviewBalance = Math.max(0, reviewFee - current.paid)
@@ -664,7 +666,7 @@ app.post('/api/repairs/:id/cancel', requirePermission('repairs.changeStatus'), a
       await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: RepairStatus.CANCELLED, internalNote: settlement, changedByUserId: auth.userId } })
       return tx.repair.findFirst({ where: { id: current.id }, include: includeRepair })
     }, { timeout: 15_000 })
-    return res.json(repair)
+    return res.json(repairResponse(authOf(req), repair))
   } catch (error) {
     const statusCode = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
     return res.status(statusCode).json({ success: false, message: error instanceof Error && statusCode !== 500 ? error.message : 'No pudimos cancelar la reparación' })
@@ -698,7 +700,7 @@ app.post('/api/repairs/:id/cancellation-payment', requirePermission('repairs.vie
       await tx.payment.create({ data: { businessId: current.businessId, repairId: current.id, clientId: current.clientId, amount: parsed.data.amount, method: parsed.data.method, note: `Cobro revisión reparación #${current.number}`, cancellationReview: true, cashMovementId: reviewMovement.id } })
       return tx.repair.findFirst({ where: { id: current.id }, include: includeRepair })
     }, { timeout: 15_000 })
-    return res.json(repair)
+    return res.json(repairResponse(authOf(req), repair))
   } catch (error) {
     const statusCode = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
     return res.status(statusCode).json({ success: false, message: error instanceof Error && statusCode !== 500 ? error.message : 'No pudimos registrar el cobro de revisión' })
@@ -734,7 +736,7 @@ app.delete('/api/repairs/:id', requirePermission('repairs.delete'), async (req, 
 const setRepairStatus = (status: RepairStatus) => async (req: Request, res: Response) => {
   const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
   if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  return res.json(await prisma.repair.update({ where: { id: current.id }, data: { status }, include: includeRepair }))
+  return res.json(repairResponse(authOf(req), await prisma.repair.update({ where: { id: current.id }, data: { status }, include: includeRepair })))
 }
 app.patch('/api/repairs/:id/approve', requirePermission('repairs.changeStatus'), setRepairStatus('APPROVED'))
 app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), setRepairStatus('REPAIRING'))
@@ -753,7 +755,7 @@ app.get('/api/clients/options', requirePermission('clients.view'), async (req, r
   return res.json(await prisma.client.findMany({ where: { businessId: authOf(req).businessId, deletedAt: null }, select: { id: true, name: true, phone: true }, orderBy: [{ name: 'asc' }, { id: 'asc' }] }))
 })
 app.get('/api/clients/:id', requirePermission('clients.view'), async (req, res) => {
-  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } } })
+  const client = await prisma.client.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: { repairs: { select: clientRepairSelect, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } } })
   return client ? res.json(client) : res.status(404).json({ success: false, message: 'Cliente no encontrado' })
 })
 app.post('/api/clients', requirePermission('clients.create'), async (req, res) => {
@@ -807,7 +809,7 @@ app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'
     ? res.status(201).json(payment)
     : res.status(409).json({ success: false, message: 'El pago supera el saldo pendiente' })
 })
-app.get('/api/repairs/:id/payments', async (req, res) => {
+app.get('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'), async (req, res) => {
   const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   return res.json(await prisma.payment.findMany({ where: { repairId: repair.id, businessId: authOf(req).businessId }, orderBy: { createdAt: 'desc' } }))
@@ -816,7 +818,7 @@ app.get('/api/repairs/:id/payments', async (req, res) => {
 app.get('/api/repairs/:id/history', async (req, res) => {
   const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true } })
   if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  return res.json(await prisma.repairStatusHistory.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } }))
+  return res.json(repairHistoryResponse(authOf(req), await prisma.repairStatusHistory.findMany({ where: { repairId: repair.id }, orderBy: { createdAt: 'desc' } })))
 })
 
 app.post('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {

@@ -6,7 +6,7 @@ const path = require('node:path')
 const vm = require('node:vm')
 const ts = require('../node_modules/typescript')
 
-function harness(file, exportName, props = {}, services = {}) {
+function harness(file, exportName, props = {}, services = {}, financial = true) {
   const slots = [], effects = [], timers = new Map()
   let cursor = 0, dirty = true, tree
   const reactCallbacks = new Map()
@@ -45,7 +45,7 @@ const react = {
         // La página de detalle pide sesión, navegación y permisos: se simulan en la frontera.
         if (name.endsWith('/auth/AuthContext')) return { useAuth: () => ({ user: { role: 'OWNER', permissions: [] } }) }
         if (name === 'react-router-dom') return { useNavigate: () => () => {}, useParams: () => ({ id: 'r1' }) }
-        if (name.endsWith('/auth/permissions')) return { canAccess: () => true }
+        if (name.endsWith('/auth/permissions')) return { canAccess: (_, permission) => !['repairs.viewFinancials', 'payments:create'].includes(permission) || financial }
         if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {} }
         // La página usa la configuración real de estados: se carga en el mismo sandbox sin React.
         if (name.endsWith('/config/repairStatus')) return loadConfig()
@@ -276,6 +276,32 @@ assert.deepEqual(advanceButtons.map(node => node.props.children), ['Corregir ade
   'solo queda el botón de «Resumen de pago»')
 assert.ok(pageText.includes('Costos y ganancia'), 'la tarjeta de costos sigue visible')
 assert.ok(!pageText.includes('"Corregir adelanto"'), 'la tarjeta de costos ya no ofrece corregir el adelanto')
+
+// Redacted responses preserve operational totals without showing invented financial zeros.
+const redacted = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
+  getRepair: async () => ({ ...repair('received'), payments: undefined, history: [] }),
+}, false)
+await redacted.settle()
+const redactedText = JSON.stringify(redacted.root())
+assert.ok(!redactedText.includes('Costos y ganancia'))
+assert.ok(!redactedText.includes('Ganancia estimada'))
+assert.ok(!redactedText.includes('Corregir adelanto inicial'))
+assert.ok(!redactedText.includes('NaN'))
+assert.ok(redactedText.includes('Resumen de pago'))
+assert.ok(collect(redacted.root(), node => node.props?.label === 'Total' && node.props?.value === '$60000').length)
+assert.ok(collect(redacted.root(), node => node.props?.label === 'Pagado' && node.props?.value === '$30000').length)
+
+// Even stale complete data must not expose payment events after permission removal.
+const stale = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
+  getRepair: async () => ({ ...repair('received', [{ id: 'p1', amount: 30000, isAdvance: true, createdAt: '2026-10-01' }]), history: [{ previousStatus: 'received', newStatus: 'received', internalNote: 'Adelanto corregido de $20.000 a $30.000', createdAt: '2026-10-01' }] }),
+}, false)
+await stale.settle()
+assert.ok(!JSON.stringify(stale.root()).includes('Adelanto recibido'))
+assert.ok(!JSON.stringify(stale.root()).includes('Adelanto corregido de'))
+const noFinanceCancel = harness('src/components/repairs/RepairCancellationDialog.tsx', 'RepairCancellationDialog', { repair: repair('received'), onClose() {}, onCancelled() {} }, {}, false)
+await noFinanceCancel.settle()
+assert.ok(buttonsOf(noFinanceCancel.root()).find(node => node.props.children === 'Confirmar cancelación').props.disabled)
+assert.ok(!JSON.stringify(noFinanceCancel.root()).includes('Medio de devolución'))
 
 console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y un único botón para corregir el adelanto')
 }

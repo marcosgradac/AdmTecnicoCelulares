@@ -2,6 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { PaymentMethod, WarrantyClaimStatus } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
+import { repairResponse } from '../repairs/repair-response'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import { addClaimExpense, claimInclude, createClaim, deliverClaim, editWarranty, removeWarranty, updateClaim, WarrantyError } from './warranties.service'
 
@@ -18,12 +19,12 @@ warrantiesRouter.get('/', run(async (req, res) => {
     include: { client: true, warrantyClaims: { orderBy: { createdAt: 'desc' }, include: claimInclude } },
     orderBy: [{ warrantyExpiresAt: 'asc' }, { updatedAt: 'desc' }],
   })
-  res.json(repairs.map(repair => ({ ...repair, warrantyClaims: repair.warrantyClaims.map(claim => publicClaim(req, claim)) })))
+  res.json(repairs.map(repair => repairResponse(authOf(req), { ...repair, warrantyClaims: repair.warrantyClaims.map(claim => publicClaim(req, claim)) })))
 }))
 warrantiesRouter.patch('/:repairId', requirePermission('repairs.update'), run(async (req, res) => {
   const input = z.object({ durationDays: z.number().int().min(1).max(365), conditions: z.string().trim().max(2000).optional() }).safeParse(req.body)
   if (!input.success) return res.status(400).json({ message: 'Datos de garantía inválidos' })
-  res.json(await editWarranty(authOf(req).businessId, String(req.params.repairId), input.data))
+  res.json(repairResponse(authOf(req), await editWarranty(authOf(req).businessId, String(req.params.repairId), input.data)))
 }))
 warrantiesRouter.delete('/:repairId', requirePermission('repairs.update'), run(async (req, res) => {
   res.json(await removeWarranty(authOf(req).businessId, String(req.params.repairId)))
