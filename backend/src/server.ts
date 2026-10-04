@@ -30,6 +30,7 @@ import { addDays, assertFeatureAccess, getBusinessAccessStatus } from './modules
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { passwordChangeRouter } from './modules/auth/password-change.routes'
+import { accountRouter } from './modules/account/account.routes'
 import { reportsRouter } from './modules/reports/reports.routes'
 import { CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION } from './config/legal'
 import { permissionsFor } from './config/permissions'
@@ -336,6 +337,9 @@ app.patch('/api/auth/tutorial-seen', authenticate, authenticatedWriteLimiter, as
 })
 
 app.get('/api/billing/plans', async (_req, res) => res.json(await prisma.plan.findMany({ where: { isActive: true }, orderBy: { displayOrder: 'asc' } })))
+
+// The destructive account flow has its own authentication and stricter rate limits.
+app.use('/api/account', accountRouter)
 
 app.use('/api', authenticate)
 // El presupuesto por usuario va despues de `authenticate` (necesita req.auth.userId) y antes

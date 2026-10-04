@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../auth/AuthContext'
@@ -19,6 +19,8 @@ export function LoginPage() {
   const [captchaToken, setCaptchaToken] = useState('')
   const [captchaResetKey, setCaptchaResetKey] = useState(0)
   const [blockedAudience, setBlockedAudience] = useState<'OWNER'|'TECHNICIAN'|null>(null)
+  const [accountDeleted] = useState(() => sessionStorage.getItem('tecnodesk_account_deleted') === 'true')
+  useEffect(() => { if (accountDeleted) sessionStorage.removeItem('tecnodesk_account_deleted') }, [accountDeleted])
   if (user) return <Navigate to={(location.state as { from?: string } | null)?.from ?? firstAllowedPath(user)} replace />
 
   const submit = async (event: FormEvent) => {
@@ -51,6 +53,7 @@ export function LoginPage() {
 
   if (blockedAudience) return <AuthLayout variant="reset-password" title={blockedAudience==='OWNER'?'Tu cuenta está temporalmente bloqueada':'Acceso temporalmente suspendido'} description={blockedAudience==='OWNER'?'El período de acceso de TecnoDesk finalizó. Tus datos siguen guardados.':'El acceso de este negocio está temporalmente suspendido.'}><Alert severity="warning">{blockedAudience==='OWNER'?'Contactá con TecnoDesk para reactivar tu cuenta.':'Contactá al propietario del negocio.'}</Alert><Button onClick={()=>{setBlockedAudience(null);setForm({email:'',password:''})}}>Ingresar con otra cuenta</Button></AuthLayout>
   return <AuthLayout title="Bienvenido de nuevo" description="Ingresá a tu espacio de trabajo y seguí gestionando reparaciones, clientes y pagos en un solo lugar.">
+    {(accountDeleted || (location.state as { accountDeleted?: boolean } | null)?.accountDeleted) && <Alert severity="success" sx={{ mb: 2 }}>Tu cuenta fue eliminada permanentemente.</Alert>}
     <LoginForm email={form.email} password={form.password} saving={saving} error={error} captchaRequired={captchaRequired} captchaToken={captchaToken} captchaResetKey={captchaResetKey} onCaptchaToken={setCaptchaToken} onSubmit={submit}
       onEmailChange={email => setForm(value => ({ ...value, email }))}
       onPasswordChange={password => setForm(value => ({ ...value, password }))} />

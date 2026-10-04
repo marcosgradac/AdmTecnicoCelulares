@@ -17,6 +17,7 @@
     "migrate:postgres:dry-run": "tsx src/scripts/migrate-sqlite-to-postgres.ts --dry-run",
     "test:password-reset": "tsx tests/password-reset.ts",
     "test:password-change": "tsx tests/password-change.ts",
+    "test:account-deletion": "tsx tests/account-deletion.ts",
     "test:settings-team": "tsx tests/settings-team.ts",
     "test:inventory": "tsx tests/inventory.ts",
     "test:reports": "tsx tests/reports.ts",
