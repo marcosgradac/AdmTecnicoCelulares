@@ -3,12 +3,14 @@ import { authOf } from '../../middlewares/auth'
 import { getBusinessAccessStatus } from './billing.service'
 
 /**
- * Barrera de suscripción para todo el sistema privado. Billing y platform-admin se montan antes
- * de esta capa, así que el OWNER en modo renovación conserva plan, datos de transferencia y pagos,
- * pero cualquier otra ruta (GET incluido) responde 403 mientras la suscripción esté bloqueada.
+ * Barrera estricta de suscripción para el sistema privado: si la cuenta está bloqueada, TODO lo que
+ * llega a esta capa responde 403, sin excepciones por método ni por ruta.
+ *
+ * No necesita bypasses porque /api/billing y /api/platform-admin se montan ANTES de esta capa en
+ * server.ts y por lo tanto nunca llegan acá. /api/profile tampoco queda exceptuado: se resuelve antes
+ * del gate y el modo renovación ya lo rechaza en `authenticate` mediante la allowlist de renovación.
  */
 export async function requireSubscriptionAccess(req: Request, res: Response, next: NextFunction) {
-  if (req.path.startsWith('/billing') || req.path.startsWith('/platform-admin') || req.path === '/profile') return next()
   try {
     const access = 'accountAccess' in req ? req.accountAccess : await getBusinessAccessStatus(authOf(req).businessId)
     if (access?.shouldBlock) {

@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 
 const database = new URL(process.env.DATABASE_URL ?? '')
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(database.hostname), 'Local PostgreSQL only')
@@ -92,6 +92,33 @@ async function main() {
       assert.equal(response.body?.code, 'SUBSCRIPTION_BLOCKED', `${method} ${path}`)
     }
     check('OWNER vencido: GET y POST privados responden 403 SUBSCRIPTION_BLOCKED')
+
+    // E2. Las rutas que se resuelven ANTES del gate tampoco quedan abiertas en modo renovación.
+    const preGateBlocked = [['GET', '/profile'], ['PATCH', '/profile'], ['PATCH', '/auth/tutorial-seen'], ['POST', '/auth/password-change/request'], ['POST', '/auth/password-change/verify'], ['POST', '/auth/password-change/confirm'], ['GET', '/platform-admin/dashboard']] as const
+    for (const [method, path] of preGateBlocked) {
+      const response = await call(renewalToken, method, path, method === 'PATCH' || method === 'POST' ? {} : undefined)
+      assert.equal(response.status, 403, `${method} ${path} debe quedar bloqueado en modo renovación`)
+      assert.equal(response.body?.code, 'SUBSCRIPTION_BLOCKED', `${method} ${path}`)
+    }
+    // Un prefijo sin límite de segmento no se confunde con /api/billing: lo rechaza el propio
+    // nivel 1, así que nunca llega al gate (403 y no un 404 de ruta inexistente).
+    const lookalike = await call(renewalToken, 'GET', '/billing-malicious')
+    assert.equal(lookalike.status, 403)
+    assert.equal(lookalike.body?.code, 'SUBSCRIPTION_BLOCKED')
+    const { isRenewalPathAllowed } = await import('../src/middlewares/auth')
+    assert.equal(isRenewalPathAllowed('/api/billing/subscription'), true)
+    assert.equal(isRenewalPathAllowed('/api/billing/subscription?x=1'), true)
+    assert.equal(isRenewalPathAllowed('/api/auth/me'), true)
+    assert.equal(isRenewalPathAllowed('/api/account'), true)
+    for (const path of ['/api/billing-malicious', '/api/profile', '/api/auth/tutorial-seen', '/api/auth/password-change/request', '/api/clients', '/api', '/api/']) {
+      assert.equal(isRenewalPathAllowed(path), false, `${path} no debe estar permitido en modo renovación`)
+    }
+    check('modo renovación: /profile, tutorial-seen, password-change y platform-admin bloqueados')
+
+    // E3. La recuperación de contraseña pública sigue abierta sin sesión.
+    assert.equal((await call(undefined, 'POST', '/auth/forgot-password', { email: active.owner.email })).status, 200)
+    assert.ok((await call(undefined, 'GET', '/health')).status === 200)
+    check('recuperación de contraseña y health siguen siendo públicos')
 
     // F. Informar transferencia crea un PaymentSubmission PENDING.
     const informed = await reportPayment(renewalToken, { reference: 'TRF-1', notes: 'Transferencia desde banco X' })
@@ -207,6 +234,18 @@ async function main() {
     const repair = await prisma.repair.create({ data: { businessId: tracking.business.id, number: 7001, clientId: client.id, deviceBrand: 'Test', deviceModel: 'Phone', issue: 'Test', trackingEnabled: true, trackingToken: `renew-${randomUUID()}` } })
     assert.equal((await call(undefined, 'GET', `/tracking/${repair.trackingToken}`)).status, 200)
     check('tracking público disponible con la suscripción vencida')
+
+    // El derecho a eliminar la cuenta sobrevive al vencimiento: la request pasa la barrera de
+    // renovación y es la propia lógica de eliminación la que responde (400 por contraseña inválida).
+    const deletion = await tenant('DELETION owner')
+    await expire(deletion.business.id)
+    const deletionLogin = await login(deletion.owner.email)
+    assert.equal(deletionLogin.status, 200)
+    const deletionAttempt = await call(deletionLogin.body.token, 'DELETE', '/account', { password: 'NoEsLaPassword!', confirmation: 'ELIMINAR MI CUENTA' })
+    assert.equal(deletionAttempt.status, 400)
+    assert.notEqual(deletionAttempt.body?.code, 'SUBSCRIPTION_BLOCKED', 'el 400 confirma que llegó a la validación propia de eliminación')
+    assert.ok(await prisma.business.count({ where: { id: deletion.business.id } }) === 1, 'el intento fallido no eliminó nada')
+    check('DELETE /api/account alcanza la lógica de eliminación en modo renovación')
 
     // Q. El SUPER_ADMIN no queda afectado por los bloqueos de suscripción.
     const adminBlocked = await prisma.user.create({ data: { businessId: expired.business.id, name: 'Super 2', email: `${randomUUID()}@local.test`, passwordHash: hash, role: 'OWNER', platformRole: 'SUPER_ADMIN' } })

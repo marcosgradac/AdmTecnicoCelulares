@@ -28,6 +28,21 @@ export const authOf = (req: Request) => req.auth as AuthData
 export const isRenewalMode = (role: UserRole, access: AccountAccessStatus | null | undefined) =>
   Boolean(access?.shouldBlock) && access?.blockType === 'AUTOMATIC' && role === 'OWNER'
 
+/**
+ * Rutas que una sesión en modo renovación puede usar. Todo lo demás —incluidas /api/profile,
+ * /api/auth/tutorial-seen y /api/auth/password-change/*, que se resuelven antes del gate general—
+ * responde 403 SUBSCRIPTION_BLOCKED.
+ *
+ * Se comparan segmentos completos: '/api/billing' y '/api/billing/*' entran, pero '/api/billing-x' no.
+ * /api/account queda permitida porque la eliminación de cuenta es el derecho del OWNER vencido y
+ * conserva su propia autenticación, contraseña actual y confirmación.
+ */
+export const RENEWAL_ALLOWED_PATHS = ['/api/auth/me', '/api/account', '/api/billing'] as const
+export const isRenewalPathAllowed = (originalUrl: string) => {
+  const path = originalUrl.split('?')[0].replace(/\/+$/, '') || '/'
+  return RENEWAL_ALLOWED_PATHS.some(allowed => path === allowed || path.startsWith(`${allowed}/`))
+}
+
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : ''
   if (!token) return unauthorized(res)
@@ -48,8 +63,13 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       ? null
       : user.business.subscription ? await getAccountAccessStatus(user.business.subscription) : null
     // Una suscripción vencida sola (bloqueo AUTOMÁTICO) deja entrar al OWNER en modo renovación:
-    // conserva su sesión normal pero sólo para Billing. El bloqueo MANUAL del Super Admin no se saltea.
-    if (req.accountAccess?.shouldBlock && !isRenewalMode(user.role, req.accountAccess)) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
+    // conserva su sesión normal, pero sólo para /auth/me, /billing/* y /api/account. El bloqueo
+    // MANUAL del Super Admin no se saltea y ningún otro rol entra.
+    if (req.accountAccess?.shouldBlock) {
+      const renewal = isRenewalMode(user.role, req.accountAccess)
+      if (!renewal) return res.status(403).json({ success: false, message: user.role === 'OWNER' ? 'Tu cuenta está temporalmente bloqueada' : 'El acceso de este negocio está temporalmente suspendido', code: 'SUBSCRIPTION_BLOCKED', audience: user.role })
+      if (!isRenewalPathAllowed(req.originalUrl)) return res.status(403).json({ success: false, code: 'SUBSCRIPTION_BLOCKED', message: 'Tu suscripción necesita renovarse.' })
+    }
     req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, permissions: permissionsFor(user.role, user.permissions) }
     next()
   } catch {
