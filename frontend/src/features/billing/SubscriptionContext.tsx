@@ -24,8 +24,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [user?.id, user?.role])
   useEffect(() => { void refresh().finally(() => setLoading(false)) }, [refresh])
   // El backend responde 200 en /billing/subscription incluso con la cuenta bloqueada, así que el
-  // modo renovación se decide acá con el estado real de acceso del OWNER.
-  const renewalMode = user?.role === 'OWNER' && subscription?.access.status === 'BLOCKED'
+  // modo renovación se decide acá con el estado real de acceso. El SUPER_ADMIN no está sujeto al
+  // bloqueo de suscripción (req.accountAccess es null para él), así que nunca entra en modo renovación.
+  const renewalMode = user?.role === 'OWNER' && user.platformRole === 'USER' && subscription?.access.status === 'BLOCKED'
   const value = useMemo(() => ({ subscription, commerceEnabled, loading, renewalMode, refresh }), [subscription, commerceEnabled, loading, renewalMode, refresh])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }

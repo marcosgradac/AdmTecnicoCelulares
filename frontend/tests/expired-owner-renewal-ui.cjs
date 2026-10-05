@@ -24,12 +24,24 @@ let passed = 0
 const check = label => console.log(`OK ${++passed}: ${label}`)
 
 const main = () => {
-  // El modo renovación se decide con el rol OWNER y el estado real de acceso, no por heurísticas.
+  // El modo renovación se decide con rol OWNER, platformRole USER y el estado real de acceso.
   assert.ok(
-    /user\?\.role === 'OWNER' && subscription\?\.access\.status === 'BLOCKED'/.test(subscriptionContext),
-    'SubscriptionContext define renewalMode con role OWNER y access.status BLOCKED'
+    /user\?\.role === 'OWNER' && user\.platformRole === 'USER' && subscription\?\.access\.status === 'BLOCKED'/.test(subscriptionContext),
+    'SubscriptionContext define renewalMode con role OWNER, platformRole USER y access.status BLOCKED'
   )
-  check('OWNER BLOCKED activa el modo renovación según el estado de acceso del backend')
+  check('OWNER USER + BLOCKED activa el modo renovación; el SUPER_ADMIN queda excluido')
+
+  // Se evalúa la condición real del código fuente con los cuatro perfiles, para fijar el contrato:
+  // el SUPER_ADMIN no está sujeto al bloqueo de suscripción y nunca debe entrar en modo renovación.
+  const renewalExpression = subscriptionContext.match(/const renewalMode = (.+)$/m)
+  assert.ok(renewalExpression, 'se encuentra la definición de renewalMode')
+  const evaluateRenewal = new Function('user', 'subscription', `return ${renewalExpression[1]}`)
+  const access = status => ({ access: { status } })
+  assert.equal(evaluateRenewal({ role: 'OWNER', platformRole: 'USER' }, access('BLOCKED')), true, 'OWNER USER + BLOCKED => renewalMode')
+  assert.equal(evaluateRenewal({ role: 'OWNER', platformRole: 'SUPER_ADMIN' }, access('BLOCKED')), false, 'SUPER_ADMIN + BLOCKED => sin modo renovación')
+  assert.equal(evaluateRenewal({ role: 'OWNER', platformRole: 'USER' }, access('ACTIVE')), false, 'OWNER USER + ACTIVE => sin modo renovación')
+  assert.equal(evaluateRenewal({ role: 'TECHNICIAN', platformRole: 'USER' }, access('BLOCKED')), false, 'TECHNICIAN + BLOCKED => sin modo renovación')
+  check('SUPER_ADMIN + BLOCKED no activa renewalMode; OWNER + ACTIVE tampoco')
 
   // Mientras se consulta la suscripción no se dibuja el sistema normal.
   assert.ok(/subscriptionLoading/.test(appShell), 'AppShell espera la suscripción antes de renderizar')

@@ -33,14 +33,15 @@ export const isRenewalMode = (role: UserRole, access: AccountAccessStatus | null
  * /api/auth/tutorial-seen y /api/auth/password-change/*, que se resuelven antes del gate general—
  * responde 403 SUBSCRIPTION_BLOCKED.
  *
- * Se comparan segmentos completos: '/api/billing' y '/api/billing/*' entran, pero '/api/billing-x' no.
- * /api/account queda permitida porque la eliminación de cuenta es el derecho del OWNER vencido y
- * conserva su propia autenticación, contraseña actual y confirmación.
+ * /api/auth/me y /api/account se comparan de forma EXACTA: sus subrutas no existen hoy, pero si
+ * alguien agregara una, una sesión de renovación no debe heredarla por accidente. Sólo Billing
+ * acepta subrutas. /api/account queda permitida porque la eliminación de cuenta es el derecho del
+ * OWNER vencido y conserva su propia autenticación, contraseña actual y confirmación.
  */
-export const RENEWAL_ALLOWED_PATHS = ['/api/auth/me', '/api/account', '/api/billing'] as const
 export const isRenewalPathAllowed = (originalUrl: string) => {
   const path = originalUrl.split('?')[0].replace(/\/+$/, '') || '/'
-  return RENEWAL_ALLOWED_PATHS.some(allowed => path === allowed || path.startsWith(`${allowed}/`))
+  if (path === '/api/auth/me' || path === '/api/account') return true
+  return path === '/api/billing' || path.startsWith('/api/billing/')
 }
 
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {

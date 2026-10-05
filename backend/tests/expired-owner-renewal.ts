@@ -106,11 +106,21 @@ async function main() {
     assert.equal(lookalike.status, 403)
     assert.equal(lookalike.body?.code, 'SUBSCRIPTION_BLOCKED')
     const { isRenewalPathAllowed } = await import('../src/middlewares/auth')
-    assert.equal(isRenewalPathAllowed('/api/billing/subscription'), true)
-    assert.equal(isRenewalPathAllowed('/api/billing/subscription?x=1'), true)
+    // Coincidencia exacta para /auth/me y /account: sus subrutas no se heredan aunque se agreguen.
     assert.equal(isRenewalPathAllowed('/api/auth/me'), true)
+    assert.equal(isRenewalPathAllowed('/api/auth/me/'), true)
+    assert.equal(isRenewalPathAllowed('/api/auth/me/foo'), false)
+    assert.equal(isRenewalPathAllowed('/api/auth/me?x=1'), true)
     assert.equal(isRenewalPathAllowed('/api/account'), true)
-    for (const path of ['/api/billing-malicious', '/api/profile', '/api/auth/tutorial-seen', '/api/auth/password-change/request', '/api/clients', '/api', '/api/']) {
+    assert.equal(isRenewalPathAllowed('/api/account/'), true)
+    assert.equal(isRenewalPathAllowed('/api/account/foo'), false)
+    // Sólo Billing acepta subrutas.
+    assert.equal(isRenewalPathAllowed('/api/billing'), true)
+    assert.equal(isRenewalPathAllowed('/api/billing/'), true)
+    assert.equal(isRenewalPathAllowed('/api/billing/subscription'), true)
+    assert.equal(isRenewalPathAllowed('/api/billing/payments?x=1'), true)
+    assert.equal(isRenewalPathAllowed('/api/billing-malicious'), false)
+    for (const path of ['/api/profile', '/api/auth/tutorial-seen', '/api/auth/password-change/request', '/api/clients', '/api', '/api/']) {
       assert.equal(isRenewalPathAllowed(path), false, `${path} no debe estar permitido en modo renovación`)
     }
     check('modo renovación: /profile, tutorial-seen, password-change y platform-admin bloqueados')
