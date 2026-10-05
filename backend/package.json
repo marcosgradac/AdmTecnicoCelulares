@@ -39,6 +39,7 @@
     "test:money-concurrency": "tsx tests/money-concurrency.ts",
     "test:commerce-stock-race": "tsx tests/commerce-stock-race.ts",
     "test:billing": "tsx tests/billing.ts",
+    "test:billing-pending-concurrency": "tsx tests/pending-payment-concurrency.ts",
     "test:commerce": "tsx tests/commerce.ts && tsx tests/commerce-sqlite.ts",
     "test:equipment-sales": "tsx tests/equipment-sales.ts && tsx tests/equipment-sales-sqlite.ts",
     "test:performance-access": "tsx tests/performance-access.ts",

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireRole } from '../../middlewares/auth'
@@ -33,8 +34,17 @@ billingRouter.post('/payments', async (req, res) => {
   // Un pago pendiente ya informado se revisa antes de aceptar otro: evita doble carga por doble clic.
   const alreadyPending = await prisma.paymentSubmission.findFirst({ where: { businessId, status: 'PENDING' }, select: { id: true } })
   if (alreadyPending) return res.status(409).json({ success: false, code: 'PAYMENT_ALREADY_PENDING', message: 'Ya tenés un pago pendiente de verificación.' })
-  const payment = await prisma.paymentSubmission.create({ data: { subscriptionId: subscription.id, businessId, planCode: plan.code, expectedAmount: plan.priceARS, reportedAmount: parsed.data.reportedAmount, payerName: parsed.data.payerName, transferDate: parsed.data.transferDate, reference: parsed.data.reference || null, notes: parsed.data.notes || null } })
-  return res.status(201).json(payment)
+  try {
+    const payment = await prisma.paymentSubmission.create({ data: { subscriptionId: subscription.id, businessId, planCode: plan.code, expectedAmount: plan.priceARS, reportedAmount: parsed.data.reportedAmount, payerName: parsed.data.payerName, transferDate: parsed.data.transferDate, reference: parsed.data.reference || null, notes: parsed.data.notes || null } })
+    return res.status(201).json(payment)
+  } catch (error) {
+    // El índice parcial protege las carreras que pasan el precheck. Sólo atrapamos
+    // este create; meta.target de un índice SQL manual no tiene un formato portable.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return res.status(409).json({ success: false, code: 'PAYMENT_ALREADY_PENDING', message: 'Ya tenés un pago pendiente de verificación.' })
+    }
+    throw error
+  }
 })
 billingRouter.get('/payments', async (req, res) => res.json(await prisma.paymentSubmission.findMany({ where: { businessId: authOf(req).businessId }, include: { plan: true }, orderBy: { createdAt: 'desc' } })))
 
