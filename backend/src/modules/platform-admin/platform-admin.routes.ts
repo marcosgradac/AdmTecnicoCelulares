@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireSuperAdmin } from '../../middlewares/auth'
-import { addDays, approvePayment, buildCourtesyDaysUpdate, buildReactivateSubscriptionUpdate, buildSuspendSubscriptionUpdate, calculateAccountAccessStatus, getBillingLifecycleSettings, invalidateBillingLifecycleSettingsCache, subscriptionUsage } from '../billing/billing.service'
+import { addDays, approvePayment, buildCourtesyDaysUpdate, buildReactivateSubscriptionUpdate, buildSuspendSubscriptionUpdate, calculateAccountAccessStatus, confirmRejectedPaymentAccreditation, getBillingLifecycleSettings, invalidateBillingLifecycleSettingsCache, subscriptionUsage } from '../billing/billing.service'
 import { limitSuperAdminWrites } from '../../middlewares/security'
 
 export const platformAdminRouter = Router()
@@ -152,18 +152,27 @@ platformAdminRouter.post('/payments/:id/approve', async (req, res) => {
   try { return res.json(await approvePayment(req.params.id, authOf(req).userId)) }
   catch (error) { return res.status(typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos aprobar el pago' }) }
 })
+platformAdminRouter.post('/payments/:id/confirm-accreditation', async (req, res) => {
+  if (!z.object({}).strict().safeParse(req.body ?? {}).success) return res.status(400).json({ success: false, message: 'La confirmación no acepta datos adicionales ni un plan.' })
+  try { return res.json(await confirmRejectedPaymentAccreditation(req.params.id, authOf(req).userId)) }
+  catch (error) { return res.status(typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos confirmar la acreditación' }) }
+})
 platformAdminRouter.post('/payments/:id/reject', async (req, res) => {
   const parsed = z.object({ reason: z.string().trim().min(3).max(500) }).safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Indicá el motivo del rechazo' })
-  const payment = await prisma.paymentSubmission.findUnique({ where: { id: req.params.id } })
-  if (!payment) return res.status(404).json({ success: false, message: 'Pago no encontrado' })
-  if (payment.status !== 'PENDING') return res.status(409).json({ success: false, message: 'Este pago ya fue procesado.' })
-  const updated = await prisma.$transaction(async tx => {
-    const result = await tx.paymentSubmission.update({ where: { id: payment.id }, data: { status: 'REJECTED', rejectionReason: parsed.data.reason, reviewedAt: new Date(), reviewedByUserId: authOf(req).userId } })
-    await tx.subscriptionAuditLog.create({ data: { actorUserId: authOf(req).userId, businessId: payment.businessId, action: 'PAYMENT_REJECTED', metadata: { paymentId: payment.id, reason: parsed.data.reason } } })
-    return result
-  })
-  return res.json(updated)
+  try {
+    const updated = await prisma.$transaction(async tx => {
+      const payment = await tx.paymentSubmission.findUnique({ where: { id: req.params.id } })
+      if (!payment) throw Object.assign(new Error('Pago no encontrado'), { statusCode: 404 })
+      if (payment.status !== 'PENDING') throw Object.assign(new Error('Este pago ya fue procesado.'), { statusCode: 409 })
+      const reviewedAt = new Date(), actorUserId = authOf(req).userId
+      const result = await tx.paymentSubmission.updateMany({ where: { id: payment.id, status: 'PENDING' }, data: { status: 'REJECTED', rejectionReason: parsed.data.reason, reviewedAt, reviewedByUserId: actorUserId } })
+      if (result.count !== 1) throw Object.assign(new Error('Este pago ya fue procesado.'), { statusCode: 409 })
+      await tx.subscriptionAuditLog.create({ data: { actorUserId, businessId: payment.businessId, action: 'PAYMENT_REJECTED', metadata: { paymentId: payment.id, planCode: payment.planCode, rejectionReason: parsed.data.reason, reviewedAt: reviewedAt.toISOString() } } })
+      return tx.paymentSubmission.findUnique({ where: { id: payment.id } })
+    })
+    return res.json(updated)
+  } catch (error) { return res.status(typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500).json({ success: false, message: error instanceof Error ? error.message : 'No pudimos rechazar el pago' }) }
 })
 
 platformAdminRouter.get('/billing-settings', async (_req, res) => res.json(await prisma.billingSettings.findUnique({ where: { id: 'default' } })))

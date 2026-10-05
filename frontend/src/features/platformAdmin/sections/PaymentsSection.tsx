@@ -3,10 +3,10 @@ import { Alert, Box, Button, Stack, Tab, Table, TableBody, TableCell, TableConta
 import { RecordCard, RecordField } from '../../../components/admin/AdminPatterns'
 import { TableSkeleton } from '../../../components/common/TableSkeleton'
 import { formatARS, formatDate } from '../../billing/billing.utils'
-import { approveAdminPayment, getAdminPayments, rejectAdminPayment, type AdminPayment, type PaymentStatus } from '../platformAdmin.api'
+import { approveAdminPayment, confirmAdminPaymentAccreditation, getAdminPayments, rejectAdminPayment, type AdminPayment, type PaymentStatus } from '../platformAdmin.api'
 import { usePlatformAction, usePlatformResource } from '../platformAdmin.hooks'
 import { PaymentStatusChip, PlatformEmpty, PlatformError, PlatformLoading, RefreshingBar } from '../platformAdmin.shared'
-import { ConfirmDialog, RejectPaymentDialog } from '../platformAdmin.dialogs'
+import { PaymentAccreditationDialog, RejectPaymentDialog } from '../platformAdmin.dialogs'
 
 const tabs: Array<[PaymentStatus, string]> = [['PENDING', 'Pendientes'], ['APPROVED', 'Aprobados'], ['REJECTED', 'Rechazados']]
 const emptyCopy: Record<PaymentStatus, { title: string; description: string }> = {
@@ -29,7 +29,7 @@ function PaymentTable({ rows, loading, onApprove, onReject }: { rows: AdminPayme
           <TableCell><Typography fontWeight={700}>{formatARS(payment.reportedAmount)}</Typography>{payment.reference && <Typography variant="caption" color="text.secondary">Ref. {payment.reference}</Typography>}</TableCell>
           <TableCell>{formatDate(payment.transferDate)}<Typography variant="caption" color="text.secondary" display="block">Informado el {formatDate(payment.createdAt)}</Typography></TableCell>
           <TableCell><PaymentStatusChip status={payment.status} />{payment.rejectionReason && <Typography variant="caption" color="text.secondary" display="block" sx={{ overflowWrap: 'anywhere' }}>{payment.rejectionReason}</Typography>}</TableCell>
-          <TableCell align="right">{payment.status === 'PENDING' && <Stack direction="row" gap={1} justifyContent="flex-end"><Button size="small" color="error" onClick={() => onReject(payment)}>Rechazar</Button><Button size="small" variant="contained" onClick={() => onApprove(payment)}>Aprobar</Button></Stack>}</TableCell>
+          <TableCell align="right">{payment.status === 'PENDING' && <Stack direction="row" gap={1} justifyContent="flex-end"><Button size="small" color="error" onClick={() => onReject(payment)}>Rechazar</Button><Button size="small" variant="contained" onClick={() => onApprove(payment)}>Aprobar</Button></Stack>}{payment.status === 'REJECTED' && <Button size="small" variant="outlined" onClick={() => onApprove(payment)}>Acreditación encontrada</Button>}</TableCell>
         </TableRow>)}
       </TableBody>
     </Table>
@@ -59,8 +59,8 @@ export function PaymentsSection({ refreshToken, onDataChanged }: { refreshToken:
   const rows = list.data ?? []
   useEffect(() => { action.clear() }, [tab, action.clear])
   const runApprove = async () => {
-    if (!approving) return
-    const done = await action.run(() => approveAdminPayment(approving.id), 'Pago aprobado. La suscripción del negocio quedó activa.')
+    if (!approving || action.saving) return
+    const done = await action.run(() => approving.status === 'REJECTED' ? confirmAdminPaymentAccreditation(approving.id) : approveAdminPayment(approving.id), 'Pago aprobado. La suscripción del negocio quedó activa.')
     if (done) { setApproving(null); list.reload(); onDataChanged() }
   }
   const runReject = async (reason: string) => {
@@ -82,11 +82,10 @@ export function PaymentsSection({ refreshToken, onDataChanged }: { refreshToken:
           {rows.length === 0
             ? <PlatformEmpty title={emptyCopy[tab].title} description={emptyCopy[tab].description} />
             : mobile
-              ? <Stack spacing={1.5}>{rows.map(payment => <PaymentCard key={payment.id} payment={payment} actions={payment.status === 'PENDING' ? <Stack direction="row" gap={1}><Button size="small" color="error" onClick={() => setRejecting(payment)}>Rechazar</Button><Button size="small" variant="contained" onClick={() => setApproving(payment)}>Aprobar</Button></Stack> : undefined} />)}</Stack>
+              ? <Stack spacing={1.5}>{rows.map(payment => <PaymentCard key={payment.id} payment={payment} actions={payment.status === 'PENDING' ? <Stack direction="row" gap={1}><Button size="small" color="error" onClick={() => setRejecting(payment)}>Rechazar</Button><Button size="small" variant="contained" onClick={() => setApproving(payment)}>Aprobar</Button></Stack> : payment.status === 'REJECTED' ? <Button size="small" variant="outlined" onClick={() => setApproving(payment)}>Acreditación encontrada</Button> : undefined} />)}</Stack>
               : <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.paper', overflow: 'hidden' }}><PaymentTable rows={rows} loading={list.loading} onApprove={setApproving} onReject={setRejecting} /></Box>}
         </Stack>}
-    <ConfirmDialog open={Boolean(approving)} title="Aprobar pago" confirmLabel="Aprobar pago" saving={action.saving} error={action.error} onClose={() => { setApproving(null); action.clear() }} onConfirm={() => void runApprove()}
-      description={approving ? <>Se activa el plan <b>{approving.plan?.name ?? approving.planCode}</b> del negocio <b>{approving.business?.name ?? ''}</b> con el pago informado de <b>{formatARS(approving.reportedAmount)}</b>. Si la cuenta está vigente, el período se extiende un mes desde el vencimiento actual; si está vencida, el nuevo período comienza hoy.</> : ''} />
+    <PaymentAccreditationDialog payment={approving} saving={action.saving} error={action.error} onClose={() => { setApproving(null); action.clear() }} onConfirm={() => void runApprove()} />
     <RejectPaymentDialog open={Boolean(rejecting)} businessName={rejecting?.business?.name} saving={action.saving} error={action.error} onClose={() => { setRejecting(null); action.clear() }} onConfirm={reason => void runReject(reason)} />
   </Stack>
 }

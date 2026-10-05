@@ -19,6 +19,9 @@ const subscriptionPage = read('features/billing/SubscriptionPage.tsx')
 const billingApi = read('features/billing/billing.api.ts')
 const adminPayments = read('features/platformAdmin/sections/PaymentsSection.tsx')
 const adminDashboard = read('features/platformAdmin/sections/DashboardSection.tsx')
+const adminDetail = read('features/platformAdmin/SubscriptionDetailDialog.tsx')
+const adminApi = read('features/platformAdmin/platformAdmin.api.ts')
+const adminDialogs = read('features/platformAdmin/platformAdmin.dialogs.tsx')
 
 let passed = 0
 const check = label => console.log(`OK ${++passed}: ${label}`)
@@ -76,9 +79,15 @@ const main = () => {
   check('la pantalla de renovación conserva datos bancarios y eliminación de cuenta')
 
   // Con un pago pendiente no se puede volver a informar otro.
-  assert.ok(/pendingPayment\?/.test(subscriptionPage), 'el botón de transferir se reemplaza cuando hay pago pendiente')
-  assert.ok(/Pago pendiente de verificación/.test(subscriptionPage), 'se informa que el pago está pendiente de verificación')
-  assert.ok(/después de que confirmemos la acreditación/.test(subscriptionPage), 'no se promete acreditación automática')
+  const pendingPanel = subscriptionPage.slice(subscriptionPage.indexOf('{pendingPayment&&<Alert'), subscriptionPage.indexOf('{subscription.status===\'TRIALING\'&&<Alert'))
+  assert.ok(pendingPanel.includes('Pago informado — pendiente de verificación'), 'el aviso aparece antes de los planes sin selected')
+  assert.ok(!pendingPanel.includes('selected'), 'no requiere elegir un plan')
+  assert.ok(pendingPanel.includes('La acreditación bancaria puede demorar en reflejarse'), 'no promete acreditación inmediata')
+  assert.ok(pendingPanel.includes('No necesitás informar el pago nuevamente.'), 'evita un segundo envío')
+  for (const field of ['pendingDetails.plan.name', 'pendingDetails.reportedAmount', 'pendingDetails.transferDate']) assert.ok(pendingPanel.includes(field), `detalle real: ${field}`)
+  assert.ok(/\{!pendingPayment&&<Box><Typography/.test(subscriptionPage), 'PlanCards se ocultan con PENDING')
+  assert.ok(/\{!pendingPayment&&selected&&plan&&/.test(subscriptionPage), 'transferencia se oculta con PENDING')
+  assert.ok(/open=\{formOpen&&!pendingPayment\}/.test(subscriptionPage), 'no permite informar otro pago con PENDING')
   assert.ok(/PAYMENT_ALREADY_PENDING/.test(subscriptionPage), 'el 409 del backend se muestra al cliente')
   check('con pago pendiente se muestra el estado en vez de permitir otro envío')
 
@@ -101,6 +110,16 @@ const main = () => {
   }
   assert.ok(/Aprobar/.test(adminPayments) && /Rechazar/.test(adminPayments), 'hay acciones de aprobar y rechazar')
   check('el Super Admin ve el pago pendiente y puede aprobarlo o rechazarlo')
+
+  assert.ok(adminDetail.includes("payment.status === 'PENDING'") && adminDetail.includes('Rechazar') && adminDetail.includes('Acreditado — renovar'))
+  assert.ok(adminDetail.includes("payment.status === 'REJECTED'") && adminDetail.includes('Acreditación encontrada'))
+  for (const source of [adminDetail, adminPayments]) assert.ok(source.includes('confirmAdminPaymentAccreditation'), 'ambas superficies usan la misma API')
+  const confirmApi = adminApi.split('\n').find(line => line.includes('export const confirmAdminPaymentAccreditation'))
+  assert.ok(confirmApi?.includes('/confirm-accreditation'))
+  assert.ok(!confirmApi.includes('planCode'), 'la API no envía un plan')
+  assert.ok(adminDialogs.includes('PaymentAccreditationDialog'), 'confirmación compartida')
+  for (const field of ['Monto esperado', 'Monto informado', 'Fecha de transferencia', 'Titular / origen', 'Referencia', 'Motivo del rechazo anterior']) assert.ok(adminDialogs.includes(field), field)
+  check('detalle y listado confirman acreditaciones con los datos del pago, sin selector de plan')
 
   console.log(`EXPIRED OWNER RENEWAL UI TESTS PASSED: ${passed}`)
 }

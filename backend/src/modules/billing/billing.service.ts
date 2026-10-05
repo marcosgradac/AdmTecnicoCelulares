@@ -196,6 +196,34 @@ export async function approvePayment(paymentId: string, actorUserId: string, now
   })
 }
 
+export async function confirmRejectedPaymentAccreditation(paymentId: string, actorUserId: string, now = new Date()) {
+  return prisma.$transaction(async tx => {
+    const payment = await tx.paymentSubmission.findUnique({ where: { id: paymentId }, include: { subscription: true } })
+    if (!payment) throw Object.assign(new Error('Pago no encontrado.'), { statusCode: 404 })
+    if (payment.status !== 'REJECTED') throw Object.assign(new Error('Sólo se puede confirmar la acreditación de un pago rechazado.'), { statusCode: 409 })
+    const baseCandidate = payment.subscription.status === 'TRIALING' ? payment.subscription.trialEndsAt : payment.subscription.currentPeriodEnd
+    const billingBase = baseCandidate && baseCandidate > now ? baseCandidate : now
+    const currentPeriodEnd = addBillingMonth(billingBase)
+    const updated = await tx.paymentSubmission.updateMany({
+      where: { id: payment.id, status: 'REJECTED' },
+      data: { status: 'APPROVED', reviewedByUserId: actorUserId, reviewedAt: now, rejectionReason: null },
+    })
+    if (updated.count !== 1) throw Object.assign(new Error('Este pago ya fue procesado.'), { statusCode: 409 })
+    const subscription = await tx.subscription.update({ where: { id: payment.subscriptionId }, data: { status: 'ACTIVE', planCode: payment.planCode, currentPeriodStart: billingBase, currentPeriodEnd, accessExpiresAt: currentPeriodEnd, graceEndsAt: null, manuallyBlockedAt: null, manualBlockReason: null, manualBlockNote: null } })
+    await tx.subscriptionAuditLog.create({ data: {
+      actorUserId, businessId: payment.businessId, action: 'PAYMENT_APPROVED_AFTER_REJECTION',
+      metadata: {
+        paymentId, planCode: payment.planCode,
+        previousRejectionReason: payment.rejectionReason,
+        previousReviewedAt: payment.reviewedAt?.toISOString() ?? null,
+        previousReviewedByUserId: payment.reviewedByUserId,
+        approvedAt: now.toISOString(), currentPeriodEnd: currentPeriodEnd.toISOString(),
+      },
+    } })
+    return { payment: await tx.paymentSubmission.findUnique({ where: { id: payment.id } }), subscription }
+  })
+}
+
 export const serializeSubscription = async (businessId: string) => {
   const subscription = await refreshSubscriptionStatus(businessId)
   const usage = await subscriptionUsage(businessId)

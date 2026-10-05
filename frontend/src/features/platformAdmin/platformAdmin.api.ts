@@ -154,6 +154,7 @@ export const getAdminSubscription = async (id: string) => (await api.get<AdminSu
 export const updateAdminSubscription = async (id: string, input: { action: SubscriptionAction; planCode?: PlanCode; days?: number }) => (await api.patch<AdminSubscriptionBase>(`/platform-admin/subscriptions/${id}`, input)).data
 export const getAdminPayments = async (status?: PaymentStatus) => (await api.get<AdminPayment[]>('/platform-admin/payments', { params: { status } })).data
 export const approveAdminPayment = async (id: string) => (await api.post<{ payment: AdminPayment | null; subscription: AdminSubscriptionBase }>(`/platform-admin/payments/${id}/approve`)).data
+export const confirmAdminPaymentAccreditation = async (id: string) => (await api.post<{ payment: AdminPayment | null; subscription: AdminSubscriptionBase }>(`/platform-admin/payments/${id}/confirm-accreditation`)).data
 export const rejectAdminPayment = async (id: string, reason: string) => (await api.post<AdminPayment>(`/platform-admin/payments/${id}/reject`, { reason })).data
 export const getBillingSettings = async () => (await api.get<BillingSettings | null>('/platform-admin/billing-settings')).data
 export const saveBillingSettings = async (input: BillingSettingsInput) => (await api.patch<BillingSettings>('/platform-admin/billing-settings', input)).data

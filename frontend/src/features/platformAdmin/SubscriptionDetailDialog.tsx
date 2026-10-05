@@ -3,10 +3,10 @@ import { Alert, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogT
 import { RecordField } from '../../components/admin/AdminPatterns'
 import { getPlans } from '../billing/billing.api'
 import { formatARS, formatDate } from '../billing/billing.utils'
-import { getAdminSubscription, updateAdminSubscription, type PlanCode, type SubscriptionAction } from './platformAdmin.api'
+import { approveAdminPayment, confirmAdminPaymentAccreditation, getAdminSubscription, rejectAdminPayment, updateAdminSubscription, type AdminPayment, type PlanCode, type SubscriptionAction } from './platformAdmin.api'
 import { usePlatformAction, usePlatformResource } from './platformAdmin.hooks'
 import { PaymentStatusChip, PlatformError, PlatformLoading, RefreshingBar, SubscriptionStatusChip, formatDateTime, formatLong, limitLabel, subscriptionPeriodLabel } from './platformAdmin.shared'
-import { ConfirmDialog } from './platformAdmin.dialogs'
+import { ConfirmDialog, PaymentAccreditationDialog, RejectPaymentDialog } from './platformAdmin.dialogs'
 
 type ActionDialog = SubscriptionAction
 const planCodes: PlanCode[] = ['INITIAL', 'PROFESSIONAL', 'COMPLETE']
@@ -20,12 +20,14 @@ const UsageRow = ({ label, used, limit }: { label: string; used: number; limit: 
 
 export function SubscriptionDetailDialog({ subscriptionId, onClose, onChanged }: { subscriptionId: string | null; onClose: () => void; onChanged: () => void }) {
   const [dialog, setDialog] = useState<ActionDialog | null>(null)
+  const [confirmingPayment, setConfirmingPayment] = useState<AdminPayment | null>(null)
+  const [rejectingPayment, setRejectingPayment] = useState<AdminPayment | null>(null)
   const [planCode, setPlanCode] = useState<PlanCode>('COMPLETE')
   const [days, setDays] = useState(30)
   const [planOptions, setPlanOptions] = useState<Array<{ code: PlanCode; label: string }>>([])
   const detail = usePlatformResource(() => getAdminSubscription(subscriptionId ?? ''), `subscription:${subscriptionId}`, Boolean(subscriptionId))
   const action = usePlatformAction()
-  useEffect(() => { setDialog(null); action.clear() }, [subscriptionId, action.clear])
+  useEffect(() => { setDialog(null); setConfirmingPayment(null); setRejectingPayment(null); action.clear() }, [subscriptionId, action.clear])
   useEffect(() => {
     if (!detail.data) return
     setPlanCode(detail.data.planCode)
@@ -39,6 +41,21 @@ export function SubscriptionDetailDialog({ subscriptionId, onClose, onChanged }:
   }, [dialog, planOptions.length])
   const subscription = detail.data
   const closeDialog = () => setDialog(null)
+  const closePaymentDialog = () => { if (!action.saving) { setConfirmingPayment(null); setRejectingPayment(null); action.clear() } }
+  const runPaymentAction = async (operation: () => Promise<unknown>, success: string) => {
+    if (action.saving) return
+    const done = await action.run(operation, success)
+    if (!done) return
+    setConfirmingPayment(null)
+    setRejectingPayment(null)
+    detail.reload()
+    onChanged()
+  }
+  const confirmPayment = () => {
+    if (!confirmingPayment) return
+    const payment = confirmingPayment
+    void runPaymentAction(() => payment.status === 'REJECTED' ? confirmAdminPaymentAccreditation(payment.id) : approveAdminPayment(payment.id), 'Pago aprobado y suscripción renovada con el plan informado.')
+  }
   const runAction = async (payload: { action: SubscriptionAction; planCode?: PlanCode; days?: number }, success: string) => {
     if (!subscription) return
     const done = await action.run(() => updateAdminSubscription(subscription.id, payload), success)
@@ -107,6 +124,11 @@ export function SubscriptionDetailDialog({ subscriptionId, onClose, onChanged }:
                       {payment.rejectionReason && <Typography variant="caption" color="error.main">{payment.rejectionReason}</Typography>}
                     </Box>
                     <PaymentStatusChip status={payment.status} />
+                    {payment.status === 'PENDING' && <Stack direction="row" gap={1} flexWrap="wrap">
+                      <Button size="small" color="error" disabled={action.saving} onClick={() => { action.clear(); setRejectingPayment(payment) }}>Rechazar</Button>
+                      <Button size="small" variant="contained" disabled={action.saving} onClick={() => { action.clear(); setConfirmingPayment(payment) }}>Acreditado — renovar</Button>
+                    </Stack>}
+                    {payment.status === 'REJECTED' && <Button size="small" variant="outlined" disabled={action.saving} onClick={() => { action.clear(); setConfirmingPayment(payment) }}>Acreditación encontrada</Button>}
                   </Box>
                 )) : <Typography variant="body2" color="text.secondary">Todavía no hay pagos informados para esta suscripción.</Typography>}
               </Stack>
@@ -114,6 +136,8 @@ export function SubscriptionDetailDialog({ subscriptionId, onClose, onChanged }:
           </Stack>}
     </DialogContent>
     <DialogActions><Button onClick={onClose}>Cerrar</Button></DialogActions>
+    <PaymentAccreditationDialog payment={confirmingPayment} businessName={subscription?.business.name} saving={action.saving} error={action.error} onClose={closePaymentDialog} onConfirm={confirmPayment} />
+    <RejectPaymentDialog open={Boolean(rejectingPayment)} businessName={subscription?.business.name} saving={action.saving} error={action.error} onClose={closePaymentDialog} onConfirm={reason => { if (rejectingPayment) void runPaymentAction(() => rejectAdminPayment(rejectingPayment.id, reason), 'Pago rechazado. El negocio puede informar uno nuevo.') }} />
     <Dialog open={dialog === 'CHANGE_PLAN'} onClose={closeDialog} fullWidth maxWidth="xs">
       <DialogTitle>Cambiar plan</DialogTitle>
       <DialogContent><Stack spacing={2} mt={.5}>

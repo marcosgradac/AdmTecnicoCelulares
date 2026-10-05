@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Alert, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, Stack, TextField, Typography } from '@mui/material'
-import { blockAdminBusiness, renewAdminBusiness, setAdminBusinessExpiry, unblockAdminBusiness, type AccountAccess } from './platformAdmin.api'
+import { blockAdminBusiness, renewAdminBusiness, setAdminBusinessExpiry, unblockAdminBusiness, type AccountAccess, type AdminPayment } from './platformAdmin.api'
+import { RecordField } from '../../components/admin/AdminPatterns'
+import { formatARS, formatDate } from '../billing/billing.utils'
 import { apiErrorMessage } from './platformAdmin.hooks'
 import { formatLong, toDateInput } from './platformAdmin.shared'
 
@@ -14,6 +16,23 @@ export function ConfirmDialog({ open, title, description, confirmLabel = 'Confir
     <DialogContent><Stack spacing={2} mt={.5}>{typeof description === 'string' ? <Typography>{description}</Typography> : description}{error && <Alert severity="error">{error}</Alert>}</Stack></DialogContent>
     <DialogActions><Button onClick={onClose}>Cancelar</Button><Button variant="contained" color={destructive ? 'error' : 'primary'} disabled={saving} onClick={onConfirm}>{saving ? 'Procesando…' : confirmLabel}</Button></DialogActions>
   </Dialog>
+}
+
+export function PaymentAccreditationDialog({ payment, businessName, saving, error, onClose, onConfirm }: { payment: AdminPayment | null; businessName?: string; saving: boolean; error?: string; onClose: () => void; onConfirm: () => void }) {
+  const rejected = payment?.status === 'REJECTED'
+  return <ConfirmDialog open={Boolean(payment)} title={rejected ? 'Acreditación encontrada' : 'Acreditado — renovar'} confirmLabel={rejected ? 'Acreditación encontrada — renovar' : 'Aprobar y renovar'} saving={saving} error={error} onClose={() => { if (!saving) onClose() }} onConfirm={onConfirm} description={payment && <Stack spacing={1.5}>
+    <RecordField label="Negocio">{businessName ?? payment.business?.name ?? 'Negocio'}</RecordField>
+    <RecordField label="Plan elegido por el cliente">{payment.plan?.name ?? payment.planCode}</RecordField>
+    <RecordField label="Monto esperado">{formatARS(payment.expectedAmount)}</RecordField>
+    <RecordField label="Monto informado">{formatARS(payment.reportedAmount)}</RecordField>
+    <RecordField label="Fecha de transferencia">{formatDate(payment.transferDate)}</RecordField>
+    <RecordField label="Titular / origen">{payment.payerName}</RecordField>
+    {payment.reference && <RecordField label="Referencia">{payment.reference}</RecordField>}
+    {rejected && <RecordField label="Motivo del rechazo anterior" color="error.main">{payment.rejectionReason ?? 'Sin motivo registrado'}</RecordField>}
+    <Alert severity="warning">{rejected
+      ? 'Este pago fue rechazado anteriormente. Usá esta opción solamente si ahora verificaste que la transferencia sí se acreditó. Al confirmar se renovará la suscripción usando el plan informado por el cliente.'
+      : 'Confirmá que verificaste la acreditación bancaria. Se aprobará este pago y se renovará la suscripción con el plan informado por el cliente.'}</Alert>
+  </Stack>} />
 }
 
 export function RejectPaymentDialog({ open, businessName, saving, error, onClose, onConfirm }: { open: boolean; businessName?: string; saving: boolean; error?: string; onClose: () => void; onConfirm: (reason: string) => void }) {
