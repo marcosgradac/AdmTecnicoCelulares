@@ -10,7 +10,8 @@ import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
 import { canViewRepairFinancials, clientRepairSelect, repairHistoryResponse, repairResponse } from './modules/repairs/repair-response'
 import { advanceCorrectionNote, correctInitialRepairAdvance, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, RepairFinanceError } from './modules/repairs/repair-finance'
-import { assertStatusChange, deliveredLockedMessage, deliveryDates, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
+import { deliveredLockedMessage, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
+import { claimRepairStatusTransition } from './modules/repairs/repair-status-transition'
 import { generateTrackingToken } from './modules/tracking/tracking-token'
 import {
   classifyTracking,
@@ -482,33 +483,6 @@ const statusFailure = (res: Response, error: unknown, fallback: string) => {
   const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : undefined
   return res.status(statusCode).json({ success: false, ...(code ? { code } : {}), message: error instanceof Error ? error.message : fallback })
 }
-/**
- * Aplica un cambio de estado y deja el rastro en RepairStatusHistory.
- * Entregar sella deliveredAt e inicia la garantía; el resto de los pasos no las tocan.
- */
-const applyStatusChange = async (
-  tx: Prisma.TransactionClient,
-  current: {
-    id: string
-    status: RepairStatus
-    deliveredAt: Date | null
-    warrantyEnabled: boolean
-    warrantyDurationDays: number | null
-    warrantyStartedAt: Date | null
-    warrantyExpiresAt: Date | null
-    trackingExpiresAt: Date | null
-  },
-  target: RepairStatus,
-  messages: z.infer<typeof statusMessagesSchema>,
-  userId: string,
-) => {
-  assertStatusChange(current.status, target)
-  // Reenviar un estado actual no es un cambio: conserva fechas, updatedAt e historial.
-  if (current.status === target) return tx.repair.findUniqueOrThrow({ where: { id: current.id }, include: includeRepair })
-  const dates = deliveryDates(current, target)
-  await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: target, publicMessage: messages.publicMessage || null, internalNote: messages.internalNote || null, changedByUserId: userId } })
-  return tx.repair.update({ where: { id: current.id }, data: { status: target, ...dates }, include: includeRepair })
-}
 /** Una ejecución canónica para el estado explícito, los pasos y las rutas legacy. */
 const executeStatusChange = (
   auth: ReturnType<typeof authOf>,
@@ -518,7 +492,8 @@ const executeStatusChange = (
 ) => prisma.$transaction(async tx => {
   const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
   if (!current) throw statusError(404, 'Reparación no encontrada')
-  return applyStatusChange(tx, current, typeof target === 'function' ? target(current.status) : target, messages, auth.userId)
+  await claimRepairStatusTransition(tx, current, typeof target === 'function' ? target(current.status) : target, messages, auth.userId)
+  return tx.repair.findUniqueOrThrow({ where: { id: current.id }, include: includeRepair })
 }, { timeout: 15_000 })
 /** Avance y retroceso de un solo paso. Los estados especiales y Entregado quedan bloqueados. */
 const statusStepRoute = (action: typeof advanceStatus | typeof rewindStatus) => async (req: Request, res: Response) => {
