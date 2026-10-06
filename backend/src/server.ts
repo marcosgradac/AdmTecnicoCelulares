@@ -502,10 +502,24 @@ const applyStatusChange = async (
   messages: z.infer<typeof statusMessagesSchema>,
   userId: string,
 ) => {
+  assertStatusChange(current.status, target)
+  // Reenviar un estado actual no es un cambio: conserva fechas, updatedAt e historial.
+  if (current.status === target) return tx.repair.findUniqueOrThrow({ where: { id: current.id }, include: includeRepair })
   const dates = deliveryDates(current, target)
   await tx.repairStatusHistory.create({ data: { repairId: current.id, previousStatus: current.status, newStatus: target, publicMessage: messages.publicMessage || null, internalNote: messages.internalNote || null, changedByUserId: userId } })
   return tx.repair.update({ where: { id: current.id }, data: { status: target, ...dates }, include: includeRepair })
 }
+/** Una ejecución canónica para el estado explícito, los pasos y las rutas legacy. */
+const executeStatusChange = (
+  auth: ReturnType<typeof authOf>,
+  repairId: string,
+  target: RepairStatus | ((current: RepairStatus) => RepairStatus),
+  messages: z.infer<typeof statusMessagesSchema>,
+) => prisma.$transaction(async tx => {
+  const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
+  if (!current) throw statusError(404, 'Reparación no encontrada')
+  return applyStatusChange(tx, current, typeof target === 'function' ? target(current.status) : target, messages, auth.userId)
+}, { timeout: 15_000 })
 /** Avance y retroceso de un solo paso. Los estados especiales y Entregado quedan bloqueados. */
 const statusStepRoute = (action: typeof advanceStatus | typeof rewindStatus) => async (req: Request, res: Response) => {
   const parsed = statusMessagesSchema.safeParse(req.body ?? {})
@@ -513,14 +527,11 @@ const statusStepRoute = (action: typeof advanceStatus | typeof rewindStatus) => 
   const auth = authOf(req)
   const repairId = String(req.params.id)
   try {
-    const result = await prisma.$transaction(async tx => {
-      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
-      if (!current) throw statusError(404, 'Reparación no encontrada')
-      const target = action === advanceStatus ? nextRepairStatus(current.status) : previousRepairStatus(current.status)
-      if (!target) throw statusError(409, noStatusStepMessage(action, current.status))
-      assertStatusChange(current.status, target)
-      return applyStatusChange(tx, current, target, parsed.data, auth.userId)
-    }, { timeout: 15_000 })
+    const result = await executeStatusChange(auth, repairId, current => {
+      const target = action === advanceStatus ? nextRepairStatus(current) : previousRepairStatus(current)
+      if (!target) throw statusError(409, noStatusStepMessage(action, current))
+      return target
+    }, parsed.data)
     return res.json(repairResponse(authOf(req), result))
   } catch (error) {
     return statusFailure(res, error, 'No pudimos actualizar el estado')
@@ -536,12 +547,7 @@ app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), 
   const auth = authOf(req)
   const repairId = String(req.params.id)
   try {
-    const result = await prisma.$transaction(async tx => {
-      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
-      if (!current) throw statusError(404, 'Reparación no encontrada')
-      assertStatusChange(current.status, parsed.data.status)
-      return applyStatusChange(tx, current, parsed.data.status, parsed.data, auth.userId)
-    }, { timeout: 15_000 })
+    const result = await executeStatusChange(auth, repairId, parsed.data.status, parsed.data)
     return res.json(repairResponse(authOf(req), result))
   } catch (error) {
     return statusFailure(res, error, 'No pudimos actualizar el estado')
@@ -734,13 +740,19 @@ app.delete('/api/repairs/:id', requirePermission('repairs.delete'), async (req, 
     return res.status(409).json({ success: false, message: 'No pudimos eliminar la reparación porque tiene registros relacionados.' })
   }
 })
-const setRepairStatus = (status: RepairStatus) => async (req: Request, res: Response) => {
-  const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId } })
-  if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  return res.json(repairResponse(authOf(req), await prisma.repair.update({ where: { id: current.id }, data: { status }, include: includeRepair })))
+const legacyStatusRoute = (target: RepairStatus) => async (req: Request, res: Response) => {
+  const parsed = statusMessagesSchema.safeParse(req.body ?? {})
+  if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de estado inválidos' })
+  const auth = authOf(req)
+  try {
+    const result = await executeStatusChange(auth, String(req.params.id), target, parsed.data)
+    return res.json(repairResponse(auth, result))
+  } catch (error) {
+    return statusFailure(res, error, 'No pudimos actualizar el estado')
+  }
 }
-app.patch('/api/repairs/:id/approve', requirePermission('repairs.changeStatus'), setRepairStatus('APPROVED'))
-app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), setRepairStatus('REPAIRING'))
+app.patch('/api/repairs/:id/approve', requirePermission('repairs.changeStatus'), legacyStatusRoute(RepairStatus.APPROVED))
+app.patch('/api/repairs/:id/start', requirePermission('repairs.changeStatus'), legacyStatusRoute(RepairStatus.REPAIRING))
 
 app.get('/api/clients', requirePermission('clients.view'), async (req, res) => {
   const businessId = authOf(req).businessId

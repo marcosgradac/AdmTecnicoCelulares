@@ -24,6 +24,7 @@
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
     "test:repair-creation-finance": "tsx tests/repair-creation-finance.ts && tsx tests/repair-creation-finance-sqlite.ts",
     "test:repair-advance-status": "tsx tests/repair-advance-status.ts",
+    "test:repair-legacy-status-endpoints": "tsx tests/repair-legacy-status-endpoints.ts",
     "test:cash-groups": "tsx tests/cash-groups.ts",
     "test:cash-period": "tsx tests/cash-period.ts",
     "test:cash-period-30d": "tsx tests/cash-period-30d.ts",

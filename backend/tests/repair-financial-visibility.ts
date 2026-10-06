@@ -100,7 +100,14 @@ async function main() {
     assert.equal(updated.status, 200); safe(updated.body); assert.equal(updated.body.total, 11000)
     const unchanged = await prisma.repair.findUniqueOrThrow({ where: { id } })
     assert.equal(unchanged.partsCost, 2000); assert.equal(unchanged.laborCost, 500); assert.equal(unchanged.laborCharge, 5000); assert.equal(unchanged.paid, 1500)
-    for (const [path, body] of [['status/advance', {}], ['status/rewind', {}], ['status', { status: 'REVIEW' }], ['approve', {}], ['start', {}]] as const) {
+    const beforeApprove = await prisma.repair.findUniqueOrThrow({ where: { id } })
+    const historyBeforeApprove = await prisma.repairStatusHistory.findMany({ where: { repairId: id } })
+    const legacyApprove = await call(technician, 'PATCH', `/repairs/${id}/approve`, {})
+    assert.equal(legacyApprove.status, 409); assert.equal(legacyApprove.body.code, 'LEGACY_STATUS')
+    for (const field of restricted) assert.equal(field in legacyApprove.body, false, `Leaked ${field} in rejection`)
+    assert.deepEqual(await prisma.repair.findUniqueOrThrow({ where: { id } }), beforeApprove)
+    assert.deepEqual(await prisma.repairStatusHistory.findMany({ where: { repairId: id } }), historyBeforeApprove)
+    for (const [path, body] of [['status/advance', {}], ['status/rewind', {}], ['status', { status: 'REVIEW' }], ['start', {}]] as const) {
       const result = await call(technician, 'PATCH', `/repairs/${id}/${path}`, body)
       assert.equal(result.status, 200, path); safe(result.body)
     }
