@@ -933,46 +933,6 @@ app.post('/api/cash/movements', requirePermission('cash.create'), async (req, re
 })
 
 app.use('/api/warranties', warrantiesRouter)
-app.get('/api/dashboard/summary', requireRole('OWNER'), async (req, res) => {
-  const businessId = authOf(req).businessId
-  const canViewFinancials = authOf(req).role === 'OWNER'
-  const now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate()), month = new Date(now.getFullYear(), now.getMonth(), 1)
-  // Every figure here is an aggregate: loading whole repairs (and their clients) just to count
-  // them made this endpoint grow with the whole history. Recent repairs are the only rows needed.
-  // The active set is "everything not finished", expressed as a negation so a new status is
-  // counted automatically instead of needing this list updated.
-  const activeWhere = { businessId, status: { notIn: [RepairStatus.DELIVERED, RepairStatus.CANCELLED] } }
-  const [byStatusRows, activeRepairs, readyRepairs, activeWarranties, repairsToday, clients, pending, movements, recentRepairs] = await Promise.all([
-    prisma.repair.groupBy({ by: ['status'], where: { businessId }, _count: { _all: true } }),
-    prisma.repair.count({ where: activeWhere }),
-    prisma.repair.count({ where: { businessId, status: RepairStatus.READY } }),
-    prisma.repair.count({ where: { businessId, warrantyEnabled: true, warrantyDeletedAt: null, warrantyExpiresAt: { gte: now } } }),
-    prisma.repair.count({ where: { businessId, createdAt: { gte: today } } }),
-    prisma.client.count({ where: { businessId, deletedAt: null } }),
-    // `pending` keeps its original meaning: the unpaid balance of EVERY repair, including
-    // delivered and cancelled ones. Prisma cannot sum an expression, so the clamp is done in
-    // SQL, always scoped to this business. The raw rows are never sent to the client.
-    prisma.$queryRaw<Array<{ pending: number | null }>>`SELECT COALESCE(SUM(GREATEST("total" - "paid", 0)), 0) AS "pending" FROM "Repair" WHERE "businessId" = ${businessId}`,
-    canViewFinancials ? prisma.cashMovement.findMany({ where: { businessId, createdAt: { gte: month } }, orderBy: { createdAt: 'asc' }, select: { type: true, amount: true, createdAt: true } }) : Promise.resolve([]),
-    prisma.repair.findMany({
-      where: { businessId },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: { id: true, number: true, deviceBrand: true, deviceModel: true, issue: true, status: true, total: true, createdAt: true, client: { select: { name: true } } },
-    }),
-  ])
-  const income = movements.filter(m => m.type === 'INCOME').reduce((sum, m) => sum + m.amount, 0)
-  const expenses = movements.filter(m => m.type === 'EXPENSE').reduce((sum, m) => sum + m.amount, 0)
-  const flow = Array.from({ length: Math.min(31, now.getDate()) }, (_, index) => { const day = index + 1; const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; return { label: String(day), key, income: 0, expense: 0 } })
-  if (canViewFinancials) {
-    for (const movement of movements.filter(m => m.type === 'INCOME')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.income += movement.amount }
-    for (const movement of movements.filter(m => m.type === 'EXPENSE')) { const point = flow.find(item => item.key === movement.createdAt.toISOString().slice(0, 10)); if (point) point.expense += movement.amount }
-  }
-  const pendingBalance = Number(pending[0]?.pending ?? 0)
-  const countByStatus = (status: RepairStatus) => byStatusRows.find(row => row.status === status)?._count._all ?? 0
-  return res.json({ activeRepairs, readyRepairs, activeWarranties, repairsToday, monthlyIncome: income, monthlyExpenses: expenses, pending: canViewFinancials ? pendingBalance : 0, clients, byStatus: Object.values(RepairStatus).map(status => ({ status, value: countByStatus(status) })), cashFlow: flow.map(({ key: _key, ...point }) => point), recentRepairs })
-})
-
 const port = Number(process.env.PORT ?? 3000)
 // Last resort: without these, Express answers with an HTML page that leaks the Node stack
 // trace and absolute server paths. The message stays generic; the detail only goes to logs.

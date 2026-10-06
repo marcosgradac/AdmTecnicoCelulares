@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import type { CommerceProduct, PaymentMethod, Prisma, ResaleDeviceStatus } from '@prisma/client'
+import { getArgentinaMonthBounds } from '../lib/argentina-day'
 
 const DAY = 86_400_000
-const ARGENTINA_OFFSET = 3 * 60 * 60 * 1000
 
 // Prices are integer ARS, matching the commerce and equipment route validators.
 const products: ReadonlyArray<readonly [string, string, number, number, number]> = [
@@ -58,8 +58,7 @@ const devices: ReadonlyArray<readonly [string, string, ResaleDeviceStatus, numbe
 
 /** All writes use the caller's transaction; never invoke global-prisma services here. */
 export async function seedLandingCommerce(tx: Prisma.TransactionClient, businessId: string, now: Date): Promise<void> {
-  const argentinaNow = new Date(now.getTime() - ARGENTINA_OFFSET)
-  const monthStart = Date.UTC(argentinaNow.getUTCFullYear(), argentinaNow.getUTCMonth(), 1) + ARGENTINA_OFFSET
+  const monthStart = getArgentinaMonthBounds(now).start.getTime()
   const inMonth = (fraction: number) => new Date(monthStart + Math.floor((now.getTime() - monthStart) * fraction))
   const historic = (days: number) => new Date(now.getTime() - days * DAY)
   const methods: PaymentMethod[] = ['CASH', 'TRANSFER', 'CARD']

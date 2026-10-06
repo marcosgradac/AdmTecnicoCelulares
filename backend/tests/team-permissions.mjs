@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict'
 import { PrismaClient } from '@prisma/client'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+require('tsx/cjs')
+const { validRegistrationPayload } = require('./helpers/registration.ts')
 
 const base = process.env.TEST_API_URL ?? 'http://localhost:3100/api'
 const prisma = new PrismaClient()
@@ -25,7 +29,7 @@ const hasPasswordHash = value => {
 }
 const register = label => request('/auth/register', {
   method: 'POST',
-  body: { firstName: `Owner${label}`, lastName: 'QA', email: `owner-${label}-${suffix}@example.com`, password: 'Password-2026!', businessName: `Negocio ${label}` },
+  body: validRegistrationPayload({ firstName: `Owner${label}`, lastName: 'QA', email: `owner-${label}-${suffix}@example.com`, password: 'Password-2026!', businessName: `Negocio ${label}` }),
 })
 const login = (email, password = 'Password-2026!') => request('/auth/login', { method: 'POST', body: { email, password } })
 
@@ -116,20 +120,15 @@ check(activeTechnicianLogin.status === 200, 'contraseña nueva funciona')
 const restrictedTechToken = activeTechnicianLogin.body.token
 
 check((await request('/cash/movements', { token: restrictedTechToken })).status === 403, 'TECHNICIAN no accede a caja ni datos financieros')
-const technicianDashboard = await request('/dashboard/summary', { token: restrictedTechToken })
-check(technicianDashboard.status === 200 && technicianDashboard.body.monthlyIncome === 0, 'dashboard técnico funciona sin exponer ingresos')
+const technicianDashboard = await request('/dashboard/overview', { token: restrictedTechToken })
+check(technicianDashboard.status === 403, 'TECHNICIAN no accede al dashboard OWNER-only')
+const client = await request('/clients', { token: restrictedTechToken, method: 'POST', body: { name: 'Cliente Técnico', phone: `11${Date.now().toString().slice(-8)}` } })
+check(client.status === 201, 'TECHNICIAN crea cliente del mismo negocio')
 const repair = await request('/repairs', {
   token: restrictedTechToken, method: 'POST',
-  body: { clientName: 'Cliente Técnico', phone: `11${Date.now().toString().slice(-8)}`, deviceBrand: 'Moto', deviceModel: 'G', issue: 'No enciende', total: 100 },
+  body: { clientId: client.body.id, deviceBrand: 'Moto', deviceModel: 'G', issue: 'No enciende', total: 100 },
 })
 check(repair.status === 201, 'TECHNICIAN puede crear reparaciones')
-check((await request('/stock', { token: restrictedTechToken })).status === 200, 'TECHNICIAN puede consultar stock')
-const stock = await request('/stock', {
-  token: tokenA, method: 'POST',
-  body: { name: `Stock ${suffix}`, category: 'QA', quantity: 5, minimumStock: 0, cost: 10, salePrice: 20 },
-})
-check((await request(`/stock/${stock.body.id}`, { token: restrictedTechToken, method: 'DELETE' })).status === 403, 'TECHNICIAN no puede desactivar stock')
-check((await request(`/stock/${stock.body.id}`, { token: restrictedTechToken, method: 'PATCH', body: { cost: 99 } })).status === 403, 'TECHNICIAN no puede editar costes')
 check((await request(`/tracking/${repair.body.trackingToken}`)).status === 200, 'seguimiento público continúa funcionando')
 check((await request('/health')).status === 200, 'health continúa respondiendo 200')
 
@@ -141,7 +140,7 @@ check(simultaneous.filter(result => result.status === 200).length === 1 && simul
 const businessAId = ownerA.body.user.business.id
 check(await prisma.user.count({ where: { businessId: businessAId, role: 'OWNER', isActive: true } }) === 1, 'concurrencia conserva un OWNER activo')
 
-const allResponses = [ownerA, ownerB, listA, technician, techLogin, techB, edited, promoted, disposable, reset, repair, stock]
+const allResponses = [ownerA, ownerB, listA, technician, techLogin, techB, edited, promoted, disposable, reset, client, repair]
 check(!allResponses.some(response => hasPasswordHash(response.body)), 'ninguna respuesta expone passwordHash')
 
 console.log(JSON.stringify({ passed, result: 'ok' }))

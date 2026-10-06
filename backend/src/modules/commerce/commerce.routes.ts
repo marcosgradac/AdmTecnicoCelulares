@@ -2,7 +2,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { z } from 'zod'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import { assertFeatureAccess } from '../billing/billing.service'
-import { cancelCommerceSale, CommerceError, createCommerceExpense, createCommerceSale, getCommerceSummary, listCommerceProducts, listCommerceSales } from './commerce.service'
+import { cancelCommerceSale, CommerceError, createCommerceExpense, createCommerceSale, getCommerceSummary, getCommerceSummaryRange, listCommerceProducts, listCommerceSales } from './commerce.service'
 import { prisma } from '../../lib/prisma'
 import { Prisma } from '@prisma/client'
 
@@ -199,7 +199,5 @@ commerceRouter.post('/expenses', requirePermission('commerce.manage'), async (re
 })
 
 commerceRouter.get('/summary', requirePermission('commerce.view'), async (req, res) => {
-  const parsed = z.object({ from: z.coerce.date().default(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), to: z.coerce.date().default(new Date()) }).safeParse(req.query)
-  if (!parsed.success || parsed.data.from >= parsed.data.to) return res.status(400).json({ success: false, message: 'Período comercial inválido' })
-  return res.json(await getCommerceSummary(authOf(req).businessId, parsed.data))
+  return res.json(await getCommerceSummary(authOf(req).businessId, getCommerceSummaryRange()))
 })

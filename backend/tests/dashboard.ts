@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken'
 
 async function main() {
   const url = new URL(process.env.DATABASE_URL!)
-  assert.ok(['127.0.0.1', 'localhost'].includes(url.hostname) && url.port === '55439', 'Only isolated PostgreSQL on port 55439')
+  assert.ok(['postgres:', 'postgresql:'].includes(url.protocol))
+  assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) && url.pathname.endsWith('_test') && url.pathname !== '/tecnodesk_visual_test', 'Only isolated local PostgreSQL test databases')
   const db = new PrismaClient()
   const dependency = require.resolve('../src/lib/prisma')
   require(dependency)

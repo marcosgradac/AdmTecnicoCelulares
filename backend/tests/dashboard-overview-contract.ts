@@ -1,18 +1,22 @@
-// Dashboard summary must keep its original contract after the aggregate optimisation:
+// Dashboard overview preserves active repairs and unpaid balances:
 // WARRANTY counts as an active repair and `pending` sums the unpaid balance of EVERY repair.
 import 'dotenv/config'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { PrismaClient } from '@prisma/client'
+import type { Server } from 'node:http'
 
 // Refuse remote databases before importing the app/Prisma.
 const database = new URL(process.env.DATABASE_URL ?? '')
+assert.ok(['postgres:', 'postgresql:'].includes(database.protocol))
+assert.ok(database.pathname.endsWith('_test') && database.pathname !== '/tecnodesk_visual_test')
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(database.hostname), 'Use only a local test database')
 
-const prisma = new PrismaClient()
-const BASE = 'http://127.0.0.1:3000/api'
+process.env.NODE_ENV = 'test'
 
 async function main() {
+  const { prisma } = await import('../src/lib/prisma')
+  const { app } = await import('../src/server')
+  let server: Server | undefined
   const suffix = randomBytes(6).toString('hex')
   const jwt = (await import('jsonwebtoken')).default
   // Declared up front so the finally block can clean a partial setup, including the
@@ -24,6 +28,11 @@ async function main() {
   let otherOwnerId: string | undefined
   let otherClientId: string | undefined
   try {
+    server = app.listen(0)
+    await new Promise<void>(resolve => server!.once('listening', resolve))
+    const address = server.address()
+    assert.ok(address && typeof address === 'object')
+    const BASE = `http://127.0.0.1:${address.port}/api`
     const owner = await prisma.user.create({ data: { business: { create: { name: `Dashboard ${suffix}` } }, name: 'Owner', email: `dashboard-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
     businessId = owner.businessId
     ownerId = owner.id
@@ -44,21 +53,22 @@ async function main() {
         trackingToken: `dash-${suffix}-${item.number}`, trackingEnabled: false, updatedAt: new Date(),
       } })
     }
-    const response = await fetch(`${BASE}/dashboard/summary`, { headers: { authorization: `Bearer ${token}` } })
+    const response = await fetch(`${BASE}/dashboard/overview`, { headers: { authorization: `Bearer ${token}` } })
     assert.equal(response.status, 200)
+    // This literal is deliberately retained solely to prove the removed endpoint is 404.
+    assert.equal((await fetch(`${BASE}/dashboard/summary`, { headers: { authorization: `Bearer ${token}` } })).status, 404)
+    const tech = await prisma.user.create({ data: { businessId, name: 'Technician', email: `tech-${suffix}@local.test`, passwordHash: 'unused', role: 'TECHNICIAN' } })
+    const techToken = jwt.sign({ userId: tech.id, businessId, tokenVersion: tech.tokenVersion }, process.env.JWT_SECRET!)
+    assert.equal((await fetch(`${BASE}/dashboard/overview`, { headers: { authorization: `Bearer ${techToken}` } })).status, 403)
     const body = await response.json() as {
-      activeRepairs: number; readyRepairs: number; clients: number
-      pending: number; byStatus: Array<{ status: string; value: number }>
+      current: { activeRepairs: number; readyRepairs: number; pending: number }
     }
 
     // WARRANTY is an active repair: only DELIVERED and CANCELLED are excluded.
-    assert.equal(body.activeRepairs, 2, 'RECEIVED + WARRANTY must be active; DELIVERED must not')
-    const warranty = body.byStatus.find(row => row.status === 'WARRANTY')
-    assert.equal(warranty?.value, 1, 'WARRANTY must appear in the status breakdown')
-    assert.equal(body.readyRepairs, 0)
-    assert.equal(body.clients, 1)
+    assert.equal(body.current.activeRepairs, 2, 'RECEIVED + WARRANTY must be active; DELIVERED must not')
+    assert.equal(body.current.readyRepairs, 0)
     // `pending` keeps its original scope: the balance of ALL repairs, delivered included.
-    assert.equal(body.pending, 60000, 'pending must total 10k + 20k + 30k, delivered included')
+    assert.equal(body.current.pending, 60000, 'pending must total 10k + 20k + 30k, delivered included')
 
     // A second tenant must not contribute to either figure.
     const other = await prisma.user.create({ data: { business: { create: { name: `Otro ${suffix}` } }, name: 'Otro', email: `otro-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
@@ -70,11 +80,12 @@ async function main() {
       businessId: other.businessId, number: 1001, clientId: otherClient.id, deviceBrand: 'Otro', deviceModel: 'Ajeno',
       issue: 'Ajeno', total: 999000, paid: 0, status: 'RECEIVED', trackingToken: `otro-${suffix}`, trackingEnabled: false, updatedAt: new Date(),
     } })
-    const after = await fetch(`${BASE}/dashboard/summary`, { headers: { authorization: `Bearer ${token}` } }).then(r => r.json()) as typeof body
-    assert.equal(after.activeRepairs, 2, 'another business must not inflate activeRepairs')
-    assert.equal(after.pending, 60000, 'another business must not inflate pending')
+    const after = await fetch(`${BASE}/dashboard/overview`, { headers: { authorization: `Bearer ${token}` } }).then(r => r.json()) as typeof body
+    assert.equal(after.current.activeRepairs, 2, 'another business must not inflate activeRepairs')
+    assert.equal(after.current.pending, 60000, 'another business must not inflate pending')
     console.log('  ok  WARRANTY counts as active; pending covers every repair of the business only')
   } finally {
+    if (server) await new Promise<void>(resolve => server!.close(() => resolve()))
     // Both tenants are removed here, never inside the happy path: an assertion that throws
     // after the second business was created would otherwise leave it behind.
     for (const tenant of [businessId, otherBusinessId]) {
@@ -83,6 +94,7 @@ async function main() {
       await prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: tenant } } })
       await prisma.repair.deleteMany({ where: { businessId: tenant } })
       // Registration also creates a Subscription, which RESTRICTs the business deletion.
+      await prisma.user.deleteMany({ where: { businessId: tenant } })
       await prisma.subscription.deleteMany({ where: { businessId: tenant } })
     }
     if (clientId) await prisma.client.deleteMany({ where: { id: clientId } })
@@ -91,7 +103,8 @@ async function main() {
     if (otherOwnerId) await prisma.user.deleteMany({ where: { id: otherOwnerId } })
     if (businessId) await prisma.business.deleteMany({ where: { id: businessId } })
     if (otherBusinessId) await prisma.business.deleteMany({ where: { id: otherBusinessId } })
+    await prisma.$disconnect()
   }
-  console.log('PASS: dashboard summary keeps its contract after the aggregate rewrite')
+  console.log('PASS: dashboard overview preserves active/pending contract; OWNER 200, TECHNICIAN 403, removed endpoint 404')
 }
-main().finally(() => prisma.$disconnect())
+main().catch(error => { console.error(error); process.exitCode = 1 })

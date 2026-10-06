@@ -9,7 +9,7 @@ const database = new URL(process.env.DATABASE_URL ?? '')
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(database.hostname), 'Use only a local test database')
 
 const prisma = new PrismaClient()
-const BASE = 'http://127.0.0.1:3000/api'
+const BASE = process.env.TEST_API_URL ?? 'http://127.0.0.1:3000/api'
 
 async function main() {
   // Self-contained: this test owns both businesses so it never depends on seeded demo data.

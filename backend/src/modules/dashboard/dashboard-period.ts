@@ -1,19 +1,21 @@
-import { getArgentinaDayBounds } from '../../lib/argentina-day'
+import { ARGENTINA_TIME_ZONE, getArgentinaCalendarDate, getArgentinaCalendarDayBounds, getArgentinaDayBounds, getArgentinaDayRangeBack, getArgentinaMonthBounds } from '../../lib/argentina-day'
 
 export type DashboardPeriod = 'today' | '7d' | '30d' | 'month'
-const DAY = 86400000
-const dateLabel = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', day: '2-digit', month: '2-digit' })
 
 export function dashboardPeriod(period: DashboardPeriod, now = new Date()) {
   const today = getArgentinaDayBounds(now).start
-  const argentinaDay = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Argentina/Buenos_Aires', day: 'numeric' }).format(now))
+  const argentinaDay = getArgentinaCalendarDate(now).day
   const days = period === '7d' ? 7 : period === '30d' ? 30 : period === 'month' ? argentinaDay : 1
-  const start = new Date(today.getTime() - (days - 1) * DAY)
+  const start = period === 'month' ? getArgentinaMonthBounds(now).start : period === 'today' ? today : getArgentinaDayRangeBack(now, days - 1).start
   const end = new Date(now.getTime() + 1)
-  const step = period === 'today' ? 3600000 : DAY
-  const buckets = Array.from({ length: Math.ceil((end.getTime() - start.getTime()) / step) }, (_, index) => {
-    const from = new Date(start.getTime() + index * step)
-    return { start: from, end: new Date(Math.min(from.getTime() + step, end.getTime())), label: period === 'today' ? `${String(index).padStart(2, '0')}:00` : dateLabel.format(from) }
+  const civilStart = getArgentinaCalendarDate(start)
+  const buckets = Array.from({ length: period === 'today' ? Math.ceil((end.getTime() - start.getTime()) / 3600000) : days }, (_, index) => {
+    const bounds = period === 'today'
+      ? { start: new Date(start.getTime() + index * 3600000), end: new Date(start.getTime() + (index + 1) * 3600000) }
+      : getArgentinaCalendarDayBounds(civilStart.year, civilStart.month, civilStart.day + index)
+    const date = getArgentinaCalendarDate(bounds.start)
+    const label = period === 'today' ? `${String(index).padStart(2, '0')}:00` : `${String(date.day).padStart(2, '0')}/${String(date.month).padStart(2, '0')}`
+    return { start: bounds.start, end: new Date(Math.min(bounds.end.getTime(), end.getTime())), label }
   })
-  return { key: period, start, end, timeZone: 'America/Argentina/Buenos_Aires', buckets }
+  return { key: period, start, end, timeZone: ARGENTINA_TIME_ZONE, buckets }
 }

@@ -101,20 +101,6 @@ export interface LooseRepairMovements {
   movements: GroupedCashMovement[]
 }
 
-export interface DashboardSummary {
-  activeRepairs: number
-  repairsToday: number
-  monthlyIncome: number
-  monthlyExpenses: number
-  pending: number
-  readyRepairs: number
-  activeWarranties: number
-  clients: number
-  byStatus: Array<{ status: string; value: number }>
-  recentRepairs: Array<{ id:string; number:number; deviceBrand:string; deviceModel:string; issue:string; status:string; total:number; createdAt:string; client:{name:string} }>
-  cashFlow: Array<{ label: string; income: number; expense: number }>
-}
-
 export const getClientsPage = async (params:{page:number;pageSize?:number;search?:string}) => (await api.get<{items:ClientListRecord[];total:number;page:number;pageSize:number;totalPages:number}>('/clients',{params:{...params,paginated:true}})).data
 export const getClientOptions = async () => (await api.get<ClientOption[]>('/clients/options')).data
 export const getClient = async (id: string) => (await api.get<ClientRecord>(`/clients/${id}`)).data

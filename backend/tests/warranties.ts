@@ -31,7 +31,9 @@ async function main() {
     const originalStart=delivered.body.warrantyStartedAt
     assert.equal((await request('PATCH',`/warranties/${repairA.body.id}`,{durationDays:60,conditions:'Cobertura QA'},ownerB.token)).status,404)
     const edited=await request('PATCH',`/warranties/${repairA.body.id}`,{durationDays:60,conditions:'Cobertura QA'},ownerA.token);assert.equal(edited.status,200);assert.equal(edited.body.warrantyStartedAt,originalStart);assert.equal(Math.round((new Date(edited.body.warrantyExpiresAt).getTime()-new Date(originalStart).getTime())/86_400_000),60)
-    const dashboard = await request('GET','/dashboard/summary',undefined,ownerA.token); assert.equal(dashboard.status,200); assert.equal(dashboard.body.activeWarranties,1); assert.ok(Array.isArray(dashboard.body.cashFlow))
+    const warranties = await request('GET','/warranties',undefined,ownerA.token); assert.equal(warranties.status,200)
+    const warranty = warranties.body.find((item: { id: string }) => item.id === repairA.body.id)
+    assert.ok(warranty); assert.equal(warranty.warrantyEnabled,true); assert.equal(warranty.warrantyStartedAt,originalStart); assert.equal(warranty.warrantyExpiresAt,edited.body.warrantyExpiresAt); assert.equal(warranty.warrantyDurationDays,60); assert.equal(warranty.warrantyConditions,'Cobertura QA')
     const isolatedList = await request('GET','/warranties',undefined,ownerB.token); assert.equal(isolatedList.status,200); assert.equal(isolatedList.body.length,0)
     assert.equal((await request('POST',`/warranties/${repairA.body.id}/claims`,{description:'Intento desde otro tenant'},ownerB.token)).status,404)
     const claim = await request('POST',`/warranties/${repairA.body.id}/claims`,{description:'La falla volvió durante una carga normal'},ownerA.token); assert.equal(claim.status,201); assert.equal(claim.body.status,'OPEN')

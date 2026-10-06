@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+const require = createRequire(import.meta.url)
+require('tsx/cjs')
+const { validRegistrationPayload } = require('./helpers/registration.ts')
 
 const base = process.env.TEST_API_URL ?? 'http://localhost:3100/api'
 const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -32,13 +36,13 @@ check(unauthorized.status === 401, 'rutas privadas rechazan falta de token')
 async function register(label) {
   return request('/auth/register', {
     method: 'POST',
-    body: {
+    body: validRegistrationPayload({
       businessName: `Negocio ${label} ${suffix}`,
       firstName: 'Dueño',
       lastName: label.toUpperCase(),
       email: `owner-${label}-${suffix}@example.com`,
       password: 'Password-2026!',
-    },
+    }),
   })
 }
 
@@ -73,31 +77,8 @@ check(clientA.status === 201 && clientB.status === 201, 'mismo teléfono permiti
 const crossClient = await request(`/clients/${clientA.body.id}`, { token: tokenB })
 check(crossClient.status === 404, 'cliente aislado entre negocios')
 
-const invalidStock = await request('/stock', {
-  token: tokenA,
-  method: 'POST',
-  body: { name: 'X', category: 'Pantalla', quantity: -1, minimumStock: 0, cost: 0, salePrice: 0 },
-})
-check(invalidStock.status === 400, 'stock negativo rechazado')
-
-const stock = await request('/stock', {
-  token: tokenA,
-  method: 'POST',
-  body: { name: 'Pantalla OLED', category: 'Pantallas', quantity: 5, minimumStock: 1, cost: 100, salePrice: 180 },
-})
-check(stock.status === 201, 'alta de stock')
-
-const editedStock = await request(`/stock/${stock.body.id}`, {
-  token: tokenA,
-  method: 'PATCH',
-  body: { quantity: 6, salePrice: 200 },
-})
-check(editedStock.status === 200 && editedStock.body.quantity === 6, 'edición de stock persistida')
-
 const repairPayload = {
   clientId: clientA.body.id,
-  clientName: clientA.body.name,
-  phone: clientA.body.phone,
   deviceBrand: 'Samsung',
   deviceModel: 'S23',
   issue: 'No enciende',
@@ -125,25 +106,6 @@ const status = await request(`/repairs/${repair.body.id}/status`, {
 })
 check(status.status === 200 && status.body.status === 'REPAIRING', 'cambio de estado')
 
-const part = await request(`/repairs/${repair.body.id}/parts`, {
-  token: tokenA,
-  method: 'POST',
-  body: { stockItemId: stock.body.id, quantity: 2, unitPrice: 200 },
-})
-const stockAfterPart = await request('/stock', { token: tokenA })
-check(part.status === 201 && stockAfterPart.body.find((row) => row.id === stock.body.id).quantity === 4, 'repuesto descuenta stock')
-
-const removedPart = await request(`/repairs/${repair.body.id}/parts/${part.body.id}`, { token: tokenA, method: 'DELETE' })
-const stockAfterRemove = await request('/stock', { token: tokenA })
-check(removedPart.status === 200 && stockAfterRemove.body.find((row) => row.id === stock.body.id).quantity === 6, 'quitar repuesto restaura stock')
-
-const crossStock = await request(`/repairs/${repair.body.id}/parts`, {
-  token: tokenB,
-  method: 'POST',
-  body: { stockItemId: stock.body.id, quantity: 1, unitPrice: 200 },
-})
-check(crossStock.status === 404, 'repuesto no cruza negocios')
-
 const tracking = await request(`/tracking/${repair.body.trackingToken}`)
 check(tracking.status === 200 && !('businessId' in tracking.body), 'tracking público no expone negocio')
 
@@ -159,34 +121,6 @@ const concurrentRepairs = await Promise.all(
 const numbers = concurrentRepairs.map((result) => result.body?.number)
 check(concurrentRepairs.every((result) => result.status === 201), '10 reparaciones simultáneas creadas')
 check(new Set(numbers).size === numbers.length, 'numeración simultánea sin duplicados')
-
-const concurrencyStock = await request('/stock', {
-  token: tokenA,
-  method: 'POST',
-  body: { name: 'Batería concurrente', category: 'Baterías', quantity: 5, minimumStock: 0, cost: 50, salePrice: 90 },
-})
-const stockWithdrawals = await Promise.all([
-  request(`/repairs/${concurrentRepairs[0].body.id}/parts`, {
-    token: tokenA,
-    method: 'POST',
-    body: { stockItemId: concurrencyStock.body.id, quantity: 4, unitPrice: 90 },
-  }),
-  request(`/repairs/${concurrentRepairs[1].body.id}/parts`, {
-    token: tokenA,
-    method: 'POST',
-    body: { stockItemId: concurrencyStock.body.id, quantity: 4, unitPrice: 90 },
-  }),
-])
-const stockAfterConcurrency = await request('/stock', { token: tokenA })
-check(
-  stockWithdrawals.filter((result) => result.status === 201).length === 1
-    && stockWithdrawals.filter((result) => result.status === 409).length === 1,
-  'dos retiros simultáneos: uno aceptado y uno rechazado',
-)
-check(
-  stockAfterConcurrency.body.find((row) => row.id === concurrencyStock.body.id).quantity === 1,
-  'stock concurrente final es 1 y nunca negativo',
-)
 
 const payments = await Promise.all([
   request(`/repairs/${repair.body.id}/payments`, { token: tokenA, method: 'POST', body: { amount: 75, method: 'CASH' } }),
@@ -218,11 +152,7 @@ check(
 const crossRepair = await request(`/repairs/${repair.body.id}`, { token: tokenB })
 check(crossRepair.status === 404, 'reparación aislada entre negocios')
 
-const deactivated = await request(`/stock/${stock.body.id}`, { token: tokenA, method: 'DELETE' })
-const activeStock = await request('/stock', { token: tokenA })
-check(deactivated.status === 204 && !activeStock.body.some((row) => row.id === stock.body.id), 'stock desactivado se oculta')
-
-const dashboard = await request('/dashboard/summary', { token: tokenA })
-check(dashboard.status === 200 && dashboard.body.clients === 1, 'dashboard consulta datos PostgreSQL')
+const dashboard = await request('/dashboard/overview', { token: tokenA })
+check(dashboard.status === 200 && dashboard.body.current.activeRepairs === 11 && dashboard.body.modules.repairs.active === 11, 'dashboard consulta las 11 reparaciones activas en PostgreSQL')
 
 console.log(JSON.stringify({ passed, result: 'ok' }))

@@ -85,7 +85,7 @@ async function main() {
     check('OWNER vencido: /auth/me y todo /billing disponible')
 
     // E. El resto del sistema privado queda bloqueado, también en GET.
-    const blockedRoutes = [['GET', '/clients'], ['GET', '/repairs'], ['GET', '/dashboard/summary'], ['GET', '/cash/movements'], ['GET', '/settings'], ['GET', '/team'], ['GET', '/reports'], ['GET', '/commerce/products'], ['GET', '/equipment-sales'], ['GET', '/warranties'], ['POST', '/clients']] as const
+    const blockedRoutes = [['GET', '/clients'], ['GET', '/repairs'], ['GET', '/dashboard/overview'], ['GET', '/cash/movements'], ['GET', '/settings'], ['GET', '/team'], ['GET', '/reports'], ['GET', '/commerce/products'], ['GET', '/equipment-sales'], ['GET', '/warranties'], ['POST', '/clients']] as const
     for (const [method, path] of blockedRoutes) {
       const response = await call(renewalToken, method, path, method === 'POST' ? { name: 'No permitido' } : undefined)
       assert.equal(response.status, 403, `${method} ${path} debe quedar bloqueado`)

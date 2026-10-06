@@ -28,7 +28,7 @@ export const createCommerceSale = async (input: { lines: Array<{ productId: stri
 export const getCommerceSales = async (params: { page?: number; pageSize?: number } = {}) => (await api.get<{ items: CommerceSale[]; total: number; page: number; pageSize: number; pages: number }>('/commerce/sales', { params })).data
 /** Cancela la venta sin borrarla: restaura stock y registra la reversión en Caja. */
 export const cancelCommerceSale = async (id: string) => (await api.post<CommerceSale>(`/commerce/sales/${encodeURIComponent(id)}/cancel`)).data
-export const getCommerceSummary = async (params: { from?: string; to?: string } = {}) => (await api.get<CommerceSummary>('/commerce/summary', { params })).data
+export const getCommerceSummary = async () => (await api.get<CommerceSummary>('/commerce/summary')).data
 export const createCommerceExpense = async (input: { description: string; amount: number; paymentMethod: CommercePaymentMethod }) => (await api.post('/commerce/expenses', input)).data
 
 export const updateCommerceCategory = async (id: string, name: string, iconKey?: string | null) => (await api.patch<CommerceCategory>('/commerce/categories/' + encodeURIComponent(id), { name, iconKey: iconKey ?? null })).data

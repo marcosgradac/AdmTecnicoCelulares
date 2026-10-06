@@ -1,5 +1,6 @@
 import { PaymentMethod, Prisma, type Prisma as PrismaTypes } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
+import { getArgentinaMonthBounds } from '../../lib/argentina-day'
 
 export class CommerceError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -149,6 +150,9 @@ export async function listCommerceSales(businessId: string, input: { page: numbe
 export async function createCommerceExpense(businessId: string, input: { description: string; amount: number; paymentMethod: PaymentMethod }) {
   return prisma.cashMovement.create({ data: { businessId, type: 'EXPENSE', origin: 'COMMERCE', description: input.description, amount: input.amount, method: input.paymentMethod } })
 }
+
+/** Current Argentine calendar month, with an exclusive upper bound at the real instant. */
+export const getCommerceSummaryRange = (now = new Date()) => ({ from: getArgentinaMonthBounds(now).start, to: now })
 
 export async function getCommerceSummary(businessId: string, input: { from: Date; to: Date }) {
   const range = { gte: input.from, lt: input.to }

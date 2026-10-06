@@ -1,5 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
 import { z } from 'zod'
+import { getArgentinaCalendarDate } from '../../lib/argentina-day'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import { createDevice, deviceSummary, editDevice, EquipmentSalesError, listDevices, sellDevice } from './equipment-sales.service'
 
@@ -36,7 +37,7 @@ equipmentSalesRouter.patch('/:id', requirePermission('equipmentSales.manage'), a
 equipmentSalesRouter.post('/:id/sell', requirePermission('equipmentSales.sell'), async (req, res) => {
   const parsed = z.object({
     expectedVersion: version, actualSalePrice: amount.min(1), salePaymentMethod: z.enum(['CASH', 'TRANSFER', 'CARD', 'OTHER']),
-    soldAt: z.string().datetime({ offset: true }).transform(value => new Date(value)).refine(value => value.getFullYear() >= 1900 && value.getTime() <= Date.now(), 'Fecha de venta inválida o futura').optional(),
+    soldAt: z.string().datetime({ offset: true }).transform(value => new Date(value)).refine(value => getArgentinaCalendarDate(value).year >= 1900 && value.getTime() <= Date.now(), 'Fecha de venta inválida o futura').optional(),
   }).strict().safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ message: 'Completá precio real, medio de pago y una fecha de venta válida, no futura.' })
   return res.json(await sellDevice(authOf(req).businessId, String(req.params.id), parsed.data))

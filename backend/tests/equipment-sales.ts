@@ -10,7 +10,8 @@ process.env.RATE_LIMIT_GLOBAL_MAX = '500'
 
 async function main() {
   const url = new URL(process.env.DATABASE_URL!)
-  assert.ok(['localhost', '127.0.0.1'].includes(url.hostname) && url.port === '55439', 'Use only the isolated test PostgreSQL on port 55439')
+  assert.ok(['postgres:', 'postgresql:'].includes(url.protocol))
+  assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) && url.pathname.endsWith('_test') && url.pathname !== '/tecnodesk_visual_test', 'Use only isolated local PostgreSQL test databases')
   const { app } = await import('../src/server')
   const server = app.listen(0)
   await new Promise<void>(resolve => server.once('listening', resolve))
