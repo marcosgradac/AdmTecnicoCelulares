@@ -28,7 +28,7 @@ import { authenticate, authOf, isRenewalMode, requirePermission, requireRole, ty
 import { billingRouter } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
 import { requireSubscriptionAccess } from './modules/billing/billing.middleware'
-import { addDays, assertFeatureAccess, assertWithinLimitTx, getBusinessAccessStatus, lockBusinessQuota, PlanLimitError } from './modules/billing/billing.service'
+import { buildTrialSubscriptionCreateData, assertFeatureAccess, assertWithinLimitTx, getBusinessAccessStatus, lockBusinessQuota, PlanLimitError } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { passwordChangeRouter } from './modules/auth/password-change.routes'
@@ -221,8 +221,7 @@ app.post('/api/auth/register', signupLimiter, async (req, res) => {
         data: { name: parsed.data.businessName, phone: normalizePhone(parsed.data.businessPhone) },
       })
       const now = new Date()
-      const trialEndsAt = addDays(now, 30)
-      await tx.subscription.create({ data: { businessId: business.id, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt, trialConsumedAt: now, accessExpiresAt: trialEndsAt } })
+      await tx.subscription.create({ data: buildTrialSubscriptionCreateData(business.id, now) })
       return tx.user.create({
         data: {
           businessId: business.id,

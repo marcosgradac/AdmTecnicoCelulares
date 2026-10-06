@@ -112,6 +112,12 @@ export function buildCourtesyDaysUpdate(subscription: Subscription, days: number
     : { ...shared, status: 'ACTIVE', currentPeriodEnd: next }
 }
 
+/** Standard trial creation only; existing subscriptions keep their chosen expiry. */
+export function buildTrialSubscriptionCreateData(businessId: string, now: Date): Prisma.SubscriptionUncheckedCreateInput {
+  const trialEndsAt = addDays(now, TRIAL_DAYS)
+  return { businessId, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt, trialConsumedAt: now, accessExpiresAt: trialEndsAt }
+}
+
 export async function ensureSubscription(businessId: string, now = new Date()) {
   return ensureSubscriptionWithClient(prisma, businessId, now)
 }
@@ -120,7 +126,7 @@ async function ensureSubscriptionWithClient(db: Prisma.TransactionClient, busine
   const existing = await db.subscription.findUnique({ where: { businessId }, include: { plan: true } })
   if (existing) return existing
   return db.subscription.create({
-    data: { businessId, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt: addDays(now, TRIAL_DAYS), trialConsumedAt: now },
+    data: buildTrialSubscriptionCreateData(businessId, now),
     include: { plan: true },
   })
 }

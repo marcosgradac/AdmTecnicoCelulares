@@ -44,6 +44,7 @@
     "test:money-concurrency": "tsx tests/money-concurrency.ts",
     "test:commerce-stock-race": "tsx tests/commerce-stock-race.ts",
     "test:billing": "tsx tests/billing.ts",
+    "test:subscription-fallback": "tsx tests/subscription-fallback.ts",
     "test:billing-quota-concurrency": "tsx tests/billing-quota-concurrency.ts",
     "test:billing-pending-concurrency": "tsx tests/pending-payment-concurrency.ts",
     "test:commerce": "tsx tests/commerce.ts && tsx tests/commerce-sqlite.ts",
