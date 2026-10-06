@@ -12,6 +12,30 @@ const repairItem = (repair: { id: string; number: number; deviceBrand: string; d
   id: repair.id, title: `${repair.deviceBrand} ${repair.deviceModel}`, detail: `#${repair.number} · ${repair.client.name}`, href: `/admin/reparaciones/${repair.id}`,
 })
 
+async function dashboardPending(tx: Prisma.TransactionClient, businessId: string) {
+  // One tenant-scoped formula feeds both totals and the globally ordered shortlist.
+  // Filtering positive balances in SQL clamps each debt at zero before summing.
+  const balances = Prisma.sql`
+    SELECT "id", "createdAt", CASE WHEN "status" = 'CANCELLED'
+      THEN COALESCE("cancellationReviewFee", 0) - COALESCE("cancellationPaidAmount", 0) - COALESCE("cancellationReviewPaid", 0)
+      ELSE "total" - "paid" END AS "balance"
+    FROM "Repair" WHERE "businessId" = ${businessId}`
+  const [totals, ids] = await Promise.all([
+    tx.$queryRaw<Array<{ pending: bigint | number; count: bigint | number }>>(Prisma.sql`
+      SELECT COALESCE(SUM("balance"), 0) AS "pending", COUNT(*) AS "count"
+      FROM (${balances}) AS outstanding WHERE "balance" > 0`),
+    tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT "id" FROM (${balances}) AS outstanding WHERE "balance" > 0
+      ORDER BY "createdAt" ASC, "id" ASC LIMIT 3`),
+  ])
+  const items = ids.length ? await tx.repair.findMany({
+    where: { businessId, id: { in: ids.map(row => row.id) } }, select: repairSelect,
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: 3,
+  }) : []
+  // PostgreSQL aggregates return bigint; the public Dashboard contract uses numbers.
+  return { amount: Number(totals[0].pending), count: Number(totals[0].count), items }
+}
+
 export async function dashboardOverview(businessId: string, period: DashboardPeriod, now = new Date()) {
   const range = dashboardPeriod(period, now)
   const features = await getFeatureEntitlements(businessId)
@@ -22,16 +46,14 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
   const deliveryCutoff = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
   // A single read snapshot keeps KPI totals and chart buckets consistent on both engines.
   return prisma.$transaction(async tx => {
-    const outstanding = { businessId, paid: { lt: tx.repair.fields.total } }
     const delayed = { businessId, status: { notIn: ['DELIVERED', 'CANCELLED', 'READY'] as RepairStatus[] }, estimatedDeliveryDate: { lt: deliveryCutoff } }
     const warranty = { businessId, warrantyEnabled: true, warrantyDeletedAt: null, warrantyExpiresAt: { gte: now, lt: new Date(now.getTime() + 7 * 86400000) } }
-    const [cash, status, pending, received, readyItems, pendingItems, delayedCount, delayedItems, warrantyCount, warrantyItems, deviceStatus, deviceSales, commerce, activity, equipmentItems] = await Promise.all([
+    const [cash, status, pending, received, readyItems, delayedCount, delayedItems, warrantyCount, warrantyItems, deviceStatus, deviceSales, commerce, activity, equipmentItems] = await Promise.all([
       tx.cashMovement.groupBy({ by: ['type', 'origin'], where: { businessId, createdAt }, _sum: { amount: true }, _count: true }),
       tx.repair.groupBy({ by: ['status'], where: { businessId }, _count: true }),
-      tx.repair.aggregate({ where: outstanding, _sum: { total: true, paid: true }, _count: true }),
+      dashboardPending(tx, businessId),
       tx.repair.count({ where: { businessId, createdAt } }),
       tx.repair.findMany({ where: { businessId, status: 'READY' }, select: repairSelect, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: 3 }),
-      tx.repair.findMany({ where: outstanding, select: repairSelect, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: 3 }),
       tx.repair.count({ where: delayed }),
       tx.repair.findMany({ where: delayed, select: repairSelect, orderBy: [{ estimatedDeliveryDate: 'asc' }, { id: 'asc' }], take: 3 }),
       tx.repair.count({ where: warranty }),
@@ -58,7 +80,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
     }
     const attention: AttentionGroup[] = [
       { key: 'ready', title: 'Listas para entregar', count: countStatus('READY'), href: '/admin/reparaciones?status=ready', items: readyItems.map(repairItem) },
-      { key: 'pending', title: 'Reparaciones con saldo', count: pending._count, href: '/admin/reparaciones', items: pendingItems.map(repairItem) },
+      { key: 'pending', title: 'Reparaciones con saldo', count: pending.count, href: '/admin/reparaciones', items: pending.items.map(repairItem) },
       { key: 'delayed', title: 'Entrega estimada vencida', count: delayedCount, href: '/admin/reparaciones', items: delayedItems.map(repairItem) },
       { key: 'warranty', title: 'Garantías que vencen en 7 días', count: warrantyCount, href: '/admin/garantias', items: warrantyItems.map(repairItem) },
       { key: 'equipment', title: 'Equipos listos para vender', count: equipmentReady, href: '/admin/venta-equipos', items: equipmentItems.map(device => ({ id: device.id, title: `${device.brand} ${device.model}`, detail: 'Listo para vender', href: '/admin/venta-equipos' })) },
@@ -67,7 +89,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
       generatedAt: now.toISOString(),
       period: { key: period, start: range.start.toISOString(), end: range.end.toISOString(), timeZone: range.timeZone },
       financial: { income, expense, balance: income - expense },
-      current: { activeRepairs, readyRepairs: countStatus('READY'), pending: (pending._sum.total ?? 0) - (pending._sum.paid ?? 0) },
+      current: { activeRepairs, readyRepairs: countStatus('READY'), pending: pending.amount },
       charts,
       attention: attention.filter(group => group.count > 0),
       modules: {
