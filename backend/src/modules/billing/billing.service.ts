@@ -113,16 +113,24 @@ export function buildCourtesyDaysUpdate(subscription: Subscription, days: number
 }
 
 export async function ensureSubscription(businessId: string, now = new Date()) {
-  const existing = await prisma.subscription.findUnique({ where: { businessId }, include: { plan: true } })
+  return ensureSubscriptionWithClient(prisma, businessId, now)
+}
+
+async function ensureSubscriptionWithClient(db: Prisma.TransactionClient, businessId: string, now: Date) {
+  const existing = await db.subscription.findUnique({ where: { businessId }, include: { plan: true } })
   if (existing) return existing
-  return prisma.subscription.create({
+  return db.subscription.create({
     data: { businessId, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now, trialEndsAt: addDays(now, TRIAL_DAYS), trialConsumedAt: now },
     include: { plan: true },
   })
 }
 
 export async function refreshSubscriptionStatus(businessId: string, now = new Date()) {
-  const subscription = await ensureSubscription(businessId, now)
+  return refreshSubscriptionStatusWithClient(prisma, businessId, now)
+}
+
+async function refreshSubscriptionStatusWithClient(db: Prisma.TransactionClient, businessId: string, now: Date) {
+  const subscription = await ensureSubscriptionWithClient(db, businessId, now)
   let status = subscription.status
   let graceEndsAt = subscription.graceEndsAt
   const end = status === 'TRIALING' ? subscription.trialEndsAt : subscription.currentPeriodEnd
@@ -132,7 +140,7 @@ export async function refreshSubscriptionStatus(businessId: string, now = new Da
   }
   if ((status === 'GRACE' || status === 'PAST_DUE') && graceEndsAt && now >= graceEndsAt) status = 'SUSPENDED'
   if (status !== subscription.status || graceEndsAt?.getTime() !== subscription.graceEndsAt?.getTime()) {
-    return prisma.subscription.update({ where: { id: subscription.id }, data: { status, graceEndsAt }, include: { plan: true } })
+    return db.subscription.update({ where: { id: subscription.id }, data: { status, graceEndsAt }, include: { plan: true } })
   }
   return subscription
 }
@@ -143,23 +151,46 @@ const periodBounds = (subscription: Subscription) => ({
 })
 
 export async function subscriptionUsage(businessId: string) {
-  const subscription = await refreshSubscriptionStatus(businessId)
+  return subscriptionUsageWithClient(prisma, businessId)
+}
+
+async function subscriptionUsageWithClient(db: Prisma.TransactionClient, businessId: string, now = new Date()) {
+  const subscription = await refreshSubscriptionStatusWithClient(db, businessId, now)
   const bounds = periodBounds(subscription)
   const [repairs, trackingLinks] = await Promise.all([
-    prisma.repair.count({ where: { businessId, createdAt: { gte: bounds.start, lt: bounds.end } } }),
-    prisma.repair.count({ where: { businessId, trackingCreatedAt: { gte: bounds.start, lt: bounds.end } } }),
+    db.repair.count({ where: { businessId, createdAt: { gte: bounds.start, lt: bounds.end } } }),
+    db.repair.count({ where: { businessId, trackingCreatedAt: { gte: bounds.start, lt: bounds.end } } }),
   ])
-  const retainsTrialAccess = subscription.trialEndsAt > new Date() && (!subscription.currentPeriodStart || subscription.currentPeriodStart >= subscription.trialEndsAt)
+  const retainsTrialAccess = subscription.trialEndsAt > now && (!subscription.currentPeriodStart || subscription.currentPeriodStart >= subscription.trialEndsAt)
   const entitlements = subscription.status === 'TRIALING' || retainsTrialAccess ? PLAN_ENTITLEMENTS.COMPLETE : PLAN_ENTITLEMENTS[subscription.planCode]
   return { repairs, trackingLinks, entitlements, periodStart: bounds.start, periodEnd: bounds.end }
 }
 
 export async function assertWithinLimit(businessId: string, resource: 'repairs' | 'trackingLinks') {
-  const usage = await subscriptionUsage(businessId)
+  return assertWithinLimitTx(prisma, businessId, resource)
+}
+
+export class PlanLimitError extends Error {
+  readonly statusCode = 409
+  constructor(readonly resource: 'repairs' | 'trackingLinks', limit: number) {
+    const label = resource === 'repairs' ? 'reparaciones' : 'links de seguimiento'
+    super(`Alcanzaste el límite de ${limit} ${label} de tu plan.`)
+    this.name = 'PlanLimitError'
+  }
+}
+
+/** Both quota-consuming routes must hold this row until their writes commit. */
+export async function lockBusinessQuota(tx: Prisma.TransactionClient, businessId: string) {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Business" WHERE "id" = ${businessId} FOR UPDATE`
+  if (!rows.length) throw new Error('El negocio no existe')
+}
+
+/** Call after lockBusinessQuota, inside the transaction that consumes the quota. */
+export async function assertWithinLimitTx(tx: Prisma.TransactionClient, businessId: string, resource: 'repairs' | 'trackingLinks', now = new Date()) {
+  const usage = await subscriptionUsageWithClient(tx, businessId, now)
   const limit = resource === 'repairs' ? usage.entitlements.repairLimitPerPeriod : usage.entitlements.trackingLimitPerPeriod
   if (limit !== null && usage[resource] >= limit) {
-    const label = resource === 'repairs' ? 'reparaciones' : 'links de seguimiento'
-    throw Object.assign(new Error(`Alcanzaste el límite de ${limit} ${label} de tu plan.`), { statusCode: 409 })
+    throw new PlanLimitError(resource, limit)
   }
   return usage
 }

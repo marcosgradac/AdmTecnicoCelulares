@@ -25,10 +25,10 @@ import {
 import { emptyLoose, linkedWhereFor, looseCashMovements, looseColumns, looseWhereFor, repairCashGroups, toLooseBlock } from './modules/cash/cash-groups.service'
 import { cashPeriodWhere, DEFAULT_CASH_PERIOD, isCashPeriod } from './modules/cash/cash-period'
 import { authenticate, authOf, isRenewalMode, requirePermission, requireRole, type AuthData } from './middlewares/auth'
-import { billingRouter, assertWithinLimit } from './modules/billing/billing.routes'
+import { billingRouter } from './modules/billing/billing.routes'
 import { platformAdminRouter } from './modules/platform-admin/platform-admin.routes'
 import { requireSubscriptionAccess } from './modules/billing/billing.middleware'
-import { addDays, assertFeatureAccess, getBusinessAccessStatus } from './modules/billing/billing.service'
+import { addDays, assertFeatureAccess, assertWithinLimitTx, getBusinessAccessStatus, lockBusinessQuota, PlanLimitError } from './modules/billing/billing.service'
 import { teamRouter } from './modules/team/team.routes'
 import { passwordResetRouter } from './modules/auth/password-reset.routes'
 import { passwordChangeRouter } from './modules/auth/password-change.routes'
@@ -429,11 +429,16 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
   }
   const businessId = authOf(req).businessId
   try {
-    await assertWithinLimit(authOf(req).businessId, 'repairs')
-    let trackingAllowed = true
-    try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch { trackingAllowed = false }
     const data = parsed.data
     const repair = await prisma.$transaction(async tx => {
+      await lockBusinessQuota(tx, businessId)
+      const now = new Date()
+      await assertWithinLimitTx(tx, businessId, 'repairs', now)
+      let trackingAllowed = true
+      try { await assertWithinLimitTx(tx, businessId, 'trackingLinks', now) } catch (error) {
+        if (!(error instanceof PlanLimitError) || error.resource !== 'trackingLinks') throw error
+        trackingAllowed = false
+      }
       const client = await tx.client.findFirst({ where: { id: data.clientId, businessId, deletedAt: null } })
       if (!client) throw Object.assign(new Error('El cliente seleccionado fue eliminado o no está disponible.'), { statusCode: 404 })
       const number = await allocateRepairNumber(tx, businessId)
@@ -445,7 +450,7 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
       const created = await tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, partsCost: data.partsCost, laborCharge: data.laborCharge, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? generateTrackingToken() : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, trackingExpiresAt, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt } })
       await recordInitialRepairFinance(tx, created, client.name, data)
       return tx.repair.findUniqueOrThrow({ where: { id: created.id }, include: includeRepair })
-    }, { timeout: 15_000 })
+    }, { timeout: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
     return res.status(201).json(repairResponse(authOf(req), repair))
   } catch (error) {
     const status = typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500
@@ -810,19 +815,28 @@ app.get('/api/repairs/:id/history', requirePermission('repairs.view'), async (re
 })
 
 app.post('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {
-  try { await assertWithinLimit(authOf(req).businessId, 'trackingLinks') } catch (error) { return res.status((error as { statusCode?: number }).statusCode ?? 409).json({ success: false, message: error instanceof Error ? error.message : 'Límite alcanzado' }) }
-  const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, select: { id: true, status: true, trackingExpiresAt: true } })
-  if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-  // Regenerar el enlace NO puede ser la forma de saltear el vencimiento: si el período ya
-  // terminó, un token nuevo tampoco serviría de nada y sólo crearía la ilusión de que revive.
-  if (isTrackingExpired(repair.trackingExpiresAt)) {
-    const error = trackingExpiredError()
-    return res.status(error.statusCode).json({ success: false, code: error.code, message: error.message })
+  const businessId = authOf(req).businessId
+  try {
+    const updated = await prisma.$transaction(async tx => {
+      await lockBusinessQuota(tx, businessId)
+      const now = new Date()
+      await assertWithinLimitTx(tx, businessId, 'trackingLinks', now)
+      const repair = await tx.repair.findFirst({ where: { id: String(req.params.id), businessId }, select: { id: true, status: true, trackingExpiresAt: true } })
+      if (!repair) return null
+      if (isTrackingExpired(repair.trackingExpiresAt)) throw trackingExpiredError()
+      // Regeneration preserves the existing expiration exactly.
+      return tx.repair.update({ where: { id: repair.id }, data: { trackingToken: generateTrackingToken(), trackingEnabled: true, trackingCreatedAt: now }, select: { trackingToken: true, trackingEnabled: true, trackingExpiresAt: true } })
+    }, { timeout: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
+    if (!updated) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+    return res.json(updated)
+  } catch (error) {
+    if (error instanceof PlanLimitError) return res.status(error.statusCode).json({ success: false, message: error.message })
+    if (error instanceof Error && 'code' in error && error.code === TRACKING_EXPIRED_CODE) {
+      const expired = trackingExpiredError()
+      return res.status(expired.statusCode).json({ success: false, code: expired.code, message: expired.message })
+    }
+    throw error
   }
-  const trackingToken = generateTrackingToken()
-  // `trackingExpiresAt` NO se toca: si la reparación ya está entregada y dentro del período,
-  // el token nuevo hereda exactamente el mismo vencimiento, sin extenderlo ni acortarlo.
-  return res.json(await prisma.repair.update({ where: { id: repair.id }, data: { trackingToken, trackingEnabled: true, trackingCreatedAt: new Date() }, select: { trackingToken: true, trackingEnabled: true, trackingExpiresAt: true } }))
 })
 
 app.patch('/api/repairs/:id/tracking-link', requirePermission('repairs.shareTracking'), async (req, res) => {
