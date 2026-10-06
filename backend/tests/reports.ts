@@ -69,7 +69,7 @@ async function main() {
     assert.equal((await request('GET', '/reports/overview?period=custom&from=2026-01-10&to=2026-01-01', undefined, ownerA.token)).status, 400)
     assert.equal((await request('GET', '/reports/overview?period=custom&from=2026-01-01', undefined, ownerA.token)).status, 400)
     assert.equal((await request('GET', '/reports/overview?period=custom&from=2025-01-01&to=2026-01-02', undefined, ownerA.token)).status, 400)
-    console.log('REPORTS TESTS PASSED: formulas, UTC period validation, owner permission and tenant isolation')
+    console.log('REPORTS TESTS PASSED: formulas, Argentina calendar period validation, owner permission and tenant isolation')
   } finally {
     await clean()
     await prisma.$disconnect()

@@ -22,6 +22,7 @@
     "test:team-password-reset": "tsx tests/team-password-reset.ts",
     "test:inventory": "tsx tests/inventory.ts",
     "test:reports": "tsx tests/reports.ts",
+    "test:reports-timezone": "tsx tests/reports-timezone.ts",
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
     "test:repair-creation-finance": "tsx tests/repair-creation-finance.ts && tsx tests/repair-creation-finance-sqlite.ts",
     "test:repair-advance-status": "tsx tests/repair-advance-status.ts",

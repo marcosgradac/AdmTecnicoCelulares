@@ -1,6 +1,7 @@
 import { PaymentMethod, RepairStatus } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
+import { ARGENTINA_TIME_ZONE, getArgentinaCalendarDate, getArgentinaCalendarDayBounds, getArgentinaCalendarDayNumber, getArgentinaDayBounds, getArgentinaDayRangeBack } from '../../lib/argentina-day'
 
 export const reportPeriodSchema = z.object({
   period: z.enum(['today', 'last_7_days', 'this_month', 'previous_month', 'last_3_months', 'this_year', 'custom']).default('this_month'),
@@ -17,39 +18,50 @@ export type ReportPeriodInput = z.infer<typeof reportPeriodSchema>
 const DAY_MS = 86_400_000
 const activeStatuses: RepairStatus[] = Object.values(RepairStatus).filter(status => !['DELIVERED', 'CANCELLED'].includes(status))
 
-const startOfUtcDay = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-const addUtcDays = (date: Date, days: number) => new Date(date.getTime() + days * DAY_MS)
-const parseUtcDate = (value: string) => {
+const parseCalendarDate = (value: string) => {
+  // Esta fecha UTC representa sólo la fecha civil para validación, no un límite de query.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error('INVALID_PERIOD')
   const date = new Date(`${value}T00:00:00.000Z`)
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) throw new Error('INVALID_PERIOD')
-  return date
+  return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate(), ordinal: date.getTime() / DAY_MS }
 }
 
 export function resolveReportPeriod(input: ReportPeriodInput, now = new Date()) {
-  const today = startOfUtcDay(now)
+  const { year, month } = getArgentinaCalendarDate(now)
+  const midnight = (y: number, m: number, d = 1) => getArgentinaCalendarDayBounds(y, m, d).start
   let from: Date
   let toExclusive: Date
   switch (input.period) {
-    case 'today': from = today; toExclusive = addUtcDays(today, 1); break
-    case 'last_7_days': from = addUtcDays(today, -6); toExclusive = addUtcDays(today, 1); break
+    case 'today': {
+      const bounds = getArgentinaDayBounds(now)
+      from = bounds.start; toExclusive = bounds.end; break
+    }
+    case 'last_7_days': {
+      const bounds = getArgentinaDayRangeBack(now, 6)
+      from = bounds.start; toExclusive = bounds.end; break
+    }
     case 'previous_month':
-      from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1))
-      toExclusive = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)); break
+      from = midnight(year, month - 1)
+      toExclusive = midnight(year, month); break
     case 'last_3_months':
-      from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 2, 1))
-      toExclusive = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1)); break
+      from = midnight(year, month - 2)
+      toExclusive = midnight(year, month + 1); break
     case 'this_year':
-      from = new Date(Date.UTC(today.getUTCFullYear(), 0, 1))
-      toExclusive = new Date(Date.UTC(today.getUTCFullYear() + 1, 0, 1)); break
-    case 'custom':
-      from = parseUtcDate(input.from as string)
-      toExclusive = addUtcDays(parseUtcDate(input.to as string), 1); break
+      from = midnight(year, 1)
+      toExclusive = midnight(year + 1, 1); break
+    case 'custom': {
+      const start = parseCalendarDate(input.from as string)
+      const end = parseCalendarDate(input.to as string)
+      const days = end.ordinal - start.ordinal + 1
+      if (days < 1 || days > 366) throw new Error('INVALID_PERIOD')
+      from = midnight(start.year, start.month, start.day)
+      toExclusive = getArgentinaCalendarDayBounds(end.year, end.month, end.day).end; break
+    }
     default:
-      from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1))
-      toExclusive = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1))
+      from = midnight(year, month)
+      toExclusive = midnight(year, month + 1)
   }
-  if (from >= toExclusive || toExclusive.getTime() - from.getTime() > 366 * DAY_MS) throw new Error('INVALID_PERIOD')
-  return { key: input.period, timezone: 'UTC' as const, from, toExclusive, to: new Date(toExclusive.getTime() - 1) }
+  return { key: input.period, timezone: ARGENTINA_TIME_ZONE, from, toExclusive, to: new Date(toExclusive.getTime() - 1) }
 }
 
 type CountItem = { label: string; value: number }
@@ -60,16 +72,18 @@ const topCounts = (values: string[], limit = 7): CountItem[] => Object.entries(v
 }, {})).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([label, value]) => ({ label, value }))
 
 const groupByDay = (from: Date, toExclusive: Date) => {
-  const days = Math.ceil((toExclusive.getTime() - from.getTime()) / DAY_MS)
+  const days = getArgentinaCalendarDayNumber(toExclusive) - getArgentinaCalendarDayNumber(from)
   return days <= 31 ? 'day' : days <= 120 ? 'week' : 'month'
 }
 
 const bucketKey = (date: Date, granularity: 'day' | 'week' | 'month') => {
-  const day = startOfUtcDay(date)
+  // Proxy UTC de la fecha CIVIL argentina, usado sólo para etiquetas y aritmética semanal.
+  const day = new Date(getArgentinaCalendarDayNumber(date) * DAY_MS)
   if (granularity === 'month') return `${day.getUTCFullYear()}-${String(day.getUTCMonth() + 1).padStart(2, '0')}`
   if (granularity === 'week') {
     const mondayOffset = (day.getUTCDay() + 6) % 7
-    return addUtcDays(day, -mondayOffset).toISOString().slice(0, 10)
+    day.setUTCDate(day.getUTCDate() - mondayOffset)
+    return day.toISOString().slice(0, 10)
   }
   return day.toISOString().slice(0, 10)
 }
