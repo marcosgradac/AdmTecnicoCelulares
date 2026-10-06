@@ -113,11 +113,22 @@ export async function updateTeamMember(businessId: string, actorId: string, id: 
 }
 
 export async function resetTeamMemberPassword(businessId: string, id: string, password: string) {
-  const user = await prisma.user.findFirst({ where: { id, businessId, deletedAt: null } })
-  if (!user) throw new TeamError(404, 'Usuario no encontrado')
   const passwordHash = await bcrypt.hash(password, 12)
-  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } })
-  return { success: true }
+  return prisma.$transaction(async tx => {
+    const user = await tx.user.findFirst({ where: { id, businessId, deletedAt: null } })
+    if (!user) throw new TeamError(404, 'Usuario no encontrado')
+    const now = new Date()
+    const updated = await tx.user.updateMany({
+      where: { id: user.id, businessId, deletedAt: null },
+      data: { passwordHash, tokenVersion: { increment: 1 } },
+    })
+    if (updated.count !== 1) throw new TeamError(404, 'Usuario no encontrado')
+    await tx.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: now },
+    })
+    return { success: true }
+  })
 }
 
 export async function deleteTeamMember(businessId: string, actorId: string, id: string) {

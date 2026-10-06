@@ -19,6 +19,7 @@
     "test:password-change": "tsx tests/password-change.ts",
     "test:account-deletion": "tsx tests/account-deletion.ts",
     "test:settings-team": "tsx tests/settings-team.ts",
+    "test:team-password-reset": "tsx tests/team-password-reset.ts",
     "test:inventory": "tsx tests/inventory.ts",
     "test:reports": "tsx tests/reports.ts",
     "test:simplified-repairs": "tsx tests/simplified-repairs.ts",
