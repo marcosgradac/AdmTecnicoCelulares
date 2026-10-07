@@ -1,4 +1,8 @@
 import { classifyTracking } from './tracking-expiry'
+import { isShortTrackingToken } from './tracking-token'
+
+export const isTrackingPreviewToken = (token: string): boolean =>
+  (token.length === 16 && isShortTrackingToken(token)) || (token.length === 64 && /^[a-fA-F0-9]{64}$/.test(token))
 
 const FRONTEND_ORIGIN = 'https://www.tecnodeskpro.com'
 const BACKEND_ORIGIN = 'https://tecnodesk-api.onrender.com'

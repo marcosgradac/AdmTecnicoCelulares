@@ -4,7 +4,9 @@ import { resolve } from 'node:path'
 
 process.env.NODE_ENV = 'test'
 process.env.JWT_SECRET = 'local-preview-test-only'
-process.env.DATABASE_URL = 'postgresql://local:local@127.0.0.1:55432/local_preview_not_connected'
+process.env.RATE_LIMIT_GLOBAL_MAX = '1'
+process.env.RATE_LIMIT_TRACKING_PREVIEW_MAX = '30'
+process.env.DATABASE_URL = 'postgresql://local:local@127.0.0.1:1/local_preview_not_connected'
 
 async function main() {
   const [{ app }, { prisma }, { trackingRisk }] = await Promise.all([
@@ -28,11 +30,11 @@ async function main() {
   const address = server.address()
   assert.ok(address && typeof address === 'object')
   const request = async (query = '?clientSlug=cliente', status = 200) => {
-    const response = await fetch(`http://127.0.0.1:${address.port}/api/tracking-preview/local-token${query}`)
+    const response = await fetch(`http://127.0.0.1:${address.port}/api/tracking-preview/AbCdEf012345_-xy${query}`)
     assert.equal(response.status, status)
     assert.match(response.headers.get('content-type')!, /^text\/html; charset=utf-8$/)
     assert.equal(response.headers.get('cache-control'), 'no-store')
-    assert.equal(response.headers.get('ratelimit'), null, 'preview must not consume the shared API limiter')
+    assert.ok(response.headers.get('ratelimit'), 'preview exposes its dedicated budget')
     return response.text()
   }
   const meta = (html: string, property: string) => html.match(new RegExp(`<meta property="${property}" content="([^"]*)"`))?.[1]
@@ -42,11 +44,11 @@ async function main() {
     assert.equal(meta(html, 'og:title'), 'TecnoMarcos')
     assert.equal(meta(html, 'og:description'), 'Seguí el estado de tu reparación en tiempo real.')
     assert.equal(meta(html, 'og:image'), business.logoUrl)
-    assert.equal(meta(html, 'og:url'), 'https://www.tecnodeskpro.com/s/cliente/local-token')
+    assert.equal(meta(html, 'og:url'), 'https://www.tecnodeskpro.com/s/cliente/AbCdEf012345_-xy')
     assert.match(html, /noindex,nofollow,noarchive/)
     console.log('Local HTTP response for a simulated valid workshop:\n' + html)
     for (const secret of ['PRIVATE_', '987654', '123456', '999999']) assert.ok(!html.includes(secret))
-    assert.deepEqual(queries[0], { where: { trackingToken: 'local-token' }, select: {
+    assert.deepEqual(queries[0], { where: { trackingToken: 'AbCdEf012345_-xy' }, select: {
       trackingEnabled: true, trackingExpiresAt: true, business: { select: { id: true, name: true, logoUrl: true } },
     } })
     business.name = '<script>"A&B\'</script>'
@@ -76,7 +78,7 @@ async function main() {
       assert.ok(!html.includes('PRIVATE_BUSINESS'))
       assert.equal(meta(html, 'og:image'), 'https://www.tecnodeskpro.com/tecnodesk-192.png')
     }
-    assert.equal(meta(await request(''), 'og:url'), 'https://www.tecnodeskpro.com/seguimiento/local-token')
+    assert.equal(meta(await request(''), 'og:url'), 'https://www.tecnodeskpro.com/seguimiento/AbCdEf012345_-xy')
     fixture = { trackingEnabled: true, trackingExpiresAt: null,
       business: { id: 'workshop-b', name: 'Otro taller', logoUrl: 'https://images.example.test/other.png' } }
     html = await request()
@@ -105,12 +107,12 @@ async function main() {
       return undefined
     }
     for (const agent of ['facebookexternalhit/1.1', 'Facebot', 'WhatsApp/2.24', 'WhatsApp/2.24 iOS']) {
-      assert.equal(destination('/s/cliente/local-token', agent), 'https://tecnodesk-api.onrender.com/api/tracking-preview/local-token?clientSlug=cliente')
-      assert.equal(destination('/seguimiento/local-token', agent), 'https://tecnodesk-api.onrender.com/api/tracking-preview/local-token')
+      assert.equal(destination('/s/cliente/AbCdEf012345_-xy', agent), 'https://tecnodesk-api.onrender.com/api/tracking-preview/AbCdEf012345_-xy?clientSlug=cliente')
+      assert.equal(destination('/seguimiento/AbCdEf012345_-xy', agent), 'https://tecnodesk-api.onrender.com/api/tracking-preview/AbCdEf012345_-xy')
       for (const path of ['/', '/login', '/admin', '/politica-de-privacidad']) assert.equal(destination(path, agent), '/index.html')
     }
     for (const agent of ['Mozilla/5.0 Chrome/130', '', 'UnknownBot']) {
-      for (const path of ['/s/cliente/local-token', '/seguimiento/local-token', '/', '/login', '/admin', '/politica-de-privacidad'])
+      for (const path of ['/s/cliente/AbCdEf012345_-xy', '/seguimiento/AbCdEf012345_-xy', '/', '/login', '/admin', '/politica-de-privacidad'])
         assert.equal(destination(path, agent), '/index.html')
     }
     console.log('VERCEL RULE RESOLUTION PASSED: Meta/WhatsApp modern + legacy links and unchanged browser/SPA routes.')

@@ -73,6 +73,21 @@ export const authenticatedApiLimiter = limiter(
 
 export const loginIpLimiter = limiter(securityConfig.rateLimits.loginIp.windowMs, securityConfig.rateLimits.loginIp.limit, 'LOGIN_RATE_LIMIT')
 export const signupLimiter = limiter(securityConfig.rateLimits.signup.windowMs, securityConfig.rateLimits.signup.limit, 'SIGNUP_RATE_LIMIT')
+// Separate IP budget for social previews; do not log the token-bearing request path.
+export const trackingPreviewLimiter = rateLimit({
+  windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
+  limit: securityConfig.rateLimits.trackingPreview.limit,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: ipKey,
+  handler: (req, res) => {
+    const seconds = retryAfter(req)
+    if (seconds) res.setHeader('Retry-After', String(seconds))
+    res.setHeader('Cache-Control', 'no-store')
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    return res.status(429).json({ success: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
+  },
+})
 export const publicTrackingLimiter = limiter(
   securityConfig.rateLimits.publicTracking.windowMs,
   securityConfig.rateLimits.publicTracking.limit,
