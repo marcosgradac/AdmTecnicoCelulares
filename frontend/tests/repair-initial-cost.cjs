@@ -8,6 +8,11 @@ async function main() {
   const page = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, { getRepair: async () => repair })
   await page.settle()
   assert.ok(button(page.root(), 'Corregir costo/gasto'))
+  const costCard = collect(page.root(), n => n.type === 'Card' && JSON.stringify(n).includes('Costos y ganancia'))[0]
+  const paymentCard = collect(page.root(), n => n.type === 'Card' && JSON.stringify(n).includes('Resumen de pago'))[0]
+  assert.ok(!button(costCard, 'Corregir costo/gasto'))
+  assert.ok(button(paymentCard, 'Corregir costo/gasto').props.fullWidth)
+  assert.equal(button(paymentCard, 'Corregir costo/gasto').props.startIcon, undefined)
   button(page.root(), 'Corregir costo/gasto').props.onClick()
   await page.settle()
   const dialog = collect(page.root(), n => n.type === 'RepairInitialCostDialog')[0]
