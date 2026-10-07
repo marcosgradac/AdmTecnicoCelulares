@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Box, Card, CardContent, Container, Divider, LinearProgress, Stack, Typography } from '@mui/material'
-import { CheckRounded } from '@mui/icons-material'
+import { Box, Card, CardContent, Container, Divider, Stack, Typography } from '@mui/material'
+import { CheckRounded, PaymentsRounded } from '@mui/icons-material'
 import type { Repair } from '../types'
 import { getTrackingRepair } from '../services/repairs'
 import { UiState } from '../components/common/UiState'
 import { canonicalStatus, canonicalStatusConfig, isSpecialStatus, repairFlow, repairStatusConfig } from '../config/repairStatus'
-import { StatusChip } from '../components/common/StatusChip'
-import { formatMoney } from '../utils/format'
+import { formatDate, formatMoney } from '../utils/format'
 import axios from 'axios'
 import { Alert, Button } from '@mui/material'
 import { TurnstileWidget } from '../components/security/TurnstileWidget'
@@ -62,82 +61,87 @@ export function TrackingPage() {
   const status = canonicalStatus(repair.status)
   const statusConfig = canonicalStatusConfig(repair.status)
   const special = isSpecialStatus(status)
-  const current = statusConfig.order
+  const current = repairFlow.indexOf(status)
   const saldo = Math.max(0, repair.total - repair.paid)
-  const brand = trackingBrand(repair)
-  const brandLogo = brand.known ? deviceBrandLogo(brand.label) : null
-  const brandTone = brand.known ? deviceBrandTone(brand.label) : { background: '#F1F3F7', color: '#596579' }
+  // El dato explícito manda; no adivinamos marcas a partir del modelo.
+  const brand = repair.deviceBrand?.trim()
+  const knownBrand = findKnownDeviceBrand(brand)
+  const brandLabel = knownBrand || (brand && brand.toLowerCase() !== 'otra' ? brand : repair.deviceModel || repair.device)
+  const logo = knownBrand ? deviceBrandLogo(knownBrand) : null
+  const tone = knownBrand ? deviceBrandTone(knownBrand) : { background: '#F1F3F7', color: '#627087' }
   const StatusIcon = statusConfig.icon
-  return <Box component="main" minHeight="100vh" sx={{ bgcolor: '#F6F7FB', py: { xs: 3, md: 5 }, color: '#18243B' }}>
-    <Container maxWidth="sm" sx={{ px: { xs: 2, sm: 3 } }}>
-      <Stack alignItems="center" textAlign="center" mb={{ xs: 3, sm: 4 }}>
-        <Box sx={{ width: { xs: 68, sm: 80 }, height: { xs: 68, sm: 80 }, p: 1.25, borderRadius: '50%', bgcolor: '#fff', border: '1px solid #E5E9F2', boxShadow: '0 4px 16px #24355008', display: 'grid', placeItems: 'center' }}>
+  const cardSx = { border: '1px solid #E5EAF2', borderRadius: 3, boxShadow: '0 3px 14px #25395904', bgcolor: '#fff' }
+  const labels = ['Recepción', 'Revisión', 'Repuesto', 'Reparación', 'Listo', 'Entregado']
+  return <Box component="main" minHeight="100vh" sx={{ bgcolor: '#F5F7FB', color: '#24334A', pb: 2 }}>
+    <Box component="header" sx={{ position: 'relative', overflow: 'hidden', pt: { xs: 2.5, sm: 3 }, pb: 2.5, bgcolor: '#F0F3FC', '&::before': { content: '""', position: 'absolute', width: '85%', height: 160, bgcolor: '#DFE9FC', borderRadius: '50%', top: -90, left: '-18%', transform: 'rotate(-8deg)' }, '&::after': { content: '""', position: 'absolute', width: '80%', height: 140, bgcolor: '#E9E3F8', borderRadius: '50%', top: -80, right: '-22%', transform: 'rotate(12deg)' } }}>
+      <Stack alignItems="center" textAlign="center" sx={{ position: 'relative', zIndex: 1, px: 2 }}>
+        <Box sx={{ width: { xs: 64, sm: 76 }, height: { xs: 64, sm: 76 }, p: 1, borderRadius: '50%', bgcolor: '#fff', border: '1px solid #E1E6F0', boxShadow: '0 4px 14px #26375B0A' }}>
           <Box component="img" src={repair.business?.logoUrl || tecnodeskMark} alt={repair.business?.logoUrl ? `Logo de ${businessName(repair)}` : 'TecnoDesk'} sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </Box>
-        <Typography component="h1" sx={{ fontSize: { xs: 23, sm: 27 }, fontWeight: 800, mt: 1.75, overflowWrap: 'anywhere' }}>{businessName(repair)}</Typography>
-        <Typography sx={{ color: '#6B7689', fontSize: 14, mt: .5 }}>Seguimiento de tu reparación</Typography>
+        <Typography component="h1" sx={{ fontSize: { xs: 21, sm: 24 }, fontWeight: 800, mt: 1, overflowWrap: 'anywhere' }}>{businessName(repair)}</Typography>
+        <Typography sx={{ fontSize: 13, color: '#748098', mt: .3 }}>Seguimiento de tu reparación</Typography>
       </Stack>
-      <Card sx={{ bgcolor: '#fff', border: '1px solid #E7EAF1', borderRadius: 5, boxShadow: '0 12px 40px #24355008' }}>
-        <CardContent sx={{ p: { xs: 2.5, sm: 4 }, '&:last-child': { pb: { xs: 2.5, sm: 4 } } }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.25}>
-            <Typography sx={{ fontSize: 11, letterSpacing: '0.09em', fontWeight: 800, color: '#727D90' }}>REPARACIÓN #{repair.number}</Typography>
-            <StatusChip status={repair.status} />
-          </Stack>
-          <Typography component="h2" sx={{ fontSize: { xs: 28, sm: 34 }, lineHeight: 1.2, letterSpacing: '-0.035em', fontWeight: 800, mt: 2.5, overflowWrap: 'anywhere' }}>{repair.device}</Typography>
-          <Stack direction="row" alignItems="center" gap={1} sx={{ mt: 1.25, mb: 3 }}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, px: 1.5, py: .8, bgcolor: brandTone.background, color: brandTone.color, borderRadius: 2, minWidth: 0 }}>
-              {brandLogo && <Box component="svg" aria-hidden="true" viewBox="0 0 24 24" sx={{ width: 25, height: 25, flexShrink: 0, fill: brandLogo.color }}><path d={brandLogo.path} /></Box>}
-              <Typography sx={{ fontSize: 12, fontWeight: 750, overflowWrap: 'anywhere' }}>{brand.label}</Typography>
+    </Box>
+    <Container sx={{ maxWidth: '660px !important', px: { xs: 2, sm: 3 }, mt: 2 }}>
+      <Stack gap={1.5}>
+        <Card sx={{ ...cardSx, bgcolor: '#F0F6FF', borderColor: '#DCE8FB' }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Stack direction="row" gap={1.5} alignItems="center">
+              <Box sx={{ width: 42, height: 42, flexShrink: 0, borderRadius: '50%', bgcolor: '#E0EBFF', color: '#4779CA', display: 'grid', placeItems: 'center' }}><StatusIcon sx={{ fontSize: 23 }} /></Box>
+              <Box minWidth={0}><Typography sx={{ fontSize: 10, letterSpacing: '.07em', fontWeight: 750, color: '#6882A9' }}>ESTADO ACTUAL</Typography><Typography component="h2" sx={{ fontSize: 18, fontWeight: 800, mt: .2 }}>{statusConfig.label}</Typography><Typography sx={{ fontSize: 12, color: '#657B9B', mt: .4 }}>Te avisaremos cuando haya novedades.</Typography></Box>
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card sx={cardSx}>
+          <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+            <Typography component="h2" sx={{ fontSize: 12, fontWeight: 750, mb: 1.5 }}>Progreso</Typography>
+            <Box component="ol" aria-label="Progreso de la reparación" sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', p: 0, m: 0, listStyle: 'none' }}>
+              {repairFlow.map((step, index) => {
+                const active = !special && index === current
+                const complete = !special && index < current
+                return <Box component="li" key={step} aria-current={active ? 'step' : undefined} title={repairStatusConfig[step].label} sx={{ position: 'relative', textAlign: 'center', '&::after': index < repairFlow.length - 1 ? { content: '""', position: 'absolute', height: 2, left: 'calc(50% + 12px)', right: 'calc(-50% + 12px)', top: 11, bgcolor: complete ? '#7293DF' : '#E4E9F1' } : {} }}>
+                  <Box sx={{ position: 'relative', zIndex: 1, mx: 'auto', width: 24, height: 24, borderRadius: '50%', border: '2px solid', borderColor: active || complete ? '#6686D6' : '#DFE5EE', bgcolor: active || complete ? '#6686D6' : '#fff', color: '#fff', display: 'grid', placeItems: 'center', boxShadow: active ? '0 0 0 3px #E9EEFC' : 'none' }}>{complete ? <CheckRounded sx={{ fontSize: 15 }} /> : active ? <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#fff' }} /> : null}</Box>
+                  <Typography sx={{ fontSize: { xs: 9, sm: 11 }, lineHeight: 1.3, mt: 1, px: .2, fontWeight: active ? 800 : 550, color: active ? '#4A64AE' : complete ? '#586A88' : '#8E99AC' }}>{labels[index]}</Typography>
+                </Box>
+              })}
             </Box>
-          </Stack>
-          <Stack direction="row" gap={1.5} sx={{ bgcolor: '#EFF6FF', border: '1px solid #DFEBFD', borderRadius: 3, p: 2 }}>
-            <StatusIcon sx={{ color: '#4775BE', fontSize: 24, mt: .25 }} />
-            <Box minWidth={0}><Typography sx={{ fontSize: 13, fontWeight: 800, color: '#315B99' }}>Estado actual</Typography><Typography sx={{ fontSize: 14, lineHeight: 1.65, color: '#506789', mt: .5 }}>{statusConfig.label}. Te avisaremos cuando haya novedades.</Typography></Box>
-          </Stack>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mt={3.5}>
-            <Typography component="h3" sx={{ fontSize: 16, fontWeight: 800 }}>Progreso</Typography>
-            <Typography sx={{ fontSize: 12, color: '#728096' }}>{special ? statusConfig.label : `${statusConfig.progress}%`}</Typography>
-          </Stack>
-          <LinearProgress aria-label="Progreso de la reparación" variant="determinate" value={special ? 0 : statusConfig.progress} sx={{ height: 7, borderRadius: 8, mt: 1.5, mb: 2, bgcolor: '#EDF0F6', '& .MuiLinearProgress-bar': { borderRadius: 8, bgcolor: '#6B58CF' } }} />
-          <Stack component="ol" sx={{ m: 0, p: 0, listStyle: 'none' }}>
-            {repairFlow.map(step => {
-              const config = repairStatusConfig[step]
-              const active = !special && step === status
-              const complete = !special && config.order < current
-              return <Stack component="li" direction="row" alignItems="center" gap={1.5} key={step} aria-current={active ? 'step' : undefined} sx={{ py: 1, px: 1.25, borderRadius: 2.5, bgcolor: active ? '#F1EFFB' : 'transparent' }}>
-                <Box sx={{ width: 28, height: 28, borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, bgcolor: active ? '#6B58CF' : complete ? '#ECF6F0' : '#F0F2F6', color: active ? '#fff' : complete ? '#398460' : '#9BA4B3' }}>{complete || active ? <CheckRounded sx={{ fontSize: 17 }} /> : <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'currentColor' }} />}</Box>
-                <Typography sx={{ flex: 1, fontSize: 13, fontWeight: active ? 800 : 550, color: active ? '#5845AF' : complete ? '#445169' : '#8791A2' }}>{config.label}</Typography>
-                {active && <Typography sx={{ fontSize: 10, fontWeight: 750, color: '#6B58CF', flexShrink: 0 }}>Actual</Typography>}
-              </Stack>
-            })}
-          </Stack>
-          {special && <Typography sx={{ fontSize: 12, color: '#6B7689', mt: 1 }}>Esta reparación está en estado {statusConfig.label.toLowerCase()}, fuera del progreso habitual.</Typography>}
-          <Divider sx={{ my: 3, borderColor: '#EDF0F5' }} />
-          <GridSummary label="Trabajo informado" value={repair.issue} />
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: { xs: 2, sm: 1.5 }, mt: 2.5, p: 2, borderRadius: 3, bgcolor: '#F8F9FC', border: '1px solid #EDF0F5' }}>
-            <GridSummary label="Presupuesto" value={formatMoney(repair.total)} />
-            <GridSummary label="Pagado" value={formatMoney(repair.paid)} color="#278152" />
-            <GridSummary label="Saldo" value={formatMoney(saldo)} color={saldo > 0 ? '#B56714' : '#278152'} />
-          </Box>
-        </CardContent>
-      </Card>
-      <Typography variant="caption" display="block" textAlign="center" sx={{ color: '#7B8596', mt: 3, px: 1, lineHeight: 1.8 }}>No necesitás una cuenta. Esta página se actualiza cuando el servicio técnico cambia el estado del equipo. · <Link to="/politica-de-privacidad">Privacidad</Link></Typography>
+            {special && <Typography sx={{ fontSize: 11, color: '#748098', mt: 1.25 }}>{statusConfig.label}: fuera del progreso habitual.</Typography>}
+          </CardContent>
+        </Card>
+        <Card sx={cardSx}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Stack direction="row" gap={1.5} alignItems="center">
+              <Box sx={{ width: 52, minHeight: 52, flexShrink: 0, borderRadius: 2.5, bgcolor: tone.background, color: tone.color, display: 'grid', placeItems: 'center', p: .75 }}>
+                {logo ? <Box component="svg" aria-label={brandLabel} role="img" viewBox="0 0 24 24" sx={{ width: 35, height: 35, fill: logo.color }}><path d={logo.path} /></Box> : <Typography sx={{ fontSize: 10, fontWeight: 800, textAlign: 'center', overflowWrap: 'anywhere', width: '100%' }}>{brandLabel}</Typography>}
+              </Box>
+              <Box minWidth={0} flex={1}>
+                <Stack direction="row" alignItems="baseline" justifyContent="space-between" gap={1} flexWrap="wrap"><Typography component="h2" sx={{ fontSize: { xs: 15, sm: 17 }, fontWeight: 800, overflowWrap: 'anywhere' }}>{repair.device}</Typography><Typography sx={{ fontSize: 10, color: '#7B879C', whiteSpace: 'nowrap', bgcolor: '#F3F5F9', borderRadius: 1, px: .75, py: .25 }}>#REP-{String(repair.number).padStart(5, '0')}</Typography></Stack>
+                <Typography sx={{ fontSize: 12, color: '#748098', mt: .5, lineHeight: 1.5, overflowWrap: 'anywhere' }}>{repair.issue}</Typography>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card sx={cardSx}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}><Stack gap={1.25}>
+            <InfoRow label="Fecha de recepción" value={formatDate(repair.createdAt)} />
+            <InfoRow label="Última actualización" value={formatDate(repair.updatedAt)} />
+            <InfoRow label="Fecha estimada de entrega" value={repair.estimatedDeliveryDate ? formatDate(repair.estimatedDeliveryDate) : 'A confirmar'} />
+          </Stack></CardContent>
+        </Card>
+        <Card sx={{ ...cardSx, bgcolor: '#EDF8F1', borderColor: '#D7EBDD' }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}><Stack gap={1.25}>
+            <Stack direction="row" alignItems="center" gap={1}><PaymentsRounded sx={{ fontSize: 21, color: '#448665' }} /><Box flex={1}><InfoRow label="Presupuesto" value={formatMoney(repair.total)} emphasis /></Box></Stack>
+            <Divider sx={{ borderColor: '#D8EBDF' }} />
+            <InfoRow label="Pagado" value={formatMoney(repair.paid)} color="#36805A" />
+            <InfoRow label="Saldo pendiente" value={formatMoney(saldo)} color={saldo > 0 ? '#B57427' : '#36805A'} emphasis />
+          </Stack></CardContent>
+        </Card>
+      </Stack>
+      <Typography sx={{ fontSize: 10, textAlign: 'center', color: '#8A95A7', mt: 2, lineHeight: 1.7 }}>No necesitás una cuenta. El seguimiento se actualiza con las novedades del taller. · <Link to="/politica-de-privacidad">Privacidad</Link></Typography>
     </Container>
   </Box>
 }
 
-/** Prioriza la marca explícita; sólo infiere prefijos inequívocos si falta ese dato. */
-function trackingBrand(repair: Repair): { label: string; known: boolean } {
-  const explicit = repair.deviceBrand?.trim()
-  if (explicit && explicit.toLowerCase() !== 'otra') {
-    const known = findKnownDeviceBrand(explicit)
-    return { label: known || explicit, known: Boolean(known) }
-  }
-  const prefix = repair.device.trim().match(/^(samsung|motorola|moto|apple|iphone|ipad|xiaomi|redmi|poco|tcl|alcatel|huawei|honor|nokia|oppo|realme|vivo|sony|asus|oneplus)\b/i)?.[1]
-  const known = prefix ? findKnownDeviceBrand(prefix) : null
-  return { label: known || repair.deviceModel?.trim() || repair.device, known: Boolean(known) }
-}
-
-function GridSummary({ label, value, color }: { label: string; value: string; color?: string }) {
-  return <Box minWidth={0}><Typography sx={{ fontSize: 11, color: '#788397', mb: .65 }}>{label}</Typography><Typography sx={{ fontSize: 14, fontWeight: 750, color: color || '#26344C', overflowWrap: 'anywhere', lineHeight: 1.6 }}>{value}</Typography></Box>
+function InfoRow({ label, value, color, emphasis = false }: { label: string; value: string; color?: string; emphasis?: boolean }) {
+  return <Stack direction="row" justifyContent="space-between" alignItems="baseline" gap={1.5}><Typography sx={{ fontSize: 12, color: '#6C7C8E', fontWeight: emphasis ? 750 : 500 }}>{label}</Typography><Typography sx={{ fontSize: 12, textAlign: 'right', fontWeight: emphasis ? 800 : 600, color: color || '#35485A', overflowWrap: 'anywhere' }}>{value}</Typography></Stack>
 }
