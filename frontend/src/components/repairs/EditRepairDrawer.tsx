@@ -12,6 +12,7 @@ import { FormSection } from '../admin/AdminPatterns'
 import { CurrencyField } from '../common/CurrencyField'
 import { FormDrawer } from '../common/FormDrawer'
 import { DeviceBrandAvatar, DeviceBrandOption } from '../common/DeviceBrandAvatar'
+import { NewClientDrawer } from '../clients/NewClientDrawer'
 
 type Method = 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
 type Form = {
@@ -26,6 +27,7 @@ const methods = [['CASH', 'Efectivo'], ['TRANSFER', 'Transferencia'], ['CARD', '
 export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: boolean; repair?: Repair; onClose: () => void; onUpdated: (repair: Repair) => void }) {
   const { user } = useAuth()
   const financial = canAccess(user, 'repairs.viewFinancials')
+  const [clientDrawerOpen, setClientDrawerOpen] = useState(false)
   const [clients, setClients] = useState<ClientOption[]>([])
   const [loaded, setLoaded] = useState<Repair>()
   const [form, setForm] = useState<Form>()
@@ -33,7 +35,7 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
   useEffect(() => {
     if (!open || !repair) return
     let active = true
-    setForm(undefined); setLoaded(undefined); setError('')
+    setForm(undefined); setLoaded(undefined); setError(''); setClientDrawerOpen(false)
     // List summaries omit workshop finances: fetch permission-filtered detail before editing.
     void getRepair(repair.id).then(current => {
       if (!active) return
@@ -50,6 +52,10 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
     return () => { active = false }
   }, [open, repair?.id])
   const field = <K extends keyof Form>(key: K, value: Form[K]) => setForm(current => current ? { ...current, [key]: value } : current)
+  const historicalClient: ClientOption | undefined = loaded && !clients.some(client => client.id === loaded.clientId)
+    ? { id: loaded.clientId, name: loaded.clientName, phone: loaded.phone || null } : undefined
+  const clientOptions = historicalClient ? [historicalClient, ...clients] : clients
+  const selectedClient = clientOptions.find(client => client.id === form?.clientId) ?? null
   const cancelled = loaded?.status === 'cancelled'
   const originalAdvance = loaded ? initialAdvance(loaded) : 0
   const otherPaid = loaded ? loaded.paid - originalAdvance : 0
@@ -92,13 +98,13 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
     catch (cause) { setError(axios.isAxiosError<{ message?: string }>(cause) ? cause.response?.data?.message ?? 'No pudimos guardar los cambios de la reparación.' : 'No pudimos guardar los cambios de la reparación.') }
     finally { setSaving(false) }
   }
-  return <FormDrawer open={open} title="Editar reparación" saving={saving} submitLabel="Guardar cambios" submitDisabled={!form?.clientId || !form.deviceBrand.trim() || !form.deviceModel.trim() || form.issue.trim().length < 2 || form.total == null || invalidTotal || needsCostMethod || needsAdvanceMethod} onClose={() => { if (!saving) onClose() }} onSubmit={() => void save()}>
+  return <><FormDrawer open={open && !clientDrawerOpen} title="Editar reparación" saving={saving} submitLabel="Guardar cambios" submitDisabled={!form?.clientId || !form.deviceBrand.trim() || !form.deviceModel.trim() || form.issue.trim().length < 2 || form.total == null || invalidTotal || needsCostMethod || needsAdvanceMethod} onClose={() => { if (!saving) onClose() }} onSubmit={() => void save()}>
     {error && <Alert severity="error">{error}</Alert>}
     {!form ? !error && <LinearProgress /> : <>
-      <FormSection legacyHeading title="Cliente"><TextField fullWidth select label="Cliente asociado" value={form.clientId} disabled={saving} onChange={event => field('clientId', event.target.value)}>
-        {loaded && form.clientId === loaded.clientId && !clients.some(client => client.id === loaded.clientId) && <MenuItem disabled value={loaded.clientId}>{loaded.clientName} · Cliente histórico</MenuItem>}
-        {clients.map(client => <MenuItem key={client.id} value={client.id}>{client.name} · {client.phone || 'Sin teléfono'}</MenuItem>)}
-      </TextField></FormSection>
+      <FormSection legacyHeading title="Cliente">
+        <Autocomplete fullWidth disabled={saving} options={clientOptions} value={selectedClient} isOptionEqualToValue={(option, value) => option.id === value.id} getOptionDisabled={option => option.id === historicalClient?.id} onChange={(_, value) => field('clientId', value?.id ?? '')} getOptionLabel={option => `${option.name}${option.phone ? ` · ${option.phone}` : ''}${option.id === historicalClient?.id ? ' · Cliente histórico' : ''}`} filterOptions={(options, state) => options.filter(option => `${option.name} ${option.phone ?? ''}`.toLowerCase().includes(state.inputValue.toLowerCase()))} noOptionsText="No encontramos ese cliente. Crealo primero desde Clientes." renderInput={params => <TextField {...params} required label="Buscar cliente..." placeholder="Nombre, apellido o teléfono" />} />
+        <Button size="small" sx={{ alignSelf: 'flex-start' }} disabled={saving} onClick={() => setClientDrawerOpen(true)}>+ Crear cliente</Button>
+      </FormSection>
       <FormSection legacyHeading legacyDivider title="Dispositivo" description="Datos para identificar el equipo que ingresa.">
         <Autocomplete fullWidth disabled={saving} options={deviceBrandOptions} value={customMode ? OTHER_DEVICE_BRAND : findKnownDeviceBrand(form.deviceBrand) ?? null} onChange={(_, value) => { if (value === OTHER_DEVICE_BRAND) { setCustomMode(true); field('deviceBrand', '') } else { setCustomMode(false); field('deviceBrand', value ?? '') } }} noOptionsText="Elegí «Otra» para escribir una marca distinta." renderOption={(props, option) => <DeviceBrandOption key={option} option={option} optionProps={props} />} renderInput={params => <TextField {...params} required label="Marca" InputProps={{ ...params.InputProps, startAdornment: form.deviceBrand ? <InputAdornment position="start"><DeviceBrandAvatar brand={form.deviceBrand} size={20} /></InputAdornment> : params.InputProps.startAdornment }} />} />
         {customMode && <TextField fullWidth required label="Otra marca" value={form.deviceBrand} onChange={event => field('deviceBrand', event.target.value)} disabled={saving} helperText="Escribí el nombre de la marca tal como querés guardarlo." />}
@@ -132,7 +138,7 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
       </FormSection>
       <FormSection legacyHeading legacyDivider title="Observaciones"><TextField fullWidth multiline minRows={3} label="Observaciones (opcional)" value={form.notes} onChange={event => field('notes', event.target.value)} disabled={saving} /></FormSection>
     </>}
-  </FormDrawer>
+  </FormDrawer><NewClientDrawer open={open && clientDrawerOpen} onClose={() => setClientDrawerOpen(false)} onCreated={created => { setClients(current => [created, ...current.filter(client => client.id !== created.id)]); field('clientId', created.id); setClientDrawerOpen(false) }} /></>
 }
 
 const Summary = ({ label, value, color }: { label: string; value: number; color?: string }) => <Stack direction="row" justifyContent="space-between" gap={2}><Typography>{label}</Typography><Typography fontWeight={750} color={color}>{formatMoney(value)}</Typography></Stack>

@@ -46,7 +46,7 @@ const react = {
         if (name.endsWith('/auth/AuthContext')) return { useAuth: () => ({ user: { role: 'OWNER', permissions: [] } }) }
         if (name === 'react-router-dom') return { useNavigate: () => () => {}, useParams: () => ({ id: 'r1' }) }
         if (name.endsWith('/auth/permissions')) return { canAccess: (_, permission) => !['repairs.viewFinancials', 'payments:create'].includes(permission) || financial }
-        if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {} }
+        if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {}, ...services }
         // La página usa la configuración real de estados: se carga en el mismo sandbox sin React.
         if (name.endsWith('/config/repairStatus')) return loadConfig()
         if (name.endsWith('/config/deviceBrands')) return loadDeviceBrands()
