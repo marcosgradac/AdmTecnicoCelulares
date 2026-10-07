@@ -46,7 +46,7 @@ import { warrantiesRouter } from './modules/warranties/warranties.routes'
 import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
-import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingRisk } from './middlewares/security'
+import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, healthReadinessLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 
 export const app = express()
@@ -142,17 +142,18 @@ const userResponse = <T extends {
   business: { id: user.business.id, name: user.business.name, logoUrl: publicBusinessLogoUrl(user.business.id, user.business.logoUrl) },
 })
 
-const health = async (_req: Request, res: Response) => {
+const healthyResponse = () => ({ status: 'ok', ok: true, environment: process.env.NODE_ENV ?? 'development', timestamp: new Date().toISOString() })
+const readiness = async (_req: Request, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`
-    return res.status(200).json({ status: 'ok', ok: true, environment: process.env.NODE_ENV ?? 'development', timestamp: new Date().toISOString() })
+    return res.status(200).json(healthyResponse())
   } catch {
     console.error('Health check: la base de datos no está disponible')
     return res.status(503).json({ status: 'error', ok: false, timestamp: new Date().toISOString() })
   }
 }
-app.get('/api/health', health)
-app.get('/health', health)
+app.get('/api/health', healthReadinessLimiter, readiness)
+app.get('/health', (_req, res) => res.status(200).json(healthyResponse()))
 app.get('/api/business-logo/:businessId', async (req, res) => {
   const business = await prisma.business.findUnique({ where: { id: String(req.params.businessId) }, select: { logoUrl: true } })
   const match = business?.logoUrl?.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/)
