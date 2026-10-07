@@ -230,3 +230,11 @@ export async function updateRepair(id: string, input: UpdateRepairInput) {
   const response = await api.patch<ApiRepair>(`/repairs/${id}`, input)
   return mapRepair(response.data)
 }
+
+export type EditRepairInput = Partial<Omit<CreateRepairInput, 'status' | 'warrantyEnabled' | 'warrantyDurationDays' | 'estimatedDeliveryDate'>> & { estimatedDeliveryDate?: string | null }
+
+/** One atomic save for general data, initial expense and advance. */
+export async function editRepair(id: string, input: EditRepairInput) {
+  const response = await api.patch<ApiRepair>(`/repairs/${id}/edit`, input)
+  return mapRepair(response.data)
+}

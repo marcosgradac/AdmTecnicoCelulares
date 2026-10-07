@@ -9,6 +9,7 @@ import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStat
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
 import { canViewRepairFinancials, clientRepairSelect, repairHistoryResponse, repairResponse } from './modules/repairs/repair-response'
+import { editRepairInTransaction, editRepairSchema } from './modules/repairs/repair-edit'
 import { advanceCorrectionNote, correctInitialRepairAdvance, correctInitialRepairCost, initialCostCorrectionNote, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, repairInitialCostSchema, RepairFinanceError } from './modules/repairs/repair-finance'
 import { deliveredLockedMessage, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
 import { claimRepairStatusTransition } from './modules/repairs/repair-status-transition'
@@ -474,6 +475,22 @@ app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) =
   }
 })
 
+app.patch('/api/repairs/:id/edit', requirePermission('repairs.update'), async (req, res) => {
+  const parsed = editRepairSchema.safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message ?? 'Datos de reparación inválidos' })
+  const auth = authOf(req), repairId = String(req.params.id)
+  try {
+    const repair = await prisma.$transaction(async tx => {
+      await editRepairInTransaction(tx, auth, repairId, parsed.data)
+      return tx.repair.findUniqueOrThrow({ where: { id: repairId, businessId: auth.businessId }, include: includeRepair })
+    }, { timeout: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
+    return res.json(repairResponse(auth, repair))
+  } catch (error) {
+    if (error instanceof RepairFinanceError) return res.status(error.statusCode).json({ success: false, message: error.message })
+    return res.status(500).json({ success: false, message: 'No pudimos guardar los cambios de la reparación.' })
+  }
+})
+
 const updateRepairSchema = z.object({
   clientId: z.string().min(1).optional(), deviceBrand: z.string().trim().min(1), deviceModel: z.string().trim().min(1),
   imei: z.string().trim().optional().nullable(), color: z.string().trim().optional().nullable(), issue: z.string().trim().min(2),
@@ -604,6 +621,7 @@ app.patch('/api/repairs/:id/advance', requirePermission('repairs.viewFinancials'
   const repairId = String(req.params.id)
   try {
     const result = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT "id" FROM "Repair" WHERE "id" = ${repairId} AND "businessId" = ${auth.businessId} FOR UPDATE`
       const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
       if (!current) throw statusError(404, 'Reparación no encontrada')
       if (current.status === RepairStatus.CANCELLED) throw statusError(409, 'Una reparación cancelada no se edita: su liquidación tiene su propio flujo.')
@@ -834,7 +852,7 @@ app.post('/api/repairs/:id/payments', requirePermission('repairs.viewFinancials'
   if (repair.status === RepairStatus.CANCELLED) return res.status(409).json({ success: false, message: 'La reparación está cancelada y no admite nuevos pagos' })
   const payment = await prisma.$transaction(async tx => {
     const changed = await tx.repair.updateMany({
-      where: { id: repair.id, businessId, status: { not: RepairStatus.CANCELLED }, paid: { lte: repair.total - parsed.data.amount } },
+      where: { id: repair.id, businessId, total: repair.total, status: { not: RepairStatus.CANCELLED }, paid: { lte: repair.total - parsed.data.amount } },
       data: { paid: { increment: parsed.data.amount } },
     })
     if (changed.count !== 1) return null

@@ -49,6 +49,7 @@ const react = {
         if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {} }
         // La página usa la configuración real de estados: se carga en el mismo sandbox sin React.
         if (name.endsWith('/config/repairStatus')) return loadConfig()
+        if (name.endsWith('/config/deviceBrands')) return loadDeviceBrands()
         if (name.endsWith('/types')) return loadTypes()
         // La construcción del enlace de seguimiento es lógica real del repo: se carga
         // el módulo de verdad, con el mismo origen que simula `window` acá abajo.
@@ -78,6 +79,12 @@ const react = {
 // Los arrays nacen en el sandbox de vm: se comparan por valor, no por identidad de realm.
 // Se carga el módulo de configuración en el mismo sandbox, sin React.
 let configCache
+function loadDeviceBrands() {
+  const exports = {}
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.resolve(__dirname, '../src/config/deviceBrands.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports, require: () => new Proxy({}, { get: () => ({ path: '', hex: '000000' }) }) })
+  return exports
+}
 function loadConfig() {
   if (configCache) return configCache
   const exports = {}
@@ -264,7 +271,7 @@ const corrected = await historyOf(
 assert.equal(corrected.countAdvance(), 1, 'la corrección no duplica el adelanto')
 assert.ok(corrected.text.includes('Adelanto corregido de $20.000 a $30.000'), 'la corrección del adelanto se muestra aparte')
 
-// 6. «Corregir adelanto» queda solo en «Resumen de pago», no en «Costos y ganancia».
+// 6. Correcciones unificadas en Editar: no quedan botones duplicados de adelanto.
 const detailPage = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
   getRepair: async () => ({ ...repair('received', [{ id: 'p1', amount: 30000, method: 'CASH', isAdvance: true, createdAt: '2026-09-29T10:00:00Z' }]), clientId: 'c1', clientName: 'Cliente' }),
   getClientOptions: async () => [],
@@ -272,8 +279,7 @@ const detailPage = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage',
 await detailPage.settle()
 const pageText = JSON.stringify(detailPage.root())
 const advanceButtons = collect(detailPage.root(), node => node.type === 'Button' && typeof node.props.children === 'string' && node.props.children.startsWith('Corregir adelanto'))
-assert.deepEqual(advanceButtons.map(node => node.props.children), ['Corregir adelanto inicial'],
-  'solo queda el botón de «Resumen de pago»')
+assert.deepEqual(advanceButtons.map(node => node.props.children), [], 'la corrección se ofrece dentro de Editar')
 assert.ok(pageText.includes('Costos y ganancia'), 'la tarjeta de costos sigue visible')
 assert.ok(!pageText.includes('"Corregir adelanto"'), 'la tarjeta de costos ya no ofrece corregir el adelanto')
 
@@ -288,7 +294,7 @@ assert.ok(!redactedText.includes('Ganancia estimada'))
 assert.ok(!redactedText.includes('Corregir adelanto inicial'))
 assert.ok(!redactedText.includes('NaN'))
 assert.ok(redactedText.includes('Resumen de pago'))
-assert.ok(collect(redacted.root(), node => node.props?.label === 'Total' && node.props?.value === '$60000').length)
+assert.ok(collect(redacted.root(), node => node.props?.label === 'Total al cliente' && node.props?.value === '$60000').length)
 assert.ok(collect(redacted.root(), node => node.props?.label === 'Pagado' && node.props?.value === '$30000').length)
 
 // Even stale complete data must not expose payment events after permission removal.
@@ -303,7 +309,7 @@ await noFinanceCancel.settle()
 assert.ok(buttonsOf(noFinanceCancel.root()).find(node => node.props.children === 'Confirmar cancelación').props.disabled)
 assert.ok(!JSON.stringify(noFinanceCancel.root()).includes('Medio de devolución'))
 
-console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y un único botón para corregir el adelanto')
+console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y edición unificada sin botones duplicados')
 }
 module.exports = { harness, collect }
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1 })

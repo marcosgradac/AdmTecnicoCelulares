@@ -7,22 +7,17 @@ const button = (root, label) => collect(root, n => n.type === 'Button' && n.prop
 async function main() {
   const page = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, { getRepair: async () => repair })
   await page.settle()
-  assert.ok(button(page.root(), 'Corregir costo/gasto'))
-  const costCard = collect(page.root(), n => n.type === 'Card' && JSON.stringify(n).includes('Costos y ganancia'))[0]
-  const paymentCard = collect(page.root(), n => n.type === 'Card' && JSON.stringify(n).includes('Resumen de pago'))[0]
-  assert.ok(!button(costCard, 'Corregir costo/gasto'))
-  assert.ok(button(paymentCard, 'Corregir costo/gasto').props.fullWidth)
-  assert.equal(button(paymentCard, 'Corregir costo/gasto').props.startIcon, undefined)
-  button(page.root(), 'Corregir costo/gasto').props.onClick()
+  assert.ok(!button(page.root(), 'Corregir costo/gasto'))
+  button(page.root(), 'Editar').props.onClick()
   await page.settle()
-  const dialog = collect(page.root(), n => n.type === 'RepairInitialCostDialog')[0]
-  assert.equal(dialog.props.repair.partsCost, 30000)
-  dialog.props.onUpdated({ ...repair, partsCost: 20000 })
+  const drawer = collect(page.root(), n => n.type === 'EditRepairDrawer')[0]
+  assert.equal(drawer.props.repair.partsCost, 30000)
+  drawer.props.onUpdated({ ...repair, partsCost: 20000 })
   await page.settle()
   assert.ok(collect(page.root(), n => n.props?.label === 'Costo / gasto de la reparación' && n.props.value === '$20500').length)
   assert.ok(collect(page.root(), n => n.props?.label === 'Ganancia estimada' && n.props.value === '$59500').length)
-  assert.ok(JSON.stringify(page.root()).includes('Costo/gasto corregido correctamente.'))
-  assert.ok(!collect(page.root(), n => n.type === 'RepairInitialCostDialog')[0].props.repair)
+  assert.ok(JSON.stringify(page.root()).includes('Reparación actualizada correctamente.'))
+  assert.equal(collect(page.root(), n => n.type === 'EditRepairDrawer')[0].props.open, false)
   for (const financial of [false, true]) {
     const hidden = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
       getRepair: async () => ({ ...repair, status: financial ? 'cancelled' : 'received', history: [{ previousStatus: 'received', newStatus: 'received', internalNote: 'Costo/gasto corregido de $30.000 a $20.000', createdAt: '2026-10-06' }] }),
