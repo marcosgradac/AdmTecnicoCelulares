@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { authOf, requireSuperAdmin } from '../../middlewares/auth'
@@ -9,9 +10,26 @@ export const platformAdminRouter = Router()
 platformAdminRouter.use(requireSuperAdmin)
 platformAdminRouter.use(limitSuperAdminWrites)
 
+// A non-deleted platform administrator identifies an internal business, even if inactive.
+const customerBusinessWhere = {
+  users: { none: { platformRole: 'SUPER_ADMIN', deletedAt: null } },
+} satisfies Prisma.BusinessWhereInput
+
 platformAdminRouter.get('/dashboard', async (_req, res) => {
   const [clients, activeBusinesses, inactiveBusinesses, owners, technicians, active, trials, pendingPayments, grace, suspended, activeSubscriptions, recentBusinesses, subscriptions, lifecycleSettings] = await Promise.all([
-    prisma.business.count(), prisma.business.count({ where: { isActive: true } }), prisma.business.count({ where: { isActive: false } }), prisma.user.count({ where: { role: 'OWNER' } }), prisma.user.count({ where: { role: 'TECHNICIAN' } }), prisma.subscription.count({ where: { status: 'ACTIVE' } }), prisma.subscription.count({ where: { status: 'TRIALING' } }), prisma.paymentSubmission.count({ where: { status: 'PENDING' } }), prisma.subscription.count({ where: { status: 'GRACE' } }), prisma.subscription.count({ where: { status: 'SUSPENDED' } }), prisma.subscription.findMany({ where: { status: 'ACTIVE' }, include: { plan: true } }), prisma.business.findMany({ take: 5, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, isActive: true, createdAt: true } }), prisma.subscription.findMany({ include: { business: { select: { id: true, name: true } } } }),
+    prisma.business.count({ where: customerBusinessWhere }),
+    prisma.business.count({ where: { ...customerBusinessWhere, isActive: true } }),
+    prisma.business.count({ where: { ...customerBusinessWhere, isActive: false } }),
+    prisma.user.count({ where: { role: 'OWNER', business: customerBusinessWhere } }),
+    prisma.user.count({ where: { role: 'TECHNICIAN', business: customerBusinessWhere } }),
+    prisma.subscription.count({ where: { status: 'ACTIVE', business: customerBusinessWhere } }),
+    prisma.subscription.count({ where: { status: 'TRIALING', business: customerBusinessWhere } }),
+    prisma.paymentSubmission.count({ where: { status: 'PENDING', business: customerBusinessWhere } }),
+    prisma.subscription.count({ where: { status: 'GRACE', business: customerBusinessWhere } }),
+    prisma.subscription.count({ where: { status: 'SUSPENDED', business: customerBusinessWhere } }),
+    prisma.subscription.findMany({ where: { status: 'ACTIVE', business: customerBusinessWhere }, include: { plan: true } }),
+    prisma.business.findMany({ where: customerBusinessWhere, take: 5, orderBy: { createdAt: 'desc' }, select: { id: true, name: true, isActive: true, createdAt: true } }),
+    prisma.subscription.findMany({ where: { business: customerBusinessWhere }, include: { business: { select: { id: true, name: true } } } }),
     getBillingLifecycleSettings(),
   ])
   const now = new Date()
@@ -25,7 +43,7 @@ platformAdminRouter.get('/businesses', async (req, res) => {
   const parsed = z.object({ page: z.coerce.number().int().min(1).default(1), pageSize: z.coerce.number().int().min(5).max(50).default(10), search: z.string().trim().max(120).optional(), lifecycle: z.enum(['ACTIVE','EXPIRING','GRACE','BLOCKED','NO_EXPIRY','TODAY','WEEK']).optional(), sort: z.enum(['EXPIRY_ASC','REMAINING_DESC','RECENT','OLDEST','NAME']).default('EXPIRY_ASC') }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Filtros inválidos' })
   const { page, pageSize, search, lifecycle, sort } = parsed.data
-  const rows = await prisma.business.findMany({ where: search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { users: { some: { OR: [{ email: { contains: search, mode: 'insensitive' } }, { name: { contains: search, mode: 'insensitive' } }] } } }] } : {}, select: { id: true, name: true, phone: true, isActive: true, createdAt: true, _count: { select: { users: true, repairs: true, clients: true } }, users: { where: { role: 'OWNER' }, take: 1, select: { name: true, email: true } }, subscription: { include: { plan: true } } } })
+  const rows = await prisma.business.findMany({ where: { ...customerBusinessWhere, ...(search ? { OR: [{ name: { contains: search, mode: 'insensitive' } }, { users: { some: { OR: [{ email: { contains: search, mode: 'insensitive' } }, { name: { contains: search, mode: 'insensitive' } }] } } }] } : {}) }, select: { id: true, name: true, phone: true, isActive: true, createdAt: true, _count: { select: { users: true, repairs: true, clients: true } }, users: { where: { role: 'OWNER' }, take: 1, select: { name: true, email: true } }, subscription: { include: { plan: true } } } })
   const lifecycleSettings = await getBillingLifecycleSettings()
   const now = new Date(); let enriched = rows.map(row => ({ ...row, access: row.subscription ? calculateAccountAccessStatus(row.subscription, lifecycleSettings, now) : { status: 'NO_EXPIRY' as const, expiresAt: null, graceEndsAt: null, daysRemaining: null } }))
   if (lifecycle) enriched = enriched.filter(row => lifecycle === 'TODAY' ? row.access.status === 'EXPIRING' && row.access.daysRemaining === 0 : lifecycle === 'WEEK' ? row.access.status === 'EXPIRING' && Number(row.access.daysRemaining) <= 7 : row.access.status === lifecycle)
@@ -111,7 +129,7 @@ platformAdminRouter.patch('/service-settings', async (req,res)=>{const parsed=z.
 platformAdminRouter.get('/subscriptions', async (req, res) => {
   const parsed = z.object({ status: z.enum(['TRIALING', 'ACTIVE', 'GRACE', 'SUSPENDED']).optional(), search: z.string().trim().optional() }).safeParse(req.query)
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Filtros inválidos' })
-  const rows = await prisma.subscription.findMany({ where: { ...(parsed.data.status ? { status: parsed.data.status } : {}), ...(parsed.data.search ? { business: { OR: [{ name: { contains: parsed.data.search, mode: 'insensitive' } }, { users: { some: { email: { contains: parsed.data.search, mode: 'insensitive' } } } }] } } : {}) }, include: { plan: true, business: { include: { users: { where: { role: 'OWNER' }, select: { id: true, name: true, email: true, createdAt: true }, take: 1 } } }, payments: { where: { status: 'APPROVED' }, orderBy: { reviewedAt: 'desc' }, take: 1 } }, orderBy: { createdAt: 'desc' } })
+  const rows = await prisma.subscription.findMany({ where: { ...(parsed.data.status ? { status: parsed.data.status } : {}), business: { ...customerBusinessWhere, ...(parsed.data.search ? { OR: [{ name: { contains: parsed.data.search, mode: 'insensitive' } }, { users: { some: { email: { contains: parsed.data.search, mode: 'insensitive' } } } }] } : {}) } }, include: { plan: true, business: { include: { users: { where: { role: 'OWNER' }, select: { id: true, name: true, email: true, createdAt: true }, take: 1 } } }, payments: { where: { status: 'APPROVED' }, orderBy: { reviewedAt: 'desc' }, take: 1 } }, orderBy: { createdAt: 'desc' } })
   return res.json(rows)
 })
 
@@ -145,7 +163,7 @@ platformAdminRouter.patch('/subscriptions/:id', async (req, res) => {
 
 platformAdminRouter.get('/payments', async (req, res) => {
   const status = z.enum(['PENDING', 'APPROVED', 'REJECTED']).safeParse(req.query.status)
-  const where = status.success ? { status: status.data } : {}
+  const where = { business: customerBusinessWhere, ...(status.success ? { status: status.data } : {}) }
   return res.json(await prisma.paymentSubmission.findMany({ where, include: { plan: true, business: { select: { name: true } } }, orderBy: { createdAt: 'desc' } }))
 })
 platformAdminRouter.post('/payments/:id/approve', async (req, res) => {

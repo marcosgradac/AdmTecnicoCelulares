@@ -7,7 +7,7 @@ import { TableSkeleton } from '../../../components/common/TableSkeleton'
 import { formatDate } from '../../billing/billing.utils'
 import { getAdminBusinesses, type AdminBusiness, type BusinessSort, type LifecycleFilter } from '../platformAdmin.api'
 import { usePlatformResource } from '../platformAdmin.hooks'
-import { AccessChip, PlatformEmpty, PlatformError, PlatformLoading, RefreshingBar, remainingLabel } from '../platformAdmin.shared'
+import { BusinessStatusChip, PlatformEmpty, PlatformError, PlatformLoading, RefreshingBar, remainingLabel } from '../platformAdmin.shared'
 import { BusinessDetailDialog } from '../BusinessDetailDialog'
 import { useBusinessLifecycleActions, type Target } from '../platformAdmin.dialogs'
 
@@ -44,7 +44,7 @@ function BusinessTable({ rows, loading, onOpen, actions }: { rows: AdminBusiness
             <TableCell><Typography fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{row.name}</Typography><Typography variant="caption" color="text.secondary">{row._count.users} usuarios · {row._count.repairs} reparaciones · {row._count.clients} clientes</Typography></TableCell>
             <TableCell>{owner?.name ?? 'Sin propietario'}<Typography variant="caption" color="text.secondary" display="block" sx={{ overflowWrap: 'anywhere' }}>{owner?.email}</Typography></TableCell>
             <TableCell>{row.subscription?.plan.name ?? 'Sin plan'}</TableCell>
-            <TableCell><AccessChip access={row.access} /></TableCell>
+            <TableCell><BusinessStatusChip subscription={row.subscription} access={row.access} /></TableCell>
             <TableCell>{formatDate(row.access.expiresAt)}</TableCell>
             <TableCell>{remainingLabel(row.access)}</TableCell>
             <TableCell align="right" onClick={event => event.stopPropagation()}><RowActionsMenu label={`Acciones de ${row.name}`} actions={rowActions(row, () => onOpen(row.id), actions)} /></TableCell>
@@ -56,7 +56,7 @@ function BusinessTable({ rows, loading, onOpen, actions }: { rows: AdminBusiness
 }
 
 function BusinessCard({ row, onOpen, actions }: { row: AdminBusiness; onOpen: () => void; actions: LifecycleActions }) {
-  return <RecordCard title={row.name} subtitle={row.users[0]?.email ?? 'Sin propietario'} status={<AccessChip access={row.access} />} onOpen={onOpen} actions={<RowActionsMenu label={`Acciones de ${row.name}`} actions={rowActions(row, onOpen, actions)} />}>
+  return <RecordCard title={row.name} subtitle={row.users[0]?.email ?? 'Sin propietario'} status={<BusinessStatusChip subscription={row.subscription} access={row.access} />} onOpen={onOpen} actions={<RowActionsMenu label={`Acciones de ${row.name}`} actions={rowActions(row, onOpen, actions)} />}>
     <RecordField label="Plan">{row.subscription?.plan.name ?? 'Sin plan'}</RecordField>
     <RecordField label="Vencimiento">{formatDate(row.access.expiresAt)}</RecordField>
     <RecordField label="Tiempo restante">{remainingLabel(row.access)}</RecordField>

@@ -3,7 +3,7 @@ import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, LinearPr
 import { BlockRounded, CancelRounded, CheckCircleRounded, HelpOutlineRounded, HourglassBottomRounded, RefreshRounded, RocketLaunchRounded, ScheduleRounded } from '@mui/icons-material'
 import { UiState } from '../../components/common/UiState'
 import { formatDate } from '../billing/billing.utils'
-import type { AccessStatus, AccountAccess, PaymentStatus, SubscriptionStatus } from './platformAdmin.api'
+import type { AccessStatus, AccountAccess, AdminBusiness, PaymentStatus, SubscriptionStatus } from './platformAdmin.api'
 
 interface PillMeta { label: string; color: string; background: string; icon: ReactElement }
 
@@ -29,6 +29,11 @@ const subscriptionMeta: Record<SubscriptionStatus, PillMeta> = {
   CANCELED: { label: 'Cancelada', color: '#5A6172', background: '#F0F1F6', icon: <CancelRounded /> },
 }
 export const SubscriptionStatusChip = ({ status }: { status: SubscriptionStatus }) => <StatusPill {...subscriptionMeta[status]} />
+
+export const BusinessStatusChip = ({ subscription, access }: Pick<AdminBusiness, 'subscription' | 'access'>) =>
+  subscription?.status === 'TRIALING'
+    ? <StatusPill {...subscriptionMeta.TRIALING} label="En prueba" />
+    : <AccessChip access={access} />
 
 const paymentMeta: Record<PaymentStatus, PillMeta> = {
   PENDING: { label: 'Pendiente', color: '#8F5A00', background: '#FFF5DF', icon: <ScheduleRounded /> },

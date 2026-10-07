@@ -23,6 +23,7 @@ async function main() {
   assert.ok(address && typeof address === 'object')
   const baseUrl = `http://127.0.0.1:${address.port}/api/platform-admin`
   let businessId: string | undefined
+  let customerId: string | undefined
   try {
     const now = new Date()
     const end = new Date(now.getTime() + 30 * 86400000)
@@ -39,6 +40,16 @@ async function main() {
     const technician = await prisma.user.create({ data: {
       businessId, name: 'Redaction Technician', email: `${businessId}-tech@example.com`,
       passwordHash: 'sensitive-technician-hash', tokenVersion: 9, role: 'TECHNICIAN',
+    } })
+    const customer = await prisma.business.create({ data: { name: `Redaction Customer QA ${Date.now()}` } })
+    customerId = customer.id
+    const customerSubscription = await prisma.subscription.create({ data: {
+      businessId: customer.id, planCode: 'COMPLETE', status: 'TRIALING', trialStartedAt: now,
+      trialEndsAt: end, trialConsumedAt: now, accessExpiresAt: end,
+    } })
+    const customerOwner = await prisma.user.create({ data: {
+      businessId: customer.id, name: 'Customer Owner', email: `${customer.id}-owner@example.com`,
+      passwordHash: 'sensitive-customer-hash', tokenVersion: 5, role: 'OWNER',
     } })
     const tokenFor = (user: typeof admin) => jwt.sign({
       userId: user.id, businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion,
@@ -59,22 +70,23 @@ async function main() {
     assertRedacted(detail.body)
 
     // E: Other user-bearing panel responses keep their visible data and remain redacted.
-    const businesses = await get(`/businesses?search=${encodeURIComponent(business.name)}`)
+    const businesses = await get(`/businesses?search=${encodeURIComponent(customer.name)}`)
     assert.equal(businesses.status, 200)
-    assert.equal(businesses.body.items.find((item: { id: string }) => item.id === businessId)?.users[0].email, admin.email)
+    assert.equal(businesses.body.items.find((item: { id: string }) => item.id === customer.id)?.users[0].email, customerOwner.email)
     const businessDetail = await get(`/businesses/${businessId}`)
     assert.equal(businessDetail.status, 200)
     assert.equal(businessDetail.body.users.find((user: { id: string }) => user.id === technician.id)?.name, technician.name)
-    const subscriptions = await get(`/subscriptions?search=${encodeURIComponent(business.name)}`)
+    const subscriptions = await get(`/subscriptions?search=${encodeURIComponent(customer.name)}`)
     assert.equal(subscriptions.status, 200)
-    assert.equal(subscriptions.body.find((item: { id: string }) => item.id === subscription.id)?.business.users[0].email, admin.email)
+    assert.equal(subscriptions.body.find((item: { id: string }) => item.id === customerSubscription.id)?.business.users[0].email, customerOwner.email)
     for (const result of [businesses, businessDetail, subscriptions]) assertRedacted(result.body)
     console.log('platform-admin user redaction: A/B/C/D/E passed (real local PostgreSQL + HTTP)')
   } finally {
-    if (businessId) await prisma.$transaction([
-      prisma.subscription.deleteMany({ where: { businessId } }),
-      prisma.user.deleteMany({ where: { businessId } }),
-      prisma.business.deleteMany({ where: { id: businessId } }),
+    const fixtureIds = [businessId, customerId].filter((id): id is string => Boolean(id))
+    if (fixtureIds.length) await prisma.$transaction([
+      prisma.subscription.deleteMany({ where: { businessId: { in: fixtureIds } } }),
+      prisma.user.deleteMany({ where: { businessId: { in: fixtureIds } } }),
+      prisma.business.deleteMany({ where: { id: { in: fixtureIds } } }),
     ])
     await prisma.$disconnect()
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))

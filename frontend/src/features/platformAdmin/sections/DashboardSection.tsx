@@ -24,8 +24,8 @@ export function DashboardSection({ refreshToken, onOpenBusiness }: { refreshToke
   if (dashboard.error || !dashboard.data) return <PlatformError message={dashboard.error || 'No pudimos leer el resumen de la plataforma.'} onRetry={dashboard.reload} />
   const data = dashboard.data
   const kpis = [
-    { label: 'Negocios', value: String(data.clients), helper: `${data.activeBusinesses} activos · ${data.inactiveBusinesses} inactivos`, icon: <StorefrontRounded />, tone: 'primary' as const },
-    { label: 'Suscripciones activas', value: String(data.active), helper: `${data.grace} en gracia · ${data.suspended} suspendidas`, icon: <CheckCircleRounded />, tone: 'success' as const },
+    { label: 'Negocios', value: String(data.clients), helper: `${data.activeBusinesses} habilitados · ${data.inactiveBusinesses} deshabilitados`, icon: <StorefrontRounded />, tone: 'primary' as const },
+    { label: 'Suscripciones activas', value: String(data.active), helper: 'Planes activados fuera del período de prueba', icon: <CheckCircleRounded />, tone: 'success' as const },
     { label: 'Trials en curso', value: String(data.trials), helper: 'Período de prueba gratuito', icon: <RocketLaunchRounded />, tone: 'info' as const },
     { label: 'Pagos pendientes', value: String(data.pendingPayments), helper: 'Transferencias por revisar', icon: <PaymentsRounded />, tone: 'warning' as const },
     { label: 'MRR estimado', value: formatARS(data.estimatedMrrARS), helper: 'Según los planes activos', icon: <TrendingUpRounded />, tone: 'primary' as const },
