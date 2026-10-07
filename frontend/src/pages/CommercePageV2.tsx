@@ -255,7 +255,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
         {visibleGroups.map(({ group, entries }) => (
           <Box key={group} sx={{ mb: 1.5 }}>
             <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '.04em' }} display="block" mb={0.75}>{group}</Typography>
-            <Box role="radiogroup" aria-label={`Iconos de ${group}`} sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0.75 }}>
+            <Box role="radiogroup" aria-label={`Iconos de ${group}`} sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))', gap: 0.75 }}>
               {entries.map(({ key, label, icon: Option }) => {
                 const selected = (value ?? 'generic') === key
                 return <Box
@@ -268,7 +268,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
                   onClick={() => onChange(key === 'generic' ? null : key)}
                   onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onChange(key === 'generic' ? null : key) } }}
                   sx={{
-                    display: 'flex', alignItems: 'center', gap: 1.25, px: 1.5, minHeight: 48, minWidth: 0, borderRadius: 2, cursor: 'pointer',
+                    display: 'grid', placeItems: 'center', height: 48, minWidth: 0, borderRadius: 2, cursor: 'pointer',
                     border: '1px solid',
                     borderColor: selected ? 'primary.main' : 'divider',
                     bgcolor: selected ? theme => alpha(theme.palette.primary.main, 0.1) : 'background.paper',
@@ -278,8 +278,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
                     '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 1 },
                   }}
                 >
-                  <Option sx={{ fontSize: 21, flexShrink: 0 }} />
-                  <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{label}</Typography>
+                  <Option sx={{ fontSize: 21 }} />
                 </Box>
               })}
             </Box>
