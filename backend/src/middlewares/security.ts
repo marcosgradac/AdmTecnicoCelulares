@@ -73,6 +73,19 @@ export const authenticatedApiLimiter = limiter(
 
 export const loginIpLimiter = limiter(securityConfig.rateLimits.loginIp.windowMs, securityConfig.rateLimits.loginIp.limit, 'LOGIN_RATE_LIMIT')
 export const signupLimiter = limiter(securityConfig.rateLimits.signup.windowMs, securityConfig.rateLimits.signup.limit, 'SIGNUP_RATE_LIMIT')
+// Readiness has its own IP budget; liveness must remain unthrottled and DB-free.
+export const healthReadinessLimiter = rateLimit({
+  windowMs: securityConfig.rateLimits.health.windowMs,
+  limit: securityConfig.rateLimits.health.limit,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  keyGenerator: ipKey,
+  handler: (req, res) => {
+    const seconds = retryAfter(req)
+    if (seconds) res.setHeader('Retry-After', String(seconds))
+    return res.status(429).json({ status: 'error', ok: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
+  },
+})
 // Separate IP budget for social previews; do not log the token-bearing request path.
 export const trackingPreviewLimiter = rateLimit({
   windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
