@@ -107,6 +107,37 @@ async function main() {
   assert.equal(money(clientsView, 'Total al cliente').props.value, 55000)
   editForm(clientsView).props.onSubmit(); await clientsView.settle()
   assert.equal(JSON.stringify(clientCalls), '[{"clientId":"c3"}]')
+  const delivered = { ...repair, status: 'delivered' }, deliveryCalls = [], deliveryUpdates = []
+  const deliveryPage = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, { getRepair: async () => delivered })
+  await deliveryPage.settle()
+  assert.ok(!find(deliveryPage, 'Button', 'Corregir entrega'), 'Delivery action leaves the status card')
+  assert.ok(!JSON.stringify(deliveryPage.root()).includes('Desde acá sólo'))
+  find(deliveryPage, 'Button', 'Editar').props.onClick(); await deliveryPage.settle()
+  const pageDrawer = collect(deliveryPage.root(), n => n.type === 'EditRepairDrawer')[0]
+  pageDrawer.props.onDeliveryCorrected({ ...delivered, status: 'ready' }); await deliveryPage.settle()
+  assert.equal(collect(deliveryPage.root(), n => n.type === 'EditRepairDrawer')[0].props.open, false)
+  assert.ok(JSON.stringify(deliveryPage.root()).includes('Entrega corregida. La reparación volvió a «Listo para retirar».'))
+  const delivery = harness('src/components/repairs/EditRepairDrawer.tsx', 'EditRepairDrawer', { open: true, repair: delivered, onClose() {}, onUpdated() { throw Error('Must not report ordinary save') }, onDeliveryCorrected: r => deliveryUpdates.push(r) }, {
+    getRepair: async () => delivered, editRepair: async (_, input) => { deliveryCalls.push(input); return delivered },
+  })
+  await delivery.settle()
+  const deliveryButton = find(delivery, 'Button', 'Corregir entrega')
+  assert.equal(deliveryButton.props.variant, 'outlined'); assert.equal(deliveryButton.props.color, 'warning')
+  find(delivery, 'TextField', 'Modelo').props.onChange({ target: { value: 'Pending model' } }); await delivery.settle()
+  deliveryButton.props.onClick(); await delivery.settle()
+  let correctionDialog = collect(delivery.root(), n => n.type === 'RepairDeliveryCorrectionDialog')[0]
+  assert.equal(correctionDialog.props.repair.id, repair.id); assert.equal(editForm(delivery).props.open, false)
+  correctionDialog.props.onClose(); await delivery.settle()
+  assert.equal(editForm(delivery).props.open, true)
+  assert.equal(find(delivery, 'TextField', 'Modelo').props.value, 'Pending model')
+  assert.equal(deliveryCalls.length, 0)
+  find(delivery, 'Button', 'Corregir entrega').props.onClick(); await delivery.settle()
+  correctionDialog = collect(delivery.root(), n => n.type === 'RepairDeliveryCorrectionDialog')[0]
+  correctionDialog.props.onCorrected({ ...delivered, status: 'ready' }); await delivery.settle()
+  assert.equal(deliveryUpdates[0].status, 'ready'); assert.equal(deliveryCalls.length, 0, 'Correction never submits pending /edit changes')
+  assert.ok(!find(view, 'Button', 'Corregir entrega'), 'Not delivered has no correction action')
+  const technician = harness('src/components/repairs/EditRepairDrawer.tsx', 'EditRepairDrawer', { open: true, repair: delivered, onClose() {}, onUpdated() {} }, { getRepair: async () => delivered, userRole: 'TECHNICIAN' })
+  await technician.settle(); assert.ok(!find(technician, 'Button', 'Corregir entrega'))
   console.log('REPAIR EDIT UI PASSED: detail header/drawer, financial colors/order, no duplicates, preload/date clearing, permissions, explicit suggested total, no-op and single save.')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

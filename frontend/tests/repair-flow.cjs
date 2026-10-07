@@ -43,7 +43,7 @@ const react = {
         if (name.endsWith('/services/repairs')) return services
         if (name.endsWith('/utils/format')) return { formatMoney: value => `$${value}`, formatDate: value => value }
         // La página de detalle pide sesión, navegación y permisos: se simulan en la frontera.
-        if (name.endsWith('/auth/AuthContext')) return { useAuth: () => ({ user: { role: 'OWNER', permissions: [] } }) }
+        if (name.endsWith('/auth/AuthContext')) return { useAuth: () => ({ user: { role: services.userRole ?? 'OWNER', permissions: [] } }) }
         if (name === 'react-router-dom') return { useNavigate: () => () => {}, useParams: () => ({ id: 'r1' }) }
         if (name.endsWith('/auth/permissions')) return { canAccess: (_, permission) => !['repairs.viewFinancials', 'payments:create'].includes(permission) || financial }
         if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {}, ...services }

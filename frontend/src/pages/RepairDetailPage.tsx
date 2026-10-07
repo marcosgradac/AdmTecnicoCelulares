@@ -9,7 +9,6 @@ import { canonicalStatus, canonicalStatusConfig, isSpecialStatus, nextStatus, pr
 import { EditRepairDrawer } from '../components/repairs/EditRepairDrawer'
 import { RepairDeleteDialog } from '../components/repairs/RepairDeleteDialog'
 import { RepairDeliveryConfirmDialog } from '../components/repairs/RepairDeliveryConfirmDialog'
-import { RepairDeliveryCorrectionDialog } from '../components/repairs/RepairDeliveryCorrectionDialog'
 import { RepairReviewPaymentDialog } from '../components/repairs/RepairReviewPaymentDialog'
 import { PageHeader } from '../components/common/PageHeader'
 import { UiState } from '../components/common/UiState'
@@ -41,7 +40,6 @@ export function RepairDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [reviewPaymentOpen, setReviewPaymentOpen] = useState(false)
   const [deliveryConfirmOpen, setDeliveryConfirmOpen] = useState(false)
-  const [deliveryCorrectionOpen, setDeliveryCorrectionOpen] = useState(false)
   const [payment, setPayment] = useState<{amount:number|null;method:'CASH'|'TRANSFER'|'CARD'|'OTHER'}>({ amount: null, method: 'TRANSFER' })
   const load = useCallback(async () => {
     if (!id) return
@@ -133,10 +131,9 @@ export function RepairDetailPage() {
     </CardContent></Card>}
     <Grid container spacing={2.2}>
       <Grid size={{ xs: 12, lg: 8 }}><Stack spacing={2.2}>
-        <Card><CardContent><Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}><Box><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Estado de la reparación</Typography><Typography variant="body2" color="text.secondary">{isDelivered ? 'El equipo ya fue entregado. Desde acá sólo se puede corregir una entrega cargada por error.' : isSpecial ? 'Este estado se administra desde su propio módulo.' : 'El cliente verá este avance en su enlace.'}</Typography></Box><Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
+        <Card><CardContent><Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}><Box><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Estado de la reparación</Typography><Typography variant="body2" color="text.secondary">{isDelivered ? 'El equipo ya fue entregado.' : isSpecial ? 'Este estado se administra desde su propio módulo.' : 'El cliente verá este avance en su enlace.'}</Typography></Box><Stack direction="row" gap={1} flexWrap="wrap" useFlexGap>
           {!isDelivered && !isSpecial && canChangeStatus && <Tooltip title={previous ? `Volver a «${repairStatusLabel(previous)}»` : 'Ya está en el primer paso'}><span><Button variant="outlined" startIcon={<ArrowBackRounded/>} onClick={() => void moveStatus('rewind')} disabled={!previous}>{`Anterior: ${previous ? repairStatusLabel(previous) : '—'}`}</Button></span></Tooltip>}
           {!isDelivered && !isSpecial && canChangeStatus && <Tooltip title={next ? (next === 'delivered' ? 'Entregar el dispositivo' : `Avanzar a «${repairStatusLabel(next)}»`) : 'Ya está en el último paso'}><span><Button variant="contained" endIcon={<ArrowForwardRounded/>} onClick={() => void moveStatus('advance')} disabled={!next}>{next === 'delivered' ? 'Entregar' : `Siguiente: ${next ? repairStatusLabel(next) : '—'}`}</Button></span></Tooltip>}
-          {isDelivered && <Button variant="outlined" color="warning" onClick={() => setDeliveryCorrectionOpen(true)}>Corregir entrega</Button>}
         </Stack></Stack><LinearProgress variant="determinate" value={canonicalStatusConfig(repair.status).progress} sx={{ height: 8, borderRadius: 8, my: 2.5 }}/><Stack spacing={1.2}>{repairFlow.map(step => { const config = repairStatusConfig[step]; const completed = config.order <= current; const Icon = config.icon; return <Stack direction="row" gap={1.5} alignItems="center" key={step}><Box width={34} height={34} borderRadius="50%" display="grid" sx={{ placeItems: 'center', bgcolor: completed ? config.background : '#F2F3F6', color: completed ? config.color : '#A0A5B1' }}><Icon fontSize="small"/></Box><Box><Typography fontWeight={step === canonical ? 800 : 600}>{config.label}</Typography><Typography variant="caption" color="text.secondary">{step === canonical ? `Actualizado ${formatDate(repair.updatedAt)}` : completed ? 'Completado' : 'Pendiente'}</Typography></Box></Stack>})}</Stack></CardContent></Card>
         <Card><CardContent><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Problema reportado</Typography><Typography mt={1}>{repair.issue}</Typography><Divider sx={{ my: 2.5 }}/><Typography variant="h2">Diagnóstico</Typography><Typography color="text.secondary" mt={1}>{repair.diagnosis || 'Sin diagnóstico cargado.'}</Typography><Divider sx={{ my: 2.5 }}/><Typography variant="h2">Observaciones</Typography><Typography color="text.secondary" mt={1}>{repair.notes || 'Sin observaciones.'}</Typography></CardContent></Card>
         <Card><CardContent><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Seguimiento del cliente</Typography><Box p={1.5} borderRadius={2} bgcolor="background.default" mt={2} sx={{ overflowWrap: 'anywhere' }}>{tracking}</Box><Stack direction={{ xs: 'column', sm: 'row' }} gap={1} mt={2}><Button variant="outlined" startIcon={<ContentCopyRounded/>} onClick={() => void navigator.clipboard?.writeText(tracking ?? '')}>Copiar enlace</Button><Button variant="outlined" startIcon={<WhatsApp/>} component="a" target="_blank" href={`https://wa.me/${repair.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${repair.clientName}, podés seguir tu reparación acá: ${tracking}`)}`}>WhatsApp</Button></Stack></CardContent></Card>
@@ -151,9 +148,8 @@ export function RepairDetailPage() {
       navigate('/admin/reparaciones', { replace: true, state: { repairDeleted: true } })
     }} />
     <RepairReviewPaymentDialog repair={reviewPaymentOpen ? repair : undefined} onClose={() => setReviewPaymentOpen(false)} onRegistered={updated => { setRepair(updated); setReviewPaymentOpen(false) }} />
-    <EditRepairDrawer open={editOpen} repair={editOpen ? repair : undefined} onClose={() => setEditOpen(false)} onUpdated={updated => { setRepair(updated); setEditOpen(false); setSuccess('Reparación actualizada correctamente.') }} />
+    <EditRepairDrawer open={editOpen} repair={editOpen ? repair : undefined} onClose={() => setEditOpen(false)} onUpdated={updated => { setRepair(updated); setEditOpen(false); setSuccess('Reparación actualizada correctamente.') }} onDeliveryCorrected={updated => { setRepair(updated); setEditOpen(false); setSuccess('Entrega corregida. La reparación volvió a «Listo para retirar».') }} />
     <RepairDeliveryConfirmDialog repair={deliveryConfirmOpen ? repair : undefined} onClose={() => setDeliveryConfirmOpen(false)} onDelivered={updated => { setDeliveryConfirmOpen(false); setRepair(updated); setSuccess('Reparación entregada correctamente.') }} />
-    <RepairDeliveryCorrectionDialog repair={deliveryCorrectionOpen ? repair : undefined} onClose={() => setDeliveryCorrectionOpen(false)} onCorrected={updated => { setDeliveryCorrectionOpen(false); setRepair(updated); setSuccess('Entrega corregida. La reparación volvió a «Listo para retirar».') }} />
   </Box>
 }
 function Info({ label, value, color }: { label: string; value: string; color?: string }) { return <Box><Typography variant="caption" color="text.secondary">{label}</Typography><Typography fontWeight={750} color={color}>{value}</Typography></Box> }

@@ -13,6 +13,7 @@ import { CurrencyField } from '../common/CurrencyField'
 import { FormDrawer } from '../common/FormDrawer'
 import { DeviceBrandAvatar, DeviceBrandOption } from '../common/DeviceBrandAvatar'
 import { NewClientDrawer } from '../clients/NewClientDrawer'
+import { RepairDeliveryCorrectionDialog } from './RepairDeliveryCorrectionDialog'
 
 type Method = 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
 type Form = {
@@ -24,9 +25,10 @@ type Form = {
 const initialAdvance = (repair: Repair) => (repair.payments ?? []).filter(payment => payment.isAdvance && !payment.cancellationReview).reduce((sum, payment) => sum + payment.amount, 0)
 const methods = [['CASH', 'Efectivo'], ['TRANSFER', 'Transferencia'], ['CARD', 'Tarjeta'], ['OTHER', 'Otro']]
 
-export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: boolean; repair?: Repair; onClose: () => void; onUpdated: (repair: Repair) => void }) {
+export function EditRepairDrawer({ open, repair, onClose, onUpdated, onDeliveryCorrected }: { open: boolean; repair?: Repair; onClose: () => void; onUpdated: (repair: Repair) => void; onDeliveryCorrected?: (repair: Repair) => void }) {
   const { user } = useAuth()
   const financial = canAccess(user, 'repairs.viewFinancials')
+  const [deliveryCorrectionOpen, setDeliveryCorrectionOpen] = useState(false)
   const [clientDrawerOpen, setClientDrawerOpen] = useState(false)
   const [clients, setClients] = useState<ClientOption[]>([])
   const [loaded, setLoaded] = useState<Repair>()
@@ -35,7 +37,7 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
   useEffect(() => {
     if (!open || !repair) return
     let active = true
-    setForm(undefined); setLoaded(undefined); setError(''); setClientDrawerOpen(false)
+    setForm(undefined); setLoaded(undefined); setError(''); setClientDrawerOpen(false); setDeliveryCorrectionOpen(false)
     // List summaries omit workshop finances: fetch permission-filtered detail before editing.
     void getRepair(repair.id).then(current => {
       if (!active) return
@@ -98,7 +100,7 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
     catch (cause) { setError(axios.isAxiosError<{ message?: string }>(cause) ? cause.response?.data?.message ?? 'No pudimos guardar los cambios de la reparación.' : 'No pudimos guardar los cambios de la reparación.') }
     finally { setSaving(false) }
   }
-  return <><FormDrawer open={open && !clientDrawerOpen} title="Editar reparación" saving={saving} submitLabel="Guardar cambios" submitDisabled={!form?.clientId || !form.deviceBrand.trim() || !form.deviceModel.trim() || form.issue.trim().length < 2 || form.total == null || invalidTotal || needsCostMethod || needsAdvanceMethod} onClose={() => { if (!saving) onClose() }} onSubmit={() => void save()}>
+  return <><FormDrawer open={open && !clientDrawerOpen && !deliveryCorrectionOpen} title="Editar reparación" saving={saving} submitLabel="Guardar cambios" submitDisabled={!form?.clientId || !form.deviceBrand.trim() || !form.deviceModel.trim() || form.issue.trim().length < 2 || form.total == null || invalidTotal || needsCostMethod || needsAdvanceMethod} onClose={() => { if (!saving) onClose() }} onSubmit={() => void save()}>
     {error && <Alert severity="error">{error}</Alert>}
     {!form ? !error && <LinearProgress /> : <>
       <FormSection legacyHeading title="Cliente">
@@ -137,8 +139,12 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated }: { open: b
         </>}
       </FormSection>
       <FormSection legacyHeading legacyDivider title="Observaciones"><TextField fullWidth multiline minRows={3} label="Observaciones (opcional)" value={form.notes} onChange={event => field('notes', event.target.value)} disabled={saving} /></FormSection>
+      {loaded?.status === 'delivered' && user?.role === 'OWNER' && <FormSection legacyHeading legacyDivider title="Entrega">
+        <Typography variant="body2" color="text.secondary">Si la entrega se registró por error, podés revertirla a «Listo para retirar».</Typography>
+        <Button variant="outlined" color="warning" disabled={saving} sx={{ alignSelf: 'flex-start' }} onClick={() => setDeliveryCorrectionOpen(true)}>Corregir entrega</Button>
+      </FormSection>}
     </>}
-  </FormDrawer><NewClientDrawer open={open && clientDrawerOpen} onClose={() => setClientDrawerOpen(false)} onCreated={created => { setClients(current => [created, ...current.filter(client => client.id !== created.id)]); field('clientId', created.id); setClientDrawerOpen(false) }} /></>
+  </FormDrawer><NewClientDrawer open={open && clientDrawerOpen} onClose={() => setClientDrawerOpen(false)} onCreated={created => { setClients(current => [created, ...current.filter(client => client.id !== created.id)]); field('clientId', created.id); setClientDrawerOpen(false) }} /><RepairDeliveryCorrectionDialog repair={open && deliveryCorrectionOpen && loaded?.status === 'delivered' && user?.role === 'OWNER' ? loaded : undefined} onClose={() => setDeliveryCorrectionOpen(false)} onCorrected={updated => { setDeliveryCorrectionOpen(false); (onDeliveryCorrected ?? onUpdated)(updated) }} /></>
 }
 
 const Summary = ({ label, value, color }: { label: string; value: number; color?: string }) => <Stack direction="row" justifyContent="space-between" gap={2}><Typography>{label}</Typography><Typography fontWeight={750} color={color}>{formatMoney(value)}</Typography></Stack>
