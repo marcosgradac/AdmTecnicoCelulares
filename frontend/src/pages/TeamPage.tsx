@@ -44,7 +44,7 @@ const permissionGroups = [
 function PermissionFields({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) {
   const toggle = (permission: string, checked: boolean) => onChange(checked ? [...value, permission] : value.filter(item => item !== permission))
   return <FormSection title="Permisos del técnico" description="Accesos asignados a esta persona.">
-    <Box display="grid" gridTemplateColumns={{ xs: 'minmax(0,1fr)', sm: 'repeat(2, minmax(0,1fr))' }} gap={1.5} alignItems="start">
+    <Box display="grid" gridTemplateColumns="minmax(0,1fr)" gap={1.5} alignItems="start">
       {permissionGroups.map(group => <Box key={group.module} sx={{ p: 1.5, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: '#FAFAFE' }}>
         <Typography variant="subtitle2" fontWeight={800} mb={.5}>{group.module}</Typography>
         <Stack>{group.options.map(([permission, label]) => <FormControlLabel key={permission} sx={{ m: 0, minWidth: 0, '& .MuiFormControlLabel-label': { fontSize: '.85rem', lineHeight: 1.4, overflowWrap: 'anywhere' } }} control={<Checkbox size="small" checked={value.includes(permission)} disabled={disabled} onChange={event => toggle(permission, event.target.checked)} />} label={label} />)}</Stack>
@@ -143,7 +143,7 @@ function CreateMemberDrawer({ open, onClose, onCompleted }: { open: boolean; onC
   return <FormDrawer open={open} title="Agregar empleado" saving={saving} submitLabel="Crear empleado" submitDisabled={!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !strong || form.password !== form.repeatPassword} onClose={close} onSubmit={() => void submit()}>
     {error && <Alert severity="error">{error}</Alert>}
     <FormSection title="Datos personales" description="Información de contacto de la persona.">
-      <Box display="grid" gridTemplateColumns={{ xs: 'minmax(0,1fr)', sm: 'repeat(2, minmax(0,1fr))' }} gap={2}>
+      <Box display="grid" gridTemplateColumns="minmax(0,1fr)" gap={2}>
         <TextField required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} />
         <TextField required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} />
         <TextField required label="Email" type="email" value={form.email} onChange={e => setForm(value => ({ ...value, email: e.target.value }))} />
@@ -180,14 +180,14 @@ function EditMemberDrawer({ member, onClose, onCompleted, onDelete }: { member: 
   return <FormDrawer open={Boolean(member)} title="Editar empleado" saving={saving} submitLabel="Guardar cambios" submitDisabled={!form.firstName.trim() || !form.lastName.trim()} onClose={close} onSubmit={() => void submit()}>
     {error && <Alert severity="error">{error}</Alert>}
     <FormSection title="Datos personales" description="Información de contacto de la persona.">
-      <Box display="grid" gridTemplateColumns={{ xs: 'minmax(0,1fr)', sm: 'repeat(2, minmax(0,1fr))' }} gap={2}>
+      <Box display="grid" gridTemplateColumns="minmax(0,1fr)" gap={2}>
         <TextField required label="Nombre" value={form.firstName} onChange={e => setForm(value => ({ ...value, firstName: e.target.value }))} />
         <TextField required label="Apellido" value={form.lastName} onChange={e => setForm(value => ({ ...value, lastName: e.target.value }))} />
-        <TextField label="Teléfono" type="tel" sx={{ gridColumn: { sm: 'span 2' } }} value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} />
+        <TextField label="Teléfono" type="tel" value={form.phone} onChange={e => setForm(value => ({ ...value, phone: e.target.value }))} />
       </Box>
     </FormSection>
     <FormSection title="Acceso" description="Define el nivel de acceso de esta persona dentro del negocio.">
-      <Box display="grid" gridTemplateColumns={{ xs: 'minmax(0,1fr)', sm: 'repeat(2, minmax(0,1fr))' }} gap={2}>
+      <Box display="grid" gridTemplateColumns="minmax(0,1fr)" gap={2}>
         <FormControl fullWidth><InputLabel>Rol</InputLabel><Select label="Rol" value={form.role} onChange={e => setForm(value => ({ ...value, role: e.target.value as TeamRole }))}><MenuItem value="TECHNICIAN">Técnico</MenuItem><MenuItem value="OWNER">Propietario</MenuItem></Select></FormControl>
         <FormControl fullWidth><InputLabel>Estado</InputLabel><Select label="Estado" value={form.isActive ? 'active' : 'inactive'} onChange={e => setForm(value => ({ ...value, isActive: e.target.value === 'active' }))}><MenuItem value="active">Activo</MenuItem><MenuItem value="inactive">Inactivo</MenuItem></Select></FormControl>
       </Box>

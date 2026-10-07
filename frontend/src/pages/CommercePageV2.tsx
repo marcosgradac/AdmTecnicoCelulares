@@ -222,7 +222,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
       <Typography variant="body2" fontWeight={650}>Icono de la categoría</Typography>
       <Typography variant="caption" color="text.secondary">{CATEGORY_ICONS.length} opciones</Typography>
     </Stack>
-    <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.5, p: 1, pl: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2.5, bgcolor: 'background.paper' }}>
+    <Stack spacing={1.25} sx={{ mb: 1.5, p: 1, pl: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2.5, bgcolor: 'background.paper' }}>
       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1.25 }}>
         <Box sx={{ width: 40, height: 40, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 2, bgcolor: theme => alpha(theme.palette.primary.main, 0.1), color: 'primary.main' }}>
           <Selected sx={{ fontSize: 21 }} />
@@ -233,11 +233,11 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
         </Box>
       </Box>
       <TextField
+        fullWidth
         size="small"
         placeholder="Buscar icono"
         value={query}
         onChange={event => setQuery(event.target.value)}
-        sx={{ width: { xs: '100%', sm: 168 }, flexShrink: 0 }}
         slotProps={{
           input: {
             startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" color="action" /></InputAdornment>,
@@ -255,7 +255,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
         {visibleGroups.map(({ group, entries }) => (
           <Box key={group} sx={{ mb: 1.5 }}>
             <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '.04em' }} display="block" mb={0.75}>{group}</Typography>
-            <Box role="radiogroup" aria-label={`Iconos de ${group}`} sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))', gap: 0.75 }}>
+            <Box role="radiogroup" aria-label={`Iconos de ${group}`} sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 0.75 }}>
               {entries.map(({ key, label, icon: Option }) => {
                 const selected = (value ?? 'generic') === key
                 return <Box
@@ -268,7 +268,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
                   onClick={() => onChange(key === 'generic' ? null : key)}
                   onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onChange(key === 'generic' ? null : key) } }}
                   sx={{
-                    display: 'grid', placeItems: 'center', height: 48, minWidth: 0, borderRadius: 2, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 1.25, px: 1.5, minHeight: 48, minWidth: 0, borderRadius: 2, cursor: 'pointer',
                     border: '1px solid',
                     borderColor: selected ? 'primary.main' : 'divider',
                     bgcolor: selected ? theme => alpha(theme.palette.primary.main, 0.1) : 'background.paper',
@@ -278,7 +278,8 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
                     '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main', outlineOffset: 1 },
                   }}
                 >
-                  <Option sx={{ fontSize: 21 }} />
+                  <Option sx={{ fontSize: 21, flexShrink: 0 }} />
+                  <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{label}</Typography>
                 </Box>
               })}
             </Box>
