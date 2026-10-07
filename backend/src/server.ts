@@ -12,6 +12,7 @@ import { canViewRepairFinancials, clientRepairSelect, repairHistoryResponse, rep
 import { advanceCorrectionNote, correctInitialRepairAdvance, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, RepairFinanceError } from './modules/repairs/repair-finance'
 import { deliveredLockedMessage, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
 import { claimRepairStatusTransition } from './modules/repairs/repair-status-transition'
+import { renderTrackingPreview, trackingPreviewSelect } from './modules/tracking/tracking-preview'
 import { generateTrackingToken } from './modules/tracking/tracking-token'
 import {
   classifyTracking,
@@ -67,6 +68,23 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: false,
 }))
+const publicBusinessLogoUrl = (businessId: string, storedLogo: string | null) => storedLogo?.startsWith('data:') ? `/api/business-logo/${businessId}` : storedLogo
+
+// Social metadata is independent of interactive tracking risk and lookup budgets.
+app.get('/api/tracking-preview/:token', async (req, res) => {
+  const token = String(req.params.token)
+  const clientSlug = typeof req.query.clientSlug === 'string' ? req.query.clientSlug : undefined
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+  try {
+    const repair = await prisma.repair.findUnique({ where: { trackingToken: token }, select: trackingPreviewSelect })
+    return res.type('html').send(renderTrackingPreview(repair, token, clientSlug, publicBusinessLogoUrl))
+  } catch {
+    // A lookup failure must not leak partial tenant metadata or database details.
+    return res.status(503).type('html').send(renderTrackingPreview(null, token, clientSlug, publicBusinessLogoUrl))
+  }
+})
+
 app.use(express.json({ limit: securityConfig.payloadLimit }))
 app.use('/api', globalApiLimiter)
 
@@ -81,7 +99,6 @@ const normalizePhone = (value?: string | null) => {
   const normalized = value?.trim().replace(/\D/g, '')
   return normalized || null
 }
-const publicBusinessLogoUrl = (businessId: string, storedLogo: string | null) => storedLogo?.startsWith('data:') ? `/api/business-logo/${businessId}` : storedLogo
 const userResponse = <T extends {
   id: string
   name: string
