@@ -22,8 +22,8 @@ $sidebar-collapsed: 78px;
 .bottom { margin-top: auto; display: grid; gap: 8px; }
 .account { display: flex; align-items: center; gap: 10px; padding: 10px 8px 0; border-top: 1px solid #E8EAF0; }
 .account :global(.MuiAvatar-root) { width: 36px; height: 36px; font-size: 14px; background: #EEE9FF; color: #5B3FD6; font-weight: 800; }
-.businessAccess :global(.MuiAvatar-root) { box-sizing: border-box; width: 38px; height: 38px; flex: 0 0 38px; padding: 3px; font-size: 12.5px; font-weight: 800; background: #EEE9FF; color: #5B3FD6; }
-.businessAccess :global(.MuiAvatar-img) { width: 100%; height: 100%; object-fit: contain; }
+.businessAccess :global(.MuiAvatar-root) { box-sizing: border-box; width: 38px; height: 38px; flex: 0 0 38px; padding: 0; overflow: hidden; font-size: 12.5px; font-weight: 800; background: #EEE9FF; color: #5B3FD6; }
+.businessAccess :global(.MuiAvatar-img) { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .header { left: $sidebar-collapsed !important; width: calc(100% - $sidebar-collapsed) !important; height: $header; justify-content: center; border-bottom: 1px solid #E8EAF0; background: rgba(255,255,255,.94) !important; backdrop-filter: blur(12px); }
 .search { width: min(420px, 42vw); }
 .search :global(.MuiOutlinedInput-root) { height: 42px; min-height: 42px; background: #F8F9FC; }
@@ -62,6 +62,6 @@ $sidebar-collapsed: 78px;
 @media (max-width: 599px) {
   .mobileBrand { width: 105px; margin-left: 3px; }
   .businessAccessText { display: none; }
-  .businessAccess :global(.MuiAvatar-root) { width: 36px; height: 36px; flex-basis: 36px; padding: 3px; }
+  .businessAccess :global(.MuiAvatar-root) { width: 36px; height: 36px; flex-basis: 36px; padding: 0; }
   .businessAccessArrow { font-size: 18px !important; }
 }
