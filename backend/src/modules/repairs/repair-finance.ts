@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 // Amounts use the same whole-peso Int representation as Repair and Payment.
 export const repairMoney = z.number().int().min(0).max(2_147_483_647)
+export const repairInitialCostSchema = z.object({ amount: repairMoney, method: z.nativeEnum(PaymentMethod).optional() })
 export const initialRepairFinanceSchema = z.object({
   partsCost: repairMoney.default(0),
   // El gasto inicial y el adelanto son dos movimientos distintos de Caja: cada uno tiene su
@@ -71,6 +72,58 @@ const advanceDescription = (number: number) => `Adelanto reparación #${number}`
 export const advanceCorrectionNote = (previousAmount: number, amount: number) => {
   const pesos = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })
   return `Adelanto corregido de $${pesos.format(previousAmount)} a $${pesos.format(amount)}`
+}
+
+export const initialCostCorrectionNote = (previousAmount: number, amount: number) => {
+  const pesos = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })
+  return `Costo/gasto corregido de $${pesos.format(previousAmount)} a $${pesos.format(amount)}`
+}
+
+/** Runs in the transaction holding the Repair row lock. Never touches client payments. */
+export async function correctInitialRepairCost(
+  tx: Prisma.TransactionClient,
+  repair: { id: string; businessId: string; number: number; partsCost: number; initialCostMovementId: string | null },
+  clientName: string,
+  input: { amount: number; method?: PaymentMethod },
+) {
+  const { id: repairId, businessId, number, initialCostMovementId, partsCost: previousAmount } = repair
+  const where = { businessId, repairId, type: 'EXPENSE' as const, origin: 'REPAIR' as const }
+  const include = { initialCostRepair: { select: { id: true } }, repairPayment: { select: { id: true } }, warrantyExpense: { select: { id: true } } }
+  const description = `Costo inicial reparación #${number}`
+  let movement
+  if (initialCostMovementId) {
+    // The linked ID wins even if its description was edited. A corrupt link is never guessed away.
+    movement = await tx.cashMovement.findFirst({ where: { ...where, id: initialCostMovementId }, include })
+    if (!movement) throw new RepairFinanceError(409, 'El egreso inicial vinculado no corresponde a esta reparación. Revisá la Caja antes de corregirlo.')
+  } else {
+    const candidates = await tx.cashMovement.findMany({ where: { ...where, description }, include, take: 2 })
+    if (candidates.length > 1) throw new RepairFinanceError(409, 'Esta reparación tiene varios egresos de costo que no se pueden distinguir. Revisá la Caja antes de corregirlo.')
+    movement = candidates[0] ?? null
+  }
+  if (movement && (movement.repairPayment || movement.warrantyExpense ||
+    (movement.initialCostRepair && movement.initialCostRepair.id !== repairId))) {
+    throw new RepairFinanceError(409, 'El egreso está vinculado a otra operación. Revisá la Caja antes de corregirlo.')
+  }
+  if (input.amount === 0) {
+    // RESTRICT requires releasing the link before deleting only this expense.
+    if (previousAmount !== 0 || initialCostMovementId || movement) {
+      await tx.repair.update({ where: { id: repairId, businessId }, data: { partsCost: 0, initialCostMovementId: null } })
+      if (movement) await tx.cashMovement.delete({ where: { id: movement.id, businessId } })
+    }
+  } else {
+    if (movement) {
+      if (movement.amount !== input.amount || (input.method !== undefined && movement.method !== input.method)) {
+        await tx.cashMovement.update({ where: { id: movement.id, businessId }, data: { amount: input.amount, ...(input.method ? { method: input.method } : {}) } })
+      }
+    } else {
+      if (!input.method) throw new RepairFinanceError(400, 'Seleccioná el medio de pago del gasto para crear el egreso inicial')
+      movement = await tx.cashMovement.create({ data: { businessId, repairId, clientName, type: 'EXPENSE', origin: 'REPAIR', description, amount: input.amount, method: input.method }, include })
+    }
+    if (previousAmount !== input.amount || initialCostMovementId !== movement.id) {
+      await tx.repair.update({ where: { id: repairId, businessId }, data: { partsCost: input.amount, initialCostMovementId: movement.id } })
+    }
+  }
+  return { previousAmount }
 }
 
 /**

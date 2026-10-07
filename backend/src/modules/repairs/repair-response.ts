@@ -3,9 +3,10 @@ import type { AuthData } from '../../middlewares/auth'
 export const canViewRepairFinancials = (auth: AuthData) =>
   auth.role === 'OWNER' || Boolean(auth.permissions?.includes('repairs.viewFinancials'))
 
-// These events contain the old and new advance amounts, not an operational status change.
+// Financial corrections contain private workshop/payment amounts, not operational status changes.
 export const repairHistoryResponse = <T extends { internalNote?: string | null }>(auth: AuthData, history: T[]) =>
-  canViewRepairFinancials(auth) ? history : history.filter(item => !item.internalNote?.startsWith('Adelanto corregido de $'))
+  canViewRepairFinancials(auth) ? history : history.filter(item =>
+    !item.internalNote?.startsWith('Adelanto corregido de $') && !item.internalNote?.startsWith('Costo/gasto corregido de $'))
 
 /** HTTP boundary only: never mutate the model used by transactions/calculations.
  * Total, paid and cancellation summary amounts are operational in the existing UI.

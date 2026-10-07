@@ -9,7 +9,7 @@ import { CashMovementOrigin, CashMovementType, PaymentMethod, Prisma, RepairStat
 import { prisma } from './lib/prisma'
 import { allocateRepairNumber } from './lib/repair-number'
 import { canViewRepairFinancials, clientRepairSelect, repairHistoryResponse, repairResponse } from './modules/repairs/repair-response'
-import { advanceCorrectionNote, correctInitialRepairAdvance, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, RepairFinanceError } from './modules/repairs/repair-finance'
+import { advanceCorrectionNote, correctInitialRepairAdvance, correctInitialRepairCost, initialCostCorrectionNote, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, repairInitialCostSchema, RepairFinanceError } from './modules/repairs/repair-finance'
 import { deliveredLockedMessage, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
 import { claimRepairStatusTransition } from './modules/repairs/repair-status-transition'
 import { renderTrackingPreview, trackingPreviewSelect } from './modules/tracking/tracking-preview'
@@ -621,6 +621,35 @@ app.patch('/api/repairs/:id/advance', requirePermission('repairs.viewFinancials'
   } catch (error) {
     if (error instanceof RepairFinanceError) return res.status(error.statusCode).json({ success: false, message: error.message })
     return statusFailure(res, error, 'No pudimos corregir el adelanto')
+  }
+})
+
+/** A workshop expense correction, independent of advance payments and client balance. */
+app.patch('/api/repairs/:id/initial-cost', requirePermission('repairs.viewFinancials'), async (req, res) => {
+  const parsed = repairInitialCostSchema.safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message ?? 'Datos de costo/gasto inválidos' })
+  const auth = authOf(req)
+  const repairId = String(req.params.id)
+  try {
+    const result = await prisma.$transaction(async tx => {
+      // Serialize corrections before reading the amount/link: simultaneous 0→cost cannot duplicate Cash.
+      await tx.$queryRaw`SELECT "id" FROM "Repair" WHERE "id" = ${repairId} AND "businessId" = ${auth.businessId} FOR UPDATE`
+      const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
+      if (!current) throw new RepairFinanceError(404, 'Reparación no encontrada')
+      if (current.status === RepairStatus.CANCELLED) throw new RepairFinanceError(409, 'Una reparación cancelada no admite correcciones del costo inicial: su liquidación tiene su propio flujo.')
+      const { previousAmount } = await correctInitialRepairCost(tx, current, current.client.name, parsed.data)
+      if (previousAmount !== parsed.data.amount) {
+        await tx.repairStatusHistory.create({ data: {
+          repairId, previousStatus: current.status, newStatus: current.status, changedByUserId: auth.userId,
+          internalNote: initialCostCorrectionNote(previousAmount, parsed.data.amount),
+        } })
+      }
+      return tx.repair.findUniqueOrThrow({ where: { id: repairId, businessId: auth.businessId }, include: includeRepair })
+    }, { timeout: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
+    return res.json(repairResponse(auth, result))
+  } catch (error) {
+    if (error instanceof RepairFinanceError) return res.status(error.statusCode).json({ success: false, message: error.message })
+    return statusFailure(res, error, 'No pudimos corregir el costo/gasto')
   }
 })
 

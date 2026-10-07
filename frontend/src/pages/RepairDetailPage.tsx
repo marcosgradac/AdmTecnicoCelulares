@@ -8,6 +8,7 @@ import { buildTrackingLink } from '../utils/trackingLink'
 import { canonicalStatus, canonicalStatusConfig, isSpecialStatus, nextStatus, previousStatus, repairFlow, repairStatusConfig, repairStatusLabel } from '../config/repairStatus'
 import { StatusChip } from '../components/common/StatusChip'
 import { RepairAdvanceDialog } from '../components/repairs/RepairAdvanceDialog'
+import { RepairInitialCostDialog } from '../components/repairs/RepairInitialCostDialog'
 import { RepairDeleteDialog } from '../components/repairs/RepairDeleteDialog'
 import { RepairDeliveryConfirmDialog } from '../components/repairs/RepairDeliveryConfirmDialog'
 import { RepairDeliveryCorrectionDialog } from '../components/repairs/RepairDeliveryCorrectionDialog'
@@ -44,6 +45,7 @@ export function RepairDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [reviewPaymentOpen, setReviewPaymentOpen] = useState(false)
   const [advanceOpen, setAdvanceOpen] = useState(false)
+  const [initialCostOpen, setInitialCostOpen] = useState(false)
   const [deliveryConfirmOpen, setDeliveryConfirmOpen] = useState(false)
   const [deliveryCorrectionOpen, setDeliveryCorrectionOpen] = useState(false)
   const [payment, setPayment] = useState<{amount:number|null;method:'CASH'|'TRANSFER'|'CARD'|'OTHER'}>({ amount: null, method: 'TRANSFER' })
@@ -134,7 +136,7 @@ export function RepairDetailPage() {
   }
   for (const item of repair.history ?? []) {
     if (item.newStatus === 'cancelled') continue
-    if (!canViewFinancials && item.internalNote?.startsWith('Adelanto corregido de $')) continue
+    if (!canViewFinancials && (item.internalNote?.startsWith('Adelanto corregido de $') || item.internalNote?.startsWith('Costo/gasto corregido de $'))) continue
     // Una corrección del adelanto registra el mismo estado de origen y destino: se muestra
     // con su nota interna («Adelanto corregido de $20.000 a $30.000»), no como un paso.
     historyEvents.push(isStatusNote(item)
@@ -148,7 +150,10 @@ export function RepairDetailPage() {
     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
     {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
     {canAccess(user, 'repairs.viewFinancials') && repair.status !== 'cancelled' && <Card sx={{ mb: 2.2 }}><CardContent>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" gap={2} mb={2}><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Costos y ganancia</Typography></Stack>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2} mb={2}>
+        <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Costos y ganancia</Typography>
+        <Button variant="outlined" startIcon={<EditRounded/>} disabled={saving || editing} onClick={() => { setError(''); setSuccess(''); setInitialCostOpen(true) }}>Corregir costo/gasto</Button>
+      </Stack>
       <Grid container spacing={2}>
         <Grid size={{ xs: 6, md: 3 }}><Info label="Costo / gasto de la reparación" value={formatMoney(repairCost)} /></Grid>
         <Grid size={{ xs: 6, md: 3 }}><Info label="Mano de obra cobrada" value={formatMoney(repair.laborCharge ?? 0)} /></Grid>
@@ -192,6 +197,7 @@ export function RepairDetailPage() {
     }} />
     <RepairReviewPaymentDialog repair={reviewPaymentOpen ? repair : undefined} onClose={() => setReviewPaymentOpen(false)} onRegistered={updated => { setRepair(updated); setReviewPaymentOpen(false) }} />
     <RepairAdvanceDialog repair={advanceOpen ? repair : undefined} onClose={() => setAdvanceOpen(false)} onUpdated={updated => { setAdvanceOpen(false); setRepair(updated); setSuccess('Adelanto corregido correctamente.') }} />
+    <RepairInitialCostDialog repair={initialCostOpen && canViewFinancials && repair.status !== 'cancelled' ? repair : undefined} onClose={() => setInitialCostOpen(false)} onUpdated={updated => { setInitialCostOpen(false); setRepair(updated); setSuccess('Costo/gasto corregido correctamente.') }} />
     <RepairDeliveryConfirmDialog repair={deliveryConfirmOpen ? repair : undefined} onClose={() => setDeliveryConfirmOpen(false)} onDelivered={updated => { setDeliveryConfirmOpen(false); setRepair(updated); setSuccess('Reparación entregada correctamente.') }} />
     <RepairDeliveryCorrectionDialog repair={deliveryCorrectionOpen ? repair : undefined} onClose={() => setDeliveryCorrectionOpen(false)} onCorrected={updated => { setDeliveryCorrectionOpen(false); setRepair(updated); setSuccess('Entrega corregida. La reparación volvió a «Listo para retirar».') }} />
   </Box>

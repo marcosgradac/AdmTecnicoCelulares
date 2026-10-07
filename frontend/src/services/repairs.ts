@@ -187,6 +187,12 @@ export async function updateRepairAdvance(id: string, input: { amount: number; m
   return mapRepair(response.data)
 }
 
+/** Corrects only the workshop's initial expense, leaving client payments intact. */
+export async function updateRepairInitialCost(id: string, input: { amount: number; method?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }) {
+  const response = await api.patch<ApiRepair>(`/repairs/${id}/initial-cost`, input)
+  return mapRepair(response.data)
+}
+
 /** Acción administrativa para una entrega cargada por error. Sólo OWNER; nunca es navegación. */
 export async function correctRepairDelivery(id: string, reason: string) {
   const response = await api.post<ApiRepair>(`/repairs/${id}/delivery/correction`, { reason })

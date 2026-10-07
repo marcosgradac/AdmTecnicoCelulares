@@ -305,4 +305,5 @@ assert.ok(!JSON.stringify(noFinanceCancel.root()).includes('Medio de devolución
 
 console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y un único botón para corregir el adelanto')
 }
-main().catch(error => { console.error(error); process.exitCode = 1 })
+module.exports = { harness, collect }
+if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1 })
