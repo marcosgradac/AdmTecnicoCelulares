@@ -24,8 +24,8 @@ async function main() {
       clients: customers.length,
       activeBusinesses: customers.filter(b => b.isActive).length,
       inactiveBusinesses: customers.filter(b => !b.isActive).length,
-      owners: customers.flatMap(b => b.users).filter(u => u.role === 'OWNER').length,
-      technicians: customers.flatMap(b => b.users).filter(u => u.role === 'TECHNICIAN').length,
+      owners: customers.flatMap(b => b.users).filter(u => u.role === 'OWNER' && u.deletedAt === null).length,
+      technicians: customers.flatMap(b => b.users).filter(u => u.role === 'TECHNICIAN' && u.deletedAt === null).length,
       active: customers.filter(b => b.subscription?.status === 'ACTIVE').length,
       trials: customers.filter(b => b.subscription?.status === 'TRIALING').length,
       grace: customers.filter(b => b.subscription?.status === 'GRACE').length,
@@ -45,8 +45,8 @@ async function main() {
         businessId: business.id, name: 'Fixture Owner', email: `${business.id}@example.test`,
         passwordHash: 'fixture-only', role: 'OWNER', platformRole: internal ? 'SUPER_ADMIN' : 'USER',
       } })
-      await prisma.user.create({ data: { businessId: business.id, name: 'Fixture Technician', email: `${business.id}-tech@example.test`, passwordHash: 'fixture-only', role: 'TECHNICIAN' } })
-      return { business, subscription, owner }
+      const technician = await prisma.user.create({ data: { businessId: business.id, name: 'Fixture Technician', email: `${business.id}-tech@example.test`, passwordHash: 'fixture-only', role: 'TECHNICIAN' } })
+      return { business, subscription, owner, technician }
     }
     const internal = await create('internal', true, 'ACTIVE')
     const first = await create('trial one', false, 'TRIALING')
@@ -98,6 +98,17 @@ async function main() {
       assert.equal(response.status, 409, 'Own administrator account remains protected')
     }
     assert.deepEqual(await snapshot(), fixtureBefore, 'Read endpoints must not alter account/subscription/payment data')
+
+    // Registered customer accounts count even when inactive, but not when soft-deleted.
+    const customerUserIds = [first.owner.id, first.technician.id]
+    await prisma.user.updateMany({ where: { id: { in: customerUserIds } }, data: { isActive: false } })
+    assert.deepEqual(await request('/dashboard'), dashboard, 'Inactive non-deleted users still count')
+    await prisma.user.update({ where: { id: first.owner.id }, data: { deletedAt: now } })
+    assert.deepEqual(await request('/dashboard'), { ...dashboard, owners: dashboard.owners - 1 }, 'Only the deleted owner leaves the metrics')
+    await prisma.user.update({ where: { id: first.technician.id }, data: { deletedAt: now } })
+    assert.deepEqual(await request('/dashboard'), { ...dashboard, owners: dashboard.owners - 1, technicians: dashboard.technicians - 1 }, 'Only deleted users leave the metrics; other KPIs remain unchanged')
+    assert.equal((await request(`/businesses?search=${encodeURIComponent(internal.business.name)}`)).total, 0, 'Internal business remains excluded')
+    await prisma.user.updateMany({ where: { id: { in: customerUserIds } }, data: { isActive: true, deletedAt: null } })
 
     // Internal subscriptions never contribute, regardless of commercial or access status.
     for (const status of ['TRIALING', 'GRACE', 'SUSPENDED'] as const) {
