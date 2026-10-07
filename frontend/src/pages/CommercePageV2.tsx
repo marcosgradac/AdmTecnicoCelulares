@@ -222,7 +222,7 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
       <Typography variant="body2" fontWeight={650}>Icono de la categoría</Typography>
       <Typography variant="caption" color="text.secondary">{CATEGORY_ICONS.length} opciones</Typography>
     </Stack>
-    <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.5, p: 1, pl: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2.5, bgcolor: 'background.paper' }}>
+    <Stack spacing={1.25} sx={{ mb: 1.5, p: 1, pl: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2.5, bgcolor: 'background.paper' }}>
       <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1.25 }}>
         <Box sx={{ width: 40, height: 40, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 2, bgcolor: theme => alpha(theme.palette.primary.main, 0.1), color: 'primary.main' }}>
           <Selected sx={{ fontSize: 21 }} />
@@ -233,11 +233,11 @@ function CategoryIconPicker({ value, onChange }: { value: string | null; onChang
         </Box>
       </Box>
       <TextField
+        fullWidth
         size="small"
         placeholder="Buscar icono"
         value={query}
         onChange={event => setQuery(event.target.value)}
-        sx={{ width: { xs: '100%', sm: 168 }, flexShrink: 0 }}
         slotProps={{
           input: {
             startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" color="action" /></InputAdornment>,
