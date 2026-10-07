@@ -13,7 +13,7 @@ import { editRepairInTransaction, editRepairSchema } from './modules/repairs/rep
 import { advanceCorrectionNote, correctInitialRepairAdvance, correctInitialRepairCost, initialCostCorrectionNote, initialRepairFinanceSchema, recordInitialRepairFinance, repairAdvanceSchema, repairInitialCostSchema, RepairFinanceError } from './modules/repairs/repair-finance'
 import { deliveredLockedMessage, isSpecialRepairStatus, nextRepairStatus, previousRepairStatus, repairFlow, statusError } from './modules/repairs/repair-status'
 import { claimRepairStatusTransition } from './modules/repairs/repair-status-transition'
-import { renderTrackingPreview, trackingPreviewSelect } from './modules/tracking/tracking-preview'
+import { isTrackingPreviewToken, renderTrackingPreview, trackingPreviewSelect } from './modules/tracking/tracking-preview'
 import { generateTrackingToken } from './modules/tracking/tracking-token'
 import {
   classifyTracking,
@@ -46,7 +46,7 @@ import { warrantiesRouter } from './modules/warranties/warranties.routes'
 import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
-import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingRisk } from './middlewares/security'
+import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 
 export const app = express()
@@ -72,11 +72,14 @@ app.use(cors({
 const publicBusinessLogoUrl = (businessId: string, storedLogo: string | null) => storedLogo?.startsWith('data:') ? `/api/business-logo/${businessId}` : storedLogo
 
 // Social metadata is independent of interactive tracking risk and lookup budgets.
-app.get('/api/tracking-preview/:token', async (req, res) => {
+app.get('/api/tracking-preview/:token', trackingPreviewLimiter, async (req, res) => {
   const token = String(req.params.token)
   const clientSlug = typeof req.query.clientSlug === 'string' ? req.query.clientSlug : undefined
   res.setHeader('Cache-Control', 'no-store')
   res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+  if (!isTrackingPreviewToken(token)) {
+    return res.type('html').send(renderTrackingPreview(null, token, clientSlug, publicBusinessLogoUrl))
+  }
   try {
     const repair = await prisma.repair.findUnique({ where: { trackingToken: token }, select: trackingPreviewSelect })
     return res.type('html').send(renderTrackingPreview(repair, token, clientSlug, publicBusinessLogoUrl))

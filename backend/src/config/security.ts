@@ -17,6 +17,7 @@ export const securityConfig = {
     passwordCodeIp: { windowMs: 60 * 60_000, limit: numberFromEnv('RATE_LIMIT_PASSWORD_CODE_IP_MAX', 10) },
     passwordVerify: { windowMs: 15 * 60_000, limit: numberFromEnv('RATE_LIMIT_PASSWORD_VERIFY_MAX', 15) },
     publicTracking: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_PUBLIC_TRACKING_MAX', 60) },
+    trackingPreview: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_TRACKING_PREVIEW_MAX', 30) },
     authenticatedWrites: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_AUTH_WRITES_MAX', 30) },
     superAdminWrites: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_SUPER_ADMIN_WRITES_MAX', 20) },
   },

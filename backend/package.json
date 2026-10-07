@@ -37,6 +37,7 @@
     "test:repair-cancellation": "tsx tests/repair-cancellation.ts",
     "test:warranties": "tsx tests/warranties.ts && tsx tests/warranties-sqlite.ts",
     "test:tracking-preview": "tsx tests/tracking-preview.ts",
+    "test:tracking-preview-rate-limit": "tsx tests/tracking-preview-rate-limit.ts",
     "test:tracking-links": "tsx tests/tracking-links-unit.ts && tsx tests/tracking-links-migration.ts && tsx tests/tracking-links-api.ts",
     "test:pagination": "tsx tests/pagination.ts",
     "test:client-soft-delete": "tsx tests/client-soft-delete.ts",
