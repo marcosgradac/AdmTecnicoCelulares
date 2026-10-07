@@ -16,8 +16,7 @@ import { formatMoney } from '../../utils/format'
 import { useAuth } from '../../auth/AuthContext'
 import { canAccess } from '../../auth/permissions'
 
-const today = () => { const now=new Date();return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}` }
-const initial = { brand: '', customBrand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, partsCost: 0, partsCostMethod: '' as '' | 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER', laborCharge: 0, advanceAmount: 0, advanceMethod: '' as '' | 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER', totalEdited: false, estimatedDeliveryDate: today(), notes: '', status: 'received' as RepairStatus }
+const initial = { brand: '', customBrand: '', model: '', imei: '', color: '', issue: '', diagnosis: '', total: null as number | null, partsCost: 0, partsCostMethod: '' as '' | 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER', laborCharge: 0, advanceAmount: 0, advanceMethod: '' as '' | 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER', totalEdited: false, estimatedDeliveryDate: '', notes: '', status: 'received' as RepairStatus }
 
 export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: { open: boolean; initialClientId?: string; onClose: () => void; onCreated: (repair: Repair) => void }) {
   const modern = useAdminVisual()
@@ -43,7 +42,7 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
     return { ...normalized, total: current.totalEdited ? current.total : normalized.partsCost + normalized.laborCharge }
   })
   const change = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [key]: key === 'total' ? Number(event.target.value) : event.target.value }))
-  const close = () => { if (!saving) { setError(''); setForm({ ...initial, estimatedDeliveryDate: today() }); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }
+  const close = () => { if (!saving) { setError(''); setForm(initial); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }
   const save = async () => {
     const brand = normalizeDeviceBrand(form.brand === OTHER_DEVICE_BRAND ? form.customBrand : form.brand), model = form.model.trim(), issue = form.issue.trim()
     if (!clientId) return setError('Seleccioná un cliente existente.')
@@ -72,7 +71,7 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}><TextField fullWidth label="IMEI (opcional)" value={form.imei} onChange={change('imei')} inputProps={{ maxLength: 32 }}/><TextField fullWidth label="Color (opcional)" value={form.color} onChange={change('color')} inputProps={{ maxLength: 60 }}/></Stack>
         </FormSection><FormSection legacyHeading legacyDivider title={modern ? 'Reparación y presupuesto' : 'Reparación'}>
         <TextField required multiline minRows={3} label="Falla informada" value={form.issue} onChange={change('issue')}/><TextField multiline minRows={2} label="Diagnóstico (opcional)" value={form.diagnosis} onChange={change('diagnosis')}/>
-        <TextField fullWidth type="date" label="Fecha estimada" value={form.estimatedDeliveryDate} onChange={change('estimatedDeliveryDate')} InputLabelProps={{ shrink: true }}/>
+        <TextField fullWidth type="date" label="Fecha estimada de entrega" value={form.estimatedDeliveryDate} onChange={change('estimatedDeliveryDate')} InputLabelProps={{ shrink: true }}/>
         <TextField select label="Estado inicial" value={form.status} onChange={change('status')}>{[['received','Recibido'],['review','En revisión'],['budget','Presupuesto informado'],['approved','Presupuesto aceptado'],['repairing','En reparación']].map(([value,label])=><MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>
         </FormSection><FormSection legacyHeading legacyDivider title="Costos y cobro">
         {canManageFinancials && <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

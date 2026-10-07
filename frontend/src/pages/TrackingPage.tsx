@@ -71,12 +71,11 @@ export function TrackingPage() {
   const tone = knownBrand ? deviceBrandTone(knownBrand) : { background: '#F1F3F7', color: '#627087' }
   const StatusIcon = statusConfig.icon
   const cardSx = { border: '1px solid #E5EAF2', borderRadius: 3, boxShadow: '0 3px 14px #25395904', bgcolor: '#fff' }
-  const labels = ['Recepción', 'Revisión', 'Repuesto', 'Reparación', 'Listo', 'Entregado']
   return <Box component="main" minHeight="100vh" sx={{ bgcolor: '#F5F7FB', color: '#24334A', pb: 2 }}>
     <Box component="header" sx={{ position: 'relative', overflow: 'hidden', pt: { xs: 2.5, sm: 3 }, pb: 2.5, bgcolor: '#F0F3FC', '&::before': { content: '""', position: 'absolute', width: '85%', height: 160, bgcolor: '#DFE9FC', borderRadius: '50%', top: -90, left: '-18%', transform: 'rotate(-8deg)' }, '&::after': { content: '""', position: 'absolute', width: '80%', height: 140, bgcolor: '#E9E3F8', borderRadius: '50%', top: -80, right: '-22%', transform: 'rotate(12deg)' } }}>
       <Stack alignItems="center" textAlign="center" sx={{ position: 'relative', zIndex: 1, px: 2 }}>
-        <Box sx={{ width: { xs: 64, sm: 76 }, height: { xs: 64, sm: 76 }, p: 1, borderRadius: '50%', bgcolor: '#fff', border: '1px solid #E1E6F0', boxShadow: '0 4px 14px #26375B0A' }}>
-          <Box component="img" src={repair.business?.logoUrl || tecnodeskMark} alt={repair.business?.logoUrl ? `Logo de ${businessName(repair)}` : 'TecnoDesk'} sx={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        <Box sx={{ width: { xs: 64, sm: 76 }, height: { xs: 64, sm: 76 }, borderRadius: '50%', overflow: 'hidden', bgcolor: '#fff', border: '1px solid #E1E6F0', boxShadow: '0 4px 14px #26375B0A' }}>
+          <Box component="img" src={repair.business?.logoUrl || tecnodeskMark} alt={repair.business?.logoUrl ? `Logo de ${businessName(repair)}` : 'TecnoDesk'} sx={{ width: '100%', height: '100%', borderRadius: '50%', display: 'block', objectFit: repair.business?.logoUrl ? 'cover' : 'contain', objectPosition: 'center' }} />
         </Box>
         <Typography component="h1" sx={{ fontSize: { xs: 21, sm: 24 }, fontWeight: 800, mt: 1, overflowWrap: 'anywhere' }}>{businessName(repair)}</Typography>
         <Typography sx={{ fontSize: 13, color: '#748098', mt: .3 }}>Seguimiento de tu reparación</Typography>
@@ -101,7 +100,7 @@ export function TrackingPage() {
                 const complete = !special && index < current
                 return <Box component="li" key={step} aria-current={active ? 'step' : undefined} title={repairStatusConfig[step].label} sx={{ position: 'relative', textAlign: 'center', '&::after': index < repairFlow.length - 1 ? { content: '""', position: 'absolute', height: 2, left: 'calc(50% + 12px)', right: 'calc(-50% + 12px)', top: 11, bgcolor: complete ? '#7293DF' : '#E4E9F1' } : {} }}>
                   <Box sx={{ position: 'relative', zIndex: 1, mx: 'auto', width: 24, height: 24, borderRadius: '50%', border: '2px solid', borderColor: active || complete ? '#6686D6' : '#DFE5EE', bgcolor: active || complete ? '#6686D6' : '#fff', color: '#fff', display: 'grid', placeItems: 'center', boxShadow: active ? '0 0 0 3px #E9EEFC' : 'none' }}>{complete ? <CheckRounded sx={{ fontSize: 15 }} /> : active ? <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#fff' }} /> : null}</Box>
-                  <Typography sx={{ fontSize: { xs: 9, sm: 11 }, lineHeight: 1.3, mt: 1, px: .2, fontWeight: active ? 800 : 550, color: active ? '#4A64AE' : complete ? '#586A88' : '#8E99AC' }}>{labels[index]}</Typography>
+                  <Typography sx={{ fontSize: { xs: 9, sm: 11 }, lineHeight: 1.3, mt: 1, px: .2, fontWeight: active ? 800 : 550, color: active ? '#4A64AE' : complete ? '#586A88' : '#8E99AC' }}>{repairStatusConfig[step].label}</Typography>
                 </Box>
               })}
             </Box>
@@ -123,9 +122,9 @@ export function TrackingPage() {
         </Card>
         <Card sx={cardSx}>
           <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}><Stack gap={1.25}>
-            <InfoRow label="Fecha de recepción" value={formatDate(repair.createdAt)} />
+            <InfoRow label="Fecha de ingreso" value={formatDate(repair.createdAt)} />
             <InfoRow label="Última actualización" value={formatDate(repair.updatedAt)} />
-            <InfoRow label="Fecha estimada de entrega" value={repair.estimatedDeliveryDate ? formatDate(repair.estimatedDeliveryDate) : 'A confirmar'} />
+            <InfoRow label="Entrega estimada" value={repair.estimatedDeliveryDate ? formatDate(repair.estimatedDeliveryDate) : 'A confirmar'} />
           </Stack></CardContent>
         </Card>
         <Card sx={{ ...cardSx, bgcolor: '#EDF8F1', borderColor: '#D7EBDD' }}>
@@ -133,7 +132,7 @@ export function TrackingPage() {
             <Stack direction="row" alignItems="center" gap={1}><PaymentsRounded sx={{ fontSize: 21, color: '#448665' }} /><Box flex={1}><InfoRow label="Presupuesto" value={formatMoney(repair.total)} emphasis /></Box></Stack>
             <Divider sx={{ borderColor: '#D8EBDF' }} />
             <InfoRow label="Pagado" value={formatMoney(repair.paid)} color="#36805A" />
-            <InfoRow label="Saldo pendiente" value={formatMoney(saldo)} color={saldo > 0 ? '#B57427' : '#36805A'} emphasis />
+            <InfoRow label="Saldo pendiente" value={formatMoney(saldo)} color={saldo > 0 ? '#C83E3E' : '#36805A'} emphasis />
           </Stack></CardContent>
         </Card>
       </Stack>
