@@ -1,11 +1,11 @@
 import { classifyTracking } from './tracking-expiry'
 import { isShortTrackingToken } from './tracking-token'
+import { publicApiOrigin } from '../../config/public-api'
 
 export const isTrackingPreviewToken = (token: string): boolean =>
   (token.length === 16 && isShortTrackingToken(token)) || (token.length === 64 && /^[a-fA-F0-9]{64}$/.test(token))
 
 const FRONTEND_ORIGIN = 'https://www.tecnodeskpro.com'
-const BACKEND_ORIGIN = 'https://tecnodesk-api.onrender.com'
 const FALLBACK_IMAGE = `${FRONTEND_ORIGIN}/tecnodesk-192.png`
 const DESCRIPTION = 'Seguí el estado de tu reparación en tiempo real.'
 
@@ -30,7 +30,7 @@ export const escapePreviewHtml = (value: string): string => value.replace(/[&<>"
 const absoluteImage = (logo: string | null): string => {
   if (!logo) return FALLBACK_IMAGE
   try {
-    const url = new URL(logo, BACKEND_ORIGIN)
+    const url = new URL(logo, publicApiOrigin)
     return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : FALLBACK_IMAGE
   } catch { return FALLBACK_IMAGE }
 }

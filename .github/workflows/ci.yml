@@ -46,6 +46,8 @@ jobs:
         run: npm run test:tracking-preview-rate-limit
       - name: Tracking token and expiry unit tests
         run: node node_modules/tsx/dist/cli.mjs tests/tracking-links-unit.ts
+      - name: Public API origin (mocked Prisma)
+        run: npm run test:public-api-origin
 
   frontend:
     name: Frontend CI
@@ -86,3 +88,5 @@ jobs:
         run: npm run test:encoding
       - name: PWA (mocked browser and fetch)
         run: npm run test:pwa
+      - name: API domain preparation (offline)
+        run: npm run test:api-domain-prep
