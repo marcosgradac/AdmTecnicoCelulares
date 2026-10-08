@@ -9,8 +9,15 @@ const retryAfter = (req: Request) => {
   return resetTime ? Math.max(1, Math.ceil((resetTime - Date.now()) / 1000)) : undefined
 }
 
+// Limiters can run before route matching; never log the token-bearing raw path.
+const securityEndpoint = (req: Request) => {
+  const path = `${req.baseUrl}${req.path}`
+  const safePath = path.replace(/^(\/api\/tracking(?:-preview)?)(?:\/.*)?$/i, '$1/:token')
+  return `${req.method} ${safePath}`
+}
+
 const event = (name: string, req: Request) => console.warn(name, {
-  endpoint: `${req.method} ${req.baseUrl}${req.path}`,
+  endpoint: securityEndpoint(req),
   userId: req.auth?.userId,
   ipHash: createHash('sha256').update(`${process.env.JWT_SECRET ?? 'local'}:${clientIp(req) || 'unknown'}`).digest('hex').slice(0, 16),
   timestamp: new Date().toISOString(),

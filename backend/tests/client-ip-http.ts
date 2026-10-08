@@ -96,7 +96,13 @@ async function main(){
   assert.equal(tracked.status,200);assert.equal(remoteIp,'203.0.113.2');assert.equal(trackingRisk.get('203.0.113.2').count,0)
   for(let i=0;i<2;i++)assert.equal((await get('/api/tracking/'+tokens[0],'203.0.113.3')).status,200)
   assert.equal((await get('/api/tracking/'+tokens[0],'203.0.113.3',{'X-Forwarded-For':'203.0.113.99'})).status,429)
+  assert.equal((await get('/api/tracking/'+tokens[1],'203.0.113.3')).status,429,'Global limiter also rejects a token-bearing tracking URL')
   assert.equal((await get('/api/isolated-global-probe','203.0.113.3')).status,429,'Normal API global budget is exhausted')
+  for (const name of ['PUBLIC_TRACKING_ABUSE','RATE_LIMIT_HIT']) {
+   assert.ok(warnings.some(([event, details])=>event===name && details.endpoint==='GET /api/tracking/:token'),name+' must log only the tracking route template')
+  }
+  const serializedWarnings=JSON.stringify(warnings)
+  for(const token of tokens)assert.ok(!serializedWarnings.includes(token),'Security logs must never contain tracking tokens')
   const beforeIndependentPreview=queries
   assert.equal((await preview(tokens[0],'203.0.113.3')).status,200,'Preview is outside the exhausted global budget')
   assert.equal(queries,beforeIndependentPreview+1,'Preview protection must come from its own limits, not the global limiter')

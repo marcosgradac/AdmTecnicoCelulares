@@ -70,6 +70,7 @@
     "test:supabase-public-access": "node tests/supabase-public-access.mjs",
     "build": "tsc",
     "start": "node scripts/start-production.cjs",
+    "test": "npm run test:client-ip",
     "test:client-ip": "tsx tests/client-ip.ts && tsx tests/client-ip-http.ts && tsx tests/password-reset-client-ip.ts && tsx tests/password-reset-client-ip.ts baseline",
     "test:rate-limit": "tsx tests/rate-limit-multiuser.ts"
   },

@@ -158,7 +158,7 @@ Ejecutar desde backend. Los tests nuevos usan solo loopback, direcciones de
 documentación, Prisma mock y Turnstile interceptado, sin DB ni APIs reales.
 La prueba HTTP obliga a localhost en su fetch y rechaza otros destinos.
 No ejecutar las suites que necesitan bases reales como sustituto de estos tests.
-Los tests de identidad se ejecutan localmente con npm run test:client-ip. El workflow existente ejecuta sus regresiones de backend y frontend al publicar el PR, pero todavía no incluye test:client-ip.
+Backend CI ejecuta npm run test después del build: es un alias de la suite aislada test:client-ip, sin PostgreSQL real. Las regresiones comprueban que los eventos de 429 de seguimiento y del limiter global no incluyan tokens; registran /api/tracking/:token. Los demás tests existentes de backend y frontend se conservan.
 
 Activación y reversión futuras requieren otra aprobación. No se cambiaron .env
 reales ni variables del proveedor; .env.example mantiene baseline y ACK vacío.
