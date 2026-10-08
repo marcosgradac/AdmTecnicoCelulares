@@ -5,6 +5,9 @@ Estado: preparación, sin activar destinos nuevos. Base revisada:
 Todos los pasos de infraestructura de esta guía requieren aprobación posterior;
 esta rama no cambia DNS, variables, servicios ni producción.
 
+Esta guía registra la preparación 4B. Para los rewrites preparados en 4C y el
+orden de activación posterior, seguir [la guía de activación](cloudflare-api-activation.md).
+
 ## Arquitectura y cambios incluidos
 
 ```text
