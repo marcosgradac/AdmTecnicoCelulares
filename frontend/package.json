@@ -16,6 +16,7 @@
     "test:cash-groups": "node tests/cash-groups.cjs",
     "test:encoding": "node tests/encoding.cjs",
     "test:pwa": "node tests/pwa.cjs",
+    "test:api-domain-prep": "node tests/api-domain-prep.cjs",
     "build:icons": "node scripts/generate-pwa-icons.mjs",
     "preview": "vite preview"
   },
