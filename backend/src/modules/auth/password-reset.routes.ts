@@ -1,3 +1,4 @@
+import { clientIpKey } from '../../middlewares/client-ip'
 import { createHash, randomBytes } from 'node:crypto'
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
@@ -15,6 +16,7 @@ const limiterOptions = {
   limit,
   standardHeaders: 'draft-8' as const,
   legacyHeaders: false,
+  keyGenerator: clientIpKey,
   handler: (_req: unknown, res: { status: (code: number) => { json: (body: object) => unknown } }) =>
     res.status(429).json({ success: false, message: 'Demasiados intentos. Probá nuevamente más tarde.' }),
 }

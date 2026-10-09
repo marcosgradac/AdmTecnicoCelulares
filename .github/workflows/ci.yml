@@ -38,6 +38,8 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
+      - name: Client IP security regressions (isolated)
+        run: npm run test
       - name: Health checks (mocked Prisma)
         run: npm run test:health-checks
       - name: Tracking preview (mocked Prisma)

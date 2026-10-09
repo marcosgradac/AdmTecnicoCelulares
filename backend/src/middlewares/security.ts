@@ -1,5 +1,7 @@
-import type { NextFunction, Request, Response } from 'express'
-import { ipKeyGenerator, rateLimit } from 'express-rate-limit'
+import { createTrackingPreviewProtection } from './tracking-preview-protection'
+import { clientIp, clientIpConfig, clientIpKey } from './client-ip'
+import type { NextFunction, Request, RequestHandler, Response } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import { createHash } from 'node:crypto'
 import { securityConfig } from '../config/security'
 
@@ -8,10 +10,17 @@ const retryAfter = (req: Request) => {
   return resetTime ? Math.max(1, Math.ceil((resetTime - Date.now()) / 1000)) : undefined
 }
 
+// Limiters can run before route matching; never log the token-bearing raw path.
+const securityEndpoint = (req: Request) => {
+  const path = `${req.baseUrl}${req.path}`
+  const safePath = path.replace(/^(\/api\/tracking(?:-preview)?)(?:\/.*)?$/i, '$1/:token')
+  return `${req.method} ${safePath}`
+}
+
 const event = (name: string, req: Request) => console.warn(name, {
-  endpoint: `${req.method} ${req.baseUrl}${req.path}`,
+  endpoint: securityEndpoint(req),
   userId: req.auth?.userId,
-  ipHash: createHash('sha256').update(`${process.env.JWT_SECRET ?? 'local'}:${req.ip ?? 'unknown'}`).digest('hex').slice(0, 16),
+  ipHash: createHash('sha256').update(`${process.env.JWT_SECRET ?? 'local'}:${clientIp(req) || 'unknown'}`).digest('hex').slice(0, 16),
   timestamp: new Date().toISOString(),
 })
 
@@ -23,7 +32,7 @@ const handler = (eventName: string, message = 'Hiciste demasiados intentos. Espe
     return res.status(429).json({ success: false, message, retryAfter: seconds })
   }
 
-const ipKey = (req: Request) => ipKeyGenerator(req.ip ?? '')
+const ipKey = clientIpKey
 
 // Los preflight CORS no representan una operacion del usuario: se responden antes de
 // llegar a las rutas, asi que contarlos solo agotaria el presupuesto del cliente legitimo.
@@ -87,20 +96,32 @@ export const healthReadinessLimiter = rateLimit({
   },
 })
 // Separate IP budget for social previews; do not log the token-bearing request path.
-export const trackingPreviewLimiter = rateLimit({
+const previewHandler = (req: Request, res: Response) => {
+  const seconds = retryAfter(req)
+  if (seconds) res.setHeader('Retry-After', String(seconds))
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+  return res.status(429).json({ success: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
+}
+const previewProtection = clientIpConfig.mode === 'cf' ? createTrackingPreviewProtection({
+  windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
+  linkMax: securityConfig.rateLimits.trackingPreview.limit,
+  ipMax: securityConfig.rateLimits.trackingPreviewCf.limit,
+  // Experimental per-process ceiling: not a distributed or approved production budget.
+  globalMax: securityConfig.rateLimits.trackingPreviewCf.processLimit,
+}) : undefined
+export const trackingPreviewLookup = <T>(query: () => Promise<T>): Promise<T> =>
+  clientIpConfig.mode === 'cf' ? previewProtection!.runLookup(query) : query()
+export const trackingPreviewLimiter: RequestHandler[] = [rateLimit({
   windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
   limit: securityConfig.rateLimits.trackingPreview.limit,
-  standardHeaders: 'draft-8',
-  legacyHeaders: false,
-  keyGenerator: ipKey,
-  handler: (req, res) => {
-    const seconds = retryAfter(req)
-    if (seconds) res.setHeader('Retry-After', String(seconds))
-    res.setHeader('Cache-Control', 'no-store')
-    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-    return res.status(429).json({ success: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
-  },
-})
+  standardHeaders: 'draft-8', legacyHeaders: false, keyGenerator: ipKey,
+  skip: () => clientIpConfig.mode === 'cf',
+  handler: previewHandler,
+}), (req, res, next) => {
+  if (clientIpConfig.mode === 'cf') return previewProtection!.middleware(req, res, next)
+  next()
+}]
 export const publicTrackingLimiter = limiter(
   securityConfig.rateLimits.publicTracking.windowMs,
   securityConfig.rateLimits.publicTracking.limit,
