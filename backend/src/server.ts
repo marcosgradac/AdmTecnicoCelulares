@@ -1,4 +1,6 @@
 import 'dotenv/config'
+import { PreviewCapacityError, rejectTrackingPreview } from './middlewares/tracking-preview-protection'
+import { clientIp, clientIpConfig, clientRiskKey, createClientIpMiddleware } from './middlewares/client-ip'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -46,11 +48,11 @@ import { warrantiesRouter } from './modules/warranties/warranties.routes'
 import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
-import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, healthReadinessLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingRisk } from './middlewares/security'
+import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, healthReadinessLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingPreviewLookup, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 
 export const app = express()
-app.set('trust proxy', 1)
+app.set('trust proxy', clientIpConfig.mode === 'cf' ? false : 1)
 app.use(helmet())
 const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173')
   .split(',')
@@ -69,10 +71,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   credentials: false,
 }))
+// CORS OPTIONS already returns above; liveness /health remains independent.
+app.use('/api', createClientIpMiddleware())
 const publicBusinessLogoUrl = (businessId: string, storedLogo: string | null) => storedLogo?.startsWith('data:') ? `/api/business-logo/${businessId}` : storedLogo
 
 // Social metadata is independent of interactive tracking risk and lookup budgets.
-app.get('/api/tracking-preview/:token', trackingPreviewLimiter, async (req, res) => {
+// This route is BEFORE globalApiLimiter: only its own preview limits protect Prisma.
+app.get('/api/tracking-preview/:token', trackingPreviewLimiter, async (req: Request, res: Response) => {
   const token = String(req.params.token)
   const clientSlug = typeof req.query.clientSlug === 'string' ? req.query.clientSlug : undefined
   res.setHeader('Cache-Control', 'no-store')
@@ -81,9 +86,10 @@ app.get('/api/tracking-preview/:token', trackingPreviewLimiter, async (req, res)
     return res.type('html').send(renderTrackingPreview(null, token, clientSlug, publicBusinessLogoUrl))
   }
   try {
-    const repair = await prisma.repair.findUnique({ where: { trackingToken: token }, select: trackingPreviewSelect })
+    const repair = await trackingPreviewLookup(() => prisma.repair.findUnique({ where: { trackingToken: token }, select: trackingPreviewSelect }))
     return res.type('html').send(renderTrackingPreview(repair, token, clientSlug, publicBusinessLogoUrl))
-  } catch {
+  } catch (error) {
+    if (error instanceof PreviewCapacityError) return rejectTrackingPreview(res, 1)
     // A lookup failure must not leak partial tenant metadata or database details.
     return res.status(503).type('html').send(renderTrackingPreview(null, token, clientSlug, publicBusinessLogoUrl))
   }
@@ -178,11 +184,11 @@ const publicRepairSelect = {
 } as const
 app.get('/api/tracking/:token', publicTrackingLimiter, async (req, res) => {
   try {
-    const ip = req.ip ?? 'unknown'
+    const ip = clientRiskKey(req)
     const risk = trackingRisk.get(ip)
     if (trackingRisk.requiresCaptcha(risk)) {
       try {
-        if (!await verifyTurnstileToken(req.header('x-turnstile-token'), req.ip)) {
+        if (!await verifyTurnstileToken(req.header('x-turnstile-token'), clientIp(req))) {
           logTurnstileFailure(req)
           return res.status(403).json({ success: false, code: 'TURNSTILE_REQUIRED', message: 'No pudimos verificar que la solicitud sea legítima. Intentá nuevamente.' })
         }
@@ -232,7 +238,7 @@ app.post('/api/auth/register', signupLimiter, async (req, res) => {
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de registro inválidos' })
   const email = parsed.data.email.toLowerCase()
   try {
-    if (!await verifyTurnstileToken(parsed.data.turnstileToken, req.ip)) {
+    if (!await verifyTurnstileToken(parsed.data.turnstileToken, clientIp(req))) {
       logTurnstileFailure(req)
       return res.status(403).json({ success: false, code: 'TURNSTILE_INVALID', message: 'No pudimos verificar que la solicitud sea legítima. Intentá nuevamente.' })
     }
@@ -287,7 +293,7 @@ app.post('/api/auth/login', loginIpLimiter, async (req, res) => {
     return res.status(429).json({ success: false, code: 'LOGIN_BACKOFF', captchaRequired: true, retryAfter, message: 'Hiciste demasiados intentos. Esperá unos minutos y volvé a intentar.' })
   }
   try {
-    if (loginRisk.requiresCaptcha(risk) && !await verifyTurnstileToken(parsed.data.turnstileToken, req.ip)) {
+    if (loginRisk.requiresCaptcha(risk) && !await verifyTurnstileToken(parsed.data.turnstileToken, clientIp(req))) {
       logTurnstileFailure(req)
       return res.status(403).json({ success: false, code: 'TURNSTILE_REQUIRED', captchaRequired: true, message: 'Completá la verificación de seguridad para continuar.' })
     }

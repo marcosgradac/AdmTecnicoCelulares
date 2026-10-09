@@ -1,5 +1,6 @@
+import { clientIpKey } from '../../middlewares/client-ip'
 import { Router } from 'express'
-import { ipKeyGenerator, rateLimit } from 'express-rate-limit'
+import { rateLimit } from 'express-rate-limit'
 import { z } from 'zod'
 import { authOf } from '../../middlewares/auth'
 import { authenticateAccountDeletion } from './account-deletion.auth'
@@ -15,7 +16,7 @@ accountRouter.use((req, res, next) => {
 })
 const limitOptions = { windowMs: 15 * 60_000, standardHeaders: 'draft-8' as const, legacyHeaders: false, message: { success: false, message: 'Hiciste demasiados intentos. Esperá unos minutos y volvé a intentar.' } }
 const userLimiter = rateLimit({ ...limitOptions, limit: 5, keyGenerator: req => authOf(req).userId })
-const ipLimiter = rateLimit({ ...limitOptions, limit: 20, keyGenerator: req => ipKeyGenerator(req.ip ?? '') })
+const ipLimiter = rateLimit({ ...limitOptions, limit: 20, keyGenerator: clientIpKey })
 const deletionSchema = z.object({ password: z.string().min(1).max(1024), confirmation: z.literal('ELIMINAR MI CUENTA') }).strict()
 
 accountRouter.delete('/', ipLimiter, userLimiter, async (req, res) => {

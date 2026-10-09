@@ -3,6 +3,16 @@ const numberFromEnv = (name: string, fallback: number) => {
   return Number.isFinite(value) && value > 0 ? value : fallback
 }
 
+const previewProcessMax = Number(process.env.RATE_LIMIT_TRACKING_PREVIEW_PROCESS_MAX ?? 120)
+if (process.env.CLIENT_IP_MODE === 'cf' && (!Number.isInteger(previewProcessMax) || previewProcessMax < 1 || previewProcessMax > 600)) {
+  throw new Error('Invalid preview process budget: use an integer between 1 and 600')
+}
+
+const previewCfMax = Number(process.env.RATE_LIMIT_TRACKING_PREVIEW_CF_MAX ?? 120)
+if (!Number.isInteger(previewCfMax) || previewCfMax < 1 || previewCfMax > 600) {
+  throw new Error('Invalid CF preview budget: use an integer between 1 and 600')
+}
+
 export const securityConfig = {
   payloadLimit: process.env.JSON_PAYLOAD_LIMIT ?? '256kb',
   rateLimits: {
@@ -18,6 +28,8 @@ export const securityConfig = {
     passwordVerify: { windowMs: 15 * 60_000, limit: numberFromEnv('RATE_LIMIT_PASSWORD_VERIFY_MAX', 15) },
     publicTracking: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_PUBLIC_TRACKING_MAX', 60) },
     trackingPreview: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_TRACKING_PREVIEW_MAX', 30) },
+    // Experimental shared-egress ceiling; per-IP+link still uses trackingPreview above.
+    trackingPreviewCf: { limit: previewCfMax, processLimit: previewProcessMax },
     health: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_HEALTH_MAX', 30) },
     authenticatedWrites: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_AUTH_WRITES_MAX', 30) },
     superAdminWrites: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_SUPER_ADMIN_WRITES_MAX', 20) },
