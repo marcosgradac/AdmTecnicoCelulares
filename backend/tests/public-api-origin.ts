@@ -5,6 +5,9 @@ process.env.JWT_SECRET = 'local-origin-test-only'
 process.env.DATABASE_URL = 'postgresql://local:local@127.0.0.1:1/never_connected'
 process.env.PUBLIC_API_ORIGIN = 'https://api.tecnodeskpro.com/'
 process.env.RATE_LIMIT_TRACKING_PREVIEW_MAX = '2'
+process.env.CORS_ORIGINS = 'https://www.tecnodeskpro.com'
+process.env.MAIL_MODE = 'fake'
+process.env.FRONTEND_URL = 'https://www.tecnodeskpro.com'
 
 async function main() {
   const { parsePublicApiOrigin } = await import('../src/config/public-api')
@@ -32,6 +35,33 @@ async function main() {
         'X-Forwarded-Host': 'evil.example.test', 'X-Forwarded-Proto': 'http' },
     })
   try {
+    const { sendPasswordResetEmail, clearFakeOutbox, getFakeOutbox } = await import('../src/services/email/email.service')
+    clearFakeOutbox()
+    await sendPasswordResetEmail('local@example.test', 'local-reset-token')
+    assert.equal(getFakeOutbox()[0].resetUrl, 'https://www.tecnodeskpro.com/restablecer-contrasena?token=local-reset-token')
+    clearFakeOutbox()
+    const base = `http://127.0.0.1:${address.port}`
+    for (const path of ['/api/auth/login', '/api/auth/register', '/api/auth/forgot-password', '/api/auth/reset-password', '/api/repairs']) {
+      const response = await fetch(base + path, { method: 'OPTIONS', headers: {
+        Origin: 'https://www.tecnodeskpro.com', 'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'authorization,content-type,x-turnstile-token',
+      } })
+      assert.equal(response.status, 204)
+      assert.equal(response.headers.get('access-control-allow-origin'), 'https://www.tecnodeskpro.com')
+      assert.match(response.headers.get('access-control-allow-headers')!, /authorization/i)
+      assert.match(response.headers.get('access-control-allow-headers')!, /x-turnstile-token/i)
+      assert.match(response.headers.get('access-control-allow-methods')!, /POST/)
+      assert.match(response.headers.get('vary')!, /Origin/)
+    }
+    const liveness = await fetch(base + '/health', { headers: { Origin: 'https://www.tecnodeskpro.com' } })
+    assert.equal(liveness.status, 200)
+    assert.equal((await liveness.json() as { ok: boolean }).ok, true)
+    for (const headers of [{}, { Authorization: 'Bearer invalid-local-jwt' }]) {
+      const response = await fetch(base + '/api/repairs', { headers: { ...headers, Origin: 'https://www.tecnodeskpro.com' } })
+      assert.equal(response.status, 401)
+      assert.equal(response.headers.get('access-control-allow-origin'), 'https://www.tecnodeskpro.com')
+    }
+    assert.equal(queries, 0, 'preflight and unauthorized requests do not reach repair lookup')
     for (const [token, suffix, path] of [
       ['AbCdEf012345_-xy', '?clientSlug=cliente', '/s/cliente/AbCdEf012345_-xy'],
       ['a'.repeat(64), '', `/seguimiento/${'a'.repeat(64)}`],

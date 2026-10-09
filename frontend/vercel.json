@@ -9,7 +9,7 @@
           "value": ".*([Ff]acebookexternalhit|[Ff]acebot|[Ww]hats[Aa]pp).*"
         }
       ],
-      "destination": "https://tecnodesk-api.onrender.com/api/tracking-preview/:token?clientSlug=:clientSlug"
+      "destination": "https://api.tecnodeskpro.com/api/tracking-preview/:token?clientSlug=:clientSlug"
     },
     {
       "source": "/seguimiento/:token",
@@ -20,7 +20,7 @@
           "value": ".*([Ff]acebookexternalhit|[Ff]acebot|[Ww]hats[Aa]pp).*"
         }
       ],
-      "destination": "https://tecnodesk-api.onrender.com/api/tracking-preview/:token"
+      "destination": "https://api.tecnodeskpro.com/api/tracking-preview/:token"
     },
     {
       "source": "/(.*)",

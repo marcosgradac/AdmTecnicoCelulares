@@ -107,8 +107,11 @@ async function main() {
       return undefined
     }
     for (const agent of ['facebookexternalhit/1.1', 'Facebot', 'WhatsApp/2.24', 'WhatsApp/2.24 iOS']) {
-      assert.equal(destination('/s/cliente/AbCdEf012345_-xy', agent), 'https://tecnodesk-api.onrender.com/api/tracking-preview/AbCdEf012345_-xy?clientSlug=cliente')
-      assert.equal(destination('/seguimiento/AbCdEf012345_-xy', agent), 'https://tecnodesk-api.onrender.com/api/tracking-preview/AbCdEf012345_-xy')
+      assert.equal(destination('/s/cliente/AbCdEf012345_-xy', agent), 'https://api.tecnodeskpro.com/api/tracking-preview/AbCdEf012345_-xy?clientSlug=cliente')
+      for (const token of ['AbCdEf012345_-xy', 'a'.repeat(64)]) {
+        assert.equal(destination(`/seguimiento/${token}`, agent), `https://api.tecnodeskpro.com/api/tracking-preview/${token}`)
+        assert.equal(destination(`/s/cliente/${token}`, agent), `https://api.tecnodeskpro.com/api/tracking-preview/${token}?clientSlug=cliente`)
+      }
       for (const path of ['/', '/login', '/admin', '/politica-de-privacidad']) assert.equal(destination(path, agent), '/index.html')
     }
     for (const agent of ['Mozilla/5.0 Chrome/130', '', 'UnknownBot']) {
