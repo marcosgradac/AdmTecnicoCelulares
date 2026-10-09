@@ -1,7 +1,10 @@
 # Seguridad 4M — admisión acotada de tracking-preview
 
-Preparación local en codex/security-4m-preview-fairness, basada en PR #5
-(afb86d07bf37ba27c5e09a3c1d4a91831f0c594a). Sin commit, push o infraestructura.
+Seguridad 4M fue publicada en codex/security-4m-preview-fairness en el commit
+74cd78151cac61607b0f09ef1aec0e567bb6a876 e integrada mediante fast-forward
+a security/central-client-ip, rama del PR #5, desde la base
+afb86d07bf37ba27c5e09a3c1d4a91831f0c594a.
+La aprobación corresponde a revisión de código, no a activación productiva.
 Baseline continúa predeterminado y su limiter 30/min/IP no cambia. CF no activado.
 
 ## Corrección concreta
@@ -75,12 +78,14 @@ corrección, la suite HTTP del servidor real usa Prisma mock: abuso de un enlace
 rotación, IPv6, tokens inválidos, privacidad, y quinta consulta concurrente
 rechazada antes de Prisma; las cuatro anteriores se liberan y una nueva funciona.
 
-tracking-preview-fairness añade seis pruebas: otros enlaces tras abuso; presupuesto
+tracking-preview-fairness añade siete pruebas: otros enlaces tras abuso; presupuesto
 por IP y agregado por proceso; memoria sin evicción y reinicio de ventana; rechazo
 sin cola y liberación por éxito/error; desconexión HTTP sin liberar prematuramente;
-validación de parámetros. Solo loopback, mocks, promesas controladas y direcciones
+rechazos por concurrencia sin consumo de presupuestos; validación de parámetros.
+Solo loopback, mocks, promesas controladas y direcciones
 de documentación. No son pruebas de rendimiento, infraestructura o WhatsApp real.
 
 El documento CLIENT-IP-REVIEW.md describe el estado auditado previo del PR #5;
 esta propuesta 4M cambia específicamente el orden/cobro y añade los techos aquí
-explicados, sin modificar ese PR o su rama. Requiere nueva auditoría antes de publicar.
+explicados y ya está integrada en su rama. El PR #5 permanece sin merge a main;
+la integración no autoriza activar CF ni los límites experimentales en producción.
