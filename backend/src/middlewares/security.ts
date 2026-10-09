@@ -1,3 +1,4 @@
+import { createTrackingPreviewProtection } from './tracking-preview-protection'
 import { clientIp, clientIpConfig, clientIpKey } from './client-ip'
 import type { NextFunction, Request, RequestHandler, Response } from 'express'
 import { rateLimit } from 'express-rate-limit'
@@ -102,21 +103,25 @@ const previewHandler = (req: Request, res: Response) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
   return res.status(429).json({ success: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
 }
+const previewProtection = clientIpConfig.mode === 'cf' ? createTrackingPreviewProtection({
+  windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
+  linkMax: securityConfig.rateLimits.trackingPreview.limit,
+  ipMax: securityConfig.rateLimits.trackingPreviewCf.limit,
+  // Experimental per-process ceiling: not a distributed or approved production budget.
+  globalMax: securityConfig.rateLimits.trackingPreviewCf.processLimit,
+}) : undefined
+export const trackingPreviewLookup = <T>(query: () => Promise<T>): Promise<T> =>
+  clientIpConfig.mode === 'cf' ? previewProtection!.runLookup(query) : query()
 export const trackingPreviewLimiter: RequestHandler[] = [rateLimit({
   windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
-  // CF can represent a shared crawler/Vercel egress. Never infer trust from UA/XFF.
-  limit: clientIpConfig.mode === 'cf' ? securityConfig.rateLimits.trackingPreviewCf.limit : securityConfig.rateLimits.trackingPreview.limit,
-  standardHeaders: 'draft-8', legacyHeaders: false, keyGenerator: ipKey,
-  handler: previewHandler,
-}), rateLimit({
-  windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
   limit: securityConfig.rateLimits.trackingPreview.limit,
-  standardHeaders: 'draft-8', legacyHeaders: false,
-  skip: () => clientIpConfig.mode !== 'cf',
-  // Pair budget is additional to the IP ceiling; rotating links cannot evade that ceiling.
-  keyGenerator: req => `${ipKey(req)}:${createHash('sha256').update(String(req.params.token ?? '').slice(0, 128)).digest('hex')}`,
+  standardHeaders: 'draft-8', legacyHeaders: false, keyGenerator: ipKey,
+  skip: () => clientIpConfig.mode === 'cf',
   handler: previewHandler,
-})]
+}), (req, res, next) => {
+  if (clientIpConfig.mode === 'cf') return previewProtection!.middleware(req, res, next)
+  next()
+}]
 export const publicTrackingLimiter = limiter(
   securityConfig.rateLimits.publicTracking.windowMs,
   securityConfig.rateLimits.publicTracking.limit,

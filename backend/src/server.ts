@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { PreviewCapacityError, rejectTrackingPreview } from './middlewares/tracking-preview-protection'
 import { clientIp, clientIpConfig, clientRiskKey, createClientIpMiddleware } from './middlewares/client-ip'
 import express, { type NextFunction, type Request, type Response } from 'express'
 import cors from 'cors'
@@ -47,7 +48,7 @@ import { warrantiesRouter } from './modules/warranties/warranties.routes'
 import { dashboardRouter } from './modules/dashboard/dashboard.routes'
 import { deviceSummary } from './modules/equipment-sales/equipment-sales.service'
 import { securityConfig } from './config/security'
-import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, healthReadinessLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingRisk } from './middlewares/security'
+import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, healthReadinessLimiter, limitAuthenticatedWrites, loginIpLimiter, loginRisk, logTurnstileFailure, publicTrackingLimiter, signupLimiter, trackingPreviewLimiter, trackingPreviewLookup, trackingRisk } from './middlewares/security'
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 
 export const app = express()
@@ -85,9 +86,10 @@ app.get('/api/tracking-preview/:token', trackingPreviewLimiter, async (req: Requ
     return res.type('html').send(renderTrackingPreview(null, token, clientSlug, publicBusinessLogoUrl))
   }
   try {
-    const repair = await prisma.repair.findUnique({ where: { trackingToken: token }, select: trackingPreviewSelect })
+    const repair = await trackingPreviewLookup(() => prisma.repair.findUnique({ where: { trackingToken: token }, select: trackingPreviewSelect }))
     return res.type('html').send(renderTrackingPreview(repair, token, clientSlug, publicBusinessLogoUrl))
-  } catch {
+  } catch (error) {
+    if (error instanceof PreviewCapacityError) return rejectTrackingPreview(res, 1)
     // A lookup failure must not leak partial tenant metadata or database details.
     return res.status(503).type('html').send(renderTrackingPreview(null, token, clientSlug, publicBusinessLogoUrl))
   }

@@ -54,7 +54,7 @@ async function main(){
   // Shared Vercel/crawler egress: different links use separate pair budgets but one total budget.
   for(let i=0;i<2;i++){const r=await preview(tokens[0],'192.0.2.1',{'User-Agent':'WhatsApp'});assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');assert.match(await r.text(),/og:title/)}
   assert.equal((await preview(tokens[0],'192.0.2.1')).status,429)
-  for(let i=0;i<1;i++)assert.equal((await preview(tokens[1],'192.0.2.1')).status,200)
+  for(let i=0;i<2;i++)assert.equal((await preview(tokens[1],'192.0.2.1')).status,200,'Rejected abuse of one link must not consume other links budget')
   const frozen=queries
   const blocked=await preview(tokens[2],'192.0.2.1',{'X-Forwarded-For':'192.0.2.9','User-Agent':'facebookexternalhit'})
   assert.equal(blocked.status,429);assert.ok(Number(blocked.headers.get('retry-after'))>0);assert.equal(queries,frozen)
@@ -110,6 +110,20 @@ async function main(){
   for(let i=0;i<10;i++)trackingRisk.miss('2001:db8:1400::/56')
   const trackedV6=await get('/api/tracking/'+tokens[1],'2001:db8:1400:2::2',{'x-turnstile-token':'invented-local-only'})
   assert.equal(trackedV6.status,200);assert.equal(remoteIp,'2001:db8:1400:2::2');assert.equal(trackingRisk.get('2001:db8:1400::/56').count,0)
+  // Real server integration: fifth concurrent preview is rejected before mocked Prisma.
+  const normalFind=prisma.repair.findUnique
+  let release!: ()=>void, ready!: ()=>void, lookupStarts=0
+  const held=new Promise<void>(done=>{release=done})
+  const started=new Promise<void>(done=>{ready=done})
+  prisma.repair.findUnique=(async(...args: any[])=>{lookupStarts++;if(lookupStarts===4)ready();await held;return (normalFind as any)(...args)}) as typeof normalFind
+  const pending=Array.from({length:4},(_,i)=>preview(tokens[0],'198.51.100.'+(30+i)))
+  try {
+   await started
+   const busy=await fetch(base+'/api/tracking-preview/'+tokens[1],{headers:{'CF-Connecting-IP':'198.51.100.34'},signal:AbortSignal.timeout(2000)})
+   assert.equal(busy.status,429);assert.equal(busy.headers.get('retry-after'),'1')
+   assert.equal(lookupStarts,4,'Concurrency rejection must not start a fifth Prisma lookup')
+  } finally {release();await Promise.all(pending);prisma.repair.findUnique=normalFind}
+  assert.equal((await preview(tokens[1],'198.51.100.35')).status,200,'Slots are reusable after Prisma settles')
   // Token fixtures keep expiry/disabled semantics and fallback metadata unchanged.
   for(const fixture of [null,{trackingEnabled:false},{trackingEnabled:true,trackingExpiresAt:new Date(0)}]){
    prisma.repair.findUnique=(async()=>{queries++;return fixture}) as typeof originals.find
