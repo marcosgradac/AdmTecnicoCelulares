@@ -136,7 +136,9 @@ const simultaneous = await Promise.all([
   request(`/team/${technician.body.id}`, { token: tokenA, method: 'PATCH', body: { role: 'TECHNICIAN' } }),
   request(`/team/${ownerA.body.user.id}`, { token: promotedToken, method: 'PATCH', body: { role: 'TECHNICIAN' } }),
 ])
-check(simultaneous.filter(result => result.status === 200).length === 1 && simultaneous.filter(result => result.status === 409).length === 1, 'concurrencia permite degradar sólo un OWNER')
+// The loser can be authorized before the first commit (409), or after its own
+// role was downgraded (403). Both must preserve exactly one active OWNER.
+check(simultaneous.filter(result => result.status === 200).length === 1 && simultaneous.filter(result => [403, 409].includes(result.status)).length === 1, `concurrencia permite degradar sólo un OWNER (${simultaneous.map(result => result.status).join(', ')})`)
 const businessAId = ownerA.body.user.business.id
 check(await prisma.user.count({ where: { businessId: businessAId, role: 'OWNER', isActive: true } }) === 1, 'concurrencia conserva un OWNER activo')
 

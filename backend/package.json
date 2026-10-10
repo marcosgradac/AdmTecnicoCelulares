@@ -71,11 +71,19 @@
     "build": "tsc",
     "start": "node scripts/start-production.cjs",
     "test:origin-auth": "tsx tests/origin-auth.ts && tsx tests/origin-auth-http.ts && tsx tests/origin-auth-http.ts disabled && tsx tests/origin-auth-http.ts default",
-    "test": "npm run test:origin-auth && npm run test:client-ip && npm run test:tracking-preview-fairness && npm run test:tracking-preview-baseline",
+    "test": "npm run test:route-registration && npm run test:origin-auth && npm run test:client-ip && npm run test:tracking-preview-fairness && npm run test:tracking-preview-baseline",
     "test:tracking-preview-baseline": "tsx tests/tracking-preview-baseline.ts",
     "test:tracking-preview-fairness": "tsx tests/tracking-preview-fairness.ts && tsx tests/tracking-preview-fairness.ts baseline",
     "test:client-ip": "tsx tests/client-ip.ts && tsx tests/client-ip-http.ts && tsx tests/password-reset-client-ip.ts && tsx tests/password-reset-client-ip.ts baseline",
-    "test:rate-limit": "tsx tests/rate-limit-multiuser.ts"
+    "test:rate-limit": "tsx tests/rate-limit-multiuser.ts",
+    "test:route-registration": "tsx tests/route-registration.ts",
+    "test:auth-profile": "node tests/helpers/local-api.mjs tests/auth-profile.mjs",
+    "test:team-permissions": "node tests/helpers/local-api.mjs tests/team-permissions.mjs",
+    "test:postgres-api": "node tests/helpers/local-api.mjs tests/postgres-api.mjs",
+    "test:dashboard": "tsx tests/dashboard.ts && tsx tests/dashboard-sqlite.ts",
+    "test:equipment-sales-timestamps": "tsx tests/equipment-sales-timestamps.ts",
+    "test:manual-payment-review": "tsx tests/manual-payment-review.ts",
+    "test:payments-flow": "tsx tests/payments_flow.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

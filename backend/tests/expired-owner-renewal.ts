@@ -155,7 +155,10 @@ async function main() {
     check('segundo intento devuelve 409 PAYMENT_ALREADY_PENDING sin duplicar')
 
     // I. El Super Admin ve el pago pendiente.
-    const superAdmin = await prisma.user.create({ data: { businessId: expired.business.id, name: 'Super', email: `${randomUUID()}@local.test`, passwordHash: hash, role: 'OWNER', platformRole: 'SUPER_ADMIN' } })
+    // Platform accounts have their own business; customer listings exclude that business.
+    const adminBusiness = await prisma.business.create({ data: { name: `Platform ${randomUUID()}` } })
+    businesses.push(adminBusiness.id)
+    const superAdmin = await prisma.user.create({ data: { businessId: adminBusiness.id, name: 'Super', email: `${randomUUID()}@local.test`, passwordHash: hash, role: 'OWNER', platformRole: 'SUPER_ADMIN' } })
     const adminLogin = await login(superAdmin.email)
     assert.equal(adminLogin.status, 200)
     const adminToken = adminLogin.body.token as string

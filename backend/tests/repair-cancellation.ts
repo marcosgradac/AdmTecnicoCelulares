@@ -6,6 +6,11 @@ import { prisma } from '../src/lib/prisma'
 import { validRegistrationPayload } from './helpers/registration'
 
 async function main() {
+  const nativeFetch = globalThis.fetch
+  globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
+    String(input) === 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+      ? Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }))
+      : nativeFetch(input, init)) as typeof fetch
   const server = app.listen(0); await new Promise<void>(resolve => server.once('listening', resolve)); const address = server.address(); assert.ok(address && typeof address === 'object')
   const base = `http://127.0.0.1:${(address as any).port}/api`, suffix = Date.now(), businesses: string[] = []
   const request = async (method: string, path: string, body?: object, token?: string) => { const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? JSON.parse(text) : null } }
@@ -266,6 +271,7 @@ async function main() {
 
     console.log('REPAIR CANCELLATION TEST PASSED: liquidación, eliminación, saldo de revisión, idempotencia, Caja e historial')
   } finally {
+    globalThis.fetch = nativeFetch
     for (const businessId of businesses) await prisma.$transaction([prisma.payment.deleteMany({where:{businessId}}),prisma.cashMovement.deleteMany({where:{businessId}}),prisma.repairPart.deleteMany({where:{repair:{businessId}}}),prisma.inventoryMovement.deleteMany({where:{businessId}}),prisma.repair.deleteMany({where:{businessId}}),prisma.stockItem.deleteMany({where:{businessId}}),prisma.device.deleteMany({where:{businessId}}),prisma.client.deleteMany({where:{businessId}}),prisma.passwordResetToken.deleteMany({where:{user:{businessId}}}),prisma.subscription.deleteMany({where:{businessId}}),prisma.user.deleteMany({where:{businessId}}),prisma.business.deleteMany({where:{id:businessId}})])
     await prisma.$disconnect(); await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()))
   }

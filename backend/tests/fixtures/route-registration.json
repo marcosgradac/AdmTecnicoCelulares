@@ -1,0 +1,1276 @@
+[
+  {
+    "middleware": "<anonymous>"
+  },
+  {
+    "middleware": "helmetMiddleware"
+  },
+  {
+    "middleware": "corsMiddleware"
+  },
+  {
+    "middleware": "<anonymous>"
+  },
+  {
+    "path": "/api/tracking-preview/:token",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "middleware",
+      "<anonymous>"
+    ]
+  },
+  {
+    "middleware": "jsonParser"
+  },
+  {
+    "middleware": "<anonymous>"
+  },
+  {
+    "path": "/api/health",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "readiness"
+    ]
+  },
+  {
+    "path": "/health",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/business-logo/:businessId",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>"
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "path": "/forgot-password",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/reset-password",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "middleware": "authenticate"
+      },
+      {
+        "path": "/request",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/verify",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/confirm",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "/api/tracking/:token",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/auth/register",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/auth/login",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/auth/me",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "authenticate",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/profile",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "authenticate",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/profile",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "authenticate",
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/auth/tutorial-seen",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "authenticate",
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/billing/plans",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>"
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "middleware": "authenticateAccountDeletion"
+      },
+      {
+        "middleware": "<anonymous>"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "authenticate"
+  },
+  {
+    "middleware": "<anonymous>"
+  },
+  {
+    "middleware": "limitAuthenticatedWrites"
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "path": "/entitlements",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "middleware": "<anonymous>"
+      },
+      {
+        "path": "/plans",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/subscription",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/usage",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/transfer-details",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/select-plan",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/payments",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/payments",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "middleware": "requireSuperAdmin"
+      },
+      {
+        "middleware": "limitSuperAdminWrites"
+      },
+      {
+        "path": "/dashboard",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id/status",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id/renew",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id/expiry",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id/block",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id/unblock",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:id/notes",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:businessId/notes/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/businesses/:businessId/notes/:id",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/service-settings",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/service-settings",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/subscriptions",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/subscriptions/:id",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/subscriptions/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/payments",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/payments/:id/approve",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/payments/:id/confirm-accreditation",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/payments/:id/reject",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/billing-settings",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/billing-settings",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "requireSubscriptionAccess"
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "middleware": "requireCommerce"
+      },
+      {
+        "path": "/categories",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/categories",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/categories/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/categories/:id",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/products",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/products",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/products/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/products/:id",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/movements",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/sales",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/sales/:id/cancel",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/sales",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/expenses",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/summary",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "path": "/",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/summary",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/:id/sell",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "middleware": "<anonymous>"
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "path": "/overview",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "path": "/",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "list"
+        ]
+      },
+      {
+        "path": "/",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "create"
+        ]
+      },
+      {
+        "path": "/:id",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "get"
+        ]
+      },
+      {
+        "path": "/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "update"
+        ]
+      },
+      {
+        "path": "/:id",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "remove"
+        ]
+      },
+      {
+        "path": "/:id/reset-password",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "resetPassword"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "middleware": "<anonymous>"
+      },
+      {
+        "path": "/overview",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "path": "/",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/business",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/business/logo",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/business/logo",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "rawParser",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/business/logo",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "middleware": "<anonymous>"
+      },
+      {
+        "path": "/logout-other-sessions",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "path": "/api/repairs",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/edit",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/status/advance",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/status/rewind",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/status",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/delivery/correction",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/advance",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/initial-cost",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/cancel",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/cancellation-payment",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id",
+    "methods": [
+      "delete"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/approve",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/start",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/clients",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/clients/options",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/clients/:id",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/clients",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/clients/:id",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/clients/:id",
+    "methods": [
+      "delete"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/payments",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/payments",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/history",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/tracking-link",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/tracking-link",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/cash/movements",
+    "methods": [
+      "get"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/cash/movements",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "middleware": "router",
+    "children": [
+      {
+        "middleware": "<anonymous>"
+      },
+      {
+        "path": "/",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/:repairId",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/:repairId",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/:repairId/claims",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/claims/:id",
+        "methods": [
+          "patch"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/claims/:id/expenses",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/claims/:id/delivery",
+        "methods": [
+          "post"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      }
+    ]
+  },
+  {
+    "middleware": "<anonymous>"
+  },
+  {
+    "middleware": "<anonymous>"
+  }
+]
