@@ -52,6 +52,8 @@ jobs:
         run: npm run test:public-api-origin
       - name: Tenant isolation (disposable local PostgreSQL)
         run: npm run test:tenant-isolation-complete
+      - name: Role and permission authorization (disposable local PostgreSQL)
+        run: npm run test:role-permissions-complete
 
   frontend:
     name: Frontend CI
