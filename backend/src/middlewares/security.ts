@@ -95,33 +95,21 @@ export const healthReadinessLimiter = rateLimit({
     return res.status(429).json({ status: 'error', ok: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
   },
 })
-// Separate IP budget for social previews; do not log the token-bearing request path.
-const previewHandler = (req: Request, res: Response) => {
-  const seconds = retryAfter(req)
-  if (seconds) res.setHeader('Retry-After', String(seconds))
-  res.setHeader('Cache-Control', 'no-store')
-  res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
-  return res.status(429).json({ success: false, message: 'Demasiadas solicitudes. Intentá nuevamente más tarde.', retryAfter: seconds })
-}
-const previewProtection = clientIpConfig.mode === 'cf' ? createTrackingPreviewProtection({
+// Preview admission is independent of the global API limiter and identity mode.
+// Baseline continues using the central baseline IP; never trust CF headers here.
+const previewIsCf = clientIpConfig.mode === 'cf'
+const previewProtection = createTrackingPreviewProtection({
   windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
-  linkMax: securityConfig.rateLimits.trackingPreview.limit,
-  ipMax: securityConfig.rateLimits.trackingPreviewCf.limit,
-  // Experimental per-process ceiling: not a distributed or approved production budget.
-  globalMax: securityConfig.rateLimits.trackingPreviewCf.processLimit,
-}) : undefined
-export const trackingPreviewLookup = <T>(query: () => Promise<T>): Promise<T> =>
-  clientIpConfig.mode === 'cf' ? previewProtection!.runLookup(query) : query()
-export const trackingPreviewLimiter: RequestHandler[] = [rateLimit({
-  windowMs: securityConfig.rateLimits.trackingPreview.windowMs,
-  limit: securityConfig.rateLimits.trackingPreview.limit,
-  standardHeaders: 'draft-8', legacyHeaders: false, keyGenerator: ipKey,
-  skip: () => clientIpConfig.mode === 'cf',
-  handler: previewHandler,
-}), (req, res, next) => {
-  if (clientIpConfig.mode === 'cf') return previewProtection!.middleware(req, res, next)
-  next()
-}]
+  linkMax: previewIsCf ? securityConfig.rateLimits.trackingPreview.limit : Math.min(
+    securityConfig.rateLimits.trackingPreviewBaseline.linkLimit,
+    securityConfig.rateLimits.trackingPreview.limit,
+  ),
+  ipMax: previewIsCf ? securityConfig.rateLimits.trackingPreviewCf.limit : securityConfig.rateLimits.trackingPreview.limit,
+  // Counters are per-process, do not charge ordinary API operations.
+  globalMax: previewIsCf ? securityConfig.rateLimits.trackingPreviewCf.processLimit : securityConfig.rateLimits.trackingPreviewBaseline.processLimit,
+})
+export const trackingPreviewLookup = <T>(query: () => Promise<T>): Promise<T> => previewProtection.runLookup(query)
+export const trackingPreviewLimiter: RequestHandler[] = [previewProtection.middleware]
 export const publicTrackingLimiter = limiter(
   securityConfig.rateLimits.publicTracking.windowMs,
   securityConfig.rateLimits.publicTracking.limit,

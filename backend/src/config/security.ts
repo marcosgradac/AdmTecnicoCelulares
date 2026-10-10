@@ -8,6 +8,16 @@ if (process.env.CLIENT_IP_MODE === 'cf' && (!Number.isInteger(previewProcessMax)
   throw new Error('Invalid preview process budget: use an integer between 1 and 600')
 }
 
+const baselinePreviewLimit = (name: string, fallback: number) => {
+  const value = Number(process.env[name] ?? fallback)
+  if (!Number.isSafeInteger(value) || value < 1 || value > 600) {
+    throw new Error('Invalid baseline preview budget: use an integer between 1 and 600')
+  }
+  return value
+}
+const baselineLinkMax = baselinePreviewLimit('RATE_LIMIT_TRACKING_PREVIEW_BASELINE_LINK_MAX', 10)
+const baselineProcessMax = baselinePreviewLimit('RATE_LIMIT_TRACKING_PREVIEW_BASELINE_PROCESS_MAX', 600)
+
 const previewCfMax = Number(process.env.RATE_LIMIT_TRACKING_PREVIEW_CF_MAX ?? 120)
 if (!Number.isInteger(previewCfMax) || previewCfMax < 1 || previewCfMax > 600) {
   throw new Error('Invalid CF preview budget: use an integer between 1 and 600')
@@ -28,6 +38,7 @@ export const securityConfig = {
     passwordVerify: { windowMs: 15 * 60_000, limit: numberFromEnv('RATE_LIMIT_PASSWORD_VERIFY_MAX', 15) },
     publicTracking: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_PUBLIC_TRACKING_MAX', 60) },
     trackingPreview: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_TRACKING_PREVIEW_MAX', 30) },
+    trackingPreviewBaseline: { linkLimit: baselineLinkMax, processLimit: baselineProcessMax },
     // Experimental shared-egress ceiling; per-IP+link still uses trackingPreview above.
     trackingPreviewCf: { limit: previewCfMax, processLimit: previewProcessMax },
     health: { windowMs: 60_000, limit: numberFromEnv('RATE_LIMIT_HEALTH_MAX', 30) },

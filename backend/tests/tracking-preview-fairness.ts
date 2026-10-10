@@ -5,11 +5,13 @@ import express from 'express'
 import { createClientIpMiddleware } from '../src/middlewares/client-ip'
 import { createTrackingPreviewProtection, PreviewCapacityError, rejectTrackingPreview } from '../src/middlewares/tracking-preview-protection'
 
+const baseline = process.argv.includes('baseline')
+
 type Options = Parameters<typeof createTrackingPreviewProtection>[0]
 const defaults: Options = { windowMs: 60000, linkMax: 2, ipMax: 6, globalMax: 10 }
 async function fixture(t: TestContext, options: Partial<Options> = {}, now?: () => number, query?: () => Promise<string>) {
   const guard = createTrackingPreviewProtection({ ...defaults, ...options }, now)
-  const app = express(); app.use(createClientIpMiddleware({ mode: 'cf' }))
+  const app = express(); app.set('trust proxy', baseline ? 1 : false); app.use(createClientIpMiddleware({ mode: baseline ? 'baseline' : 'cf' }))
   let queries = 0
   app.get('/probe/:token', guard.middleware, async (_req, res) => {
     try { const result = await guard.runLookup(() => { queries++; return query ? query() : Promise.resolve('metadata') }); res.json({ ok: true, result }) }
@@ -19,7 +21,9 @@ async function fixture(t: TestContext, options: Partial<Options> = {}, now?: () 
   t.after(() => new Promise<void>(done => server.close(() => done())))
   const address = server.address() as { port: number }
   const get = (token: string, ip = '192.0.2.1', extra: Record<string,string> = {}, signal?: AbortSignal) =>
-    fetch(`http://127.0.0.1:${address.port}/probe/${token}`, { headers: { 'CF-Connecting-IP': ip, ...extra }, signal })
+    fetch(`http://127.0.0.1:${address.port}/probe/${token}`, { headers: baseline
+      ? { 'CF-Connecting-IP': '203.0.113.99', ...extra, 'X-Forwarded-For': `${extra['X-Forwarded-For'] ?? '198.51.100.99'}, ${ip}` }
+      : { 'CF-Connecting-IP': ip, ...extra }, signal })
   return { guard, get, queries: () => queries }
 }
 test('one abused link does not consume the shared IP/process budget for other links', async t => {
@@ -114,4 +118,41 @@ test('configuration rejects invalid admission/capacity limits',()=>{
   for(const field of ['windowMs','linkMax','ipMax','globalMax','maxEntries','maxConcurrent']) {
     for(const value of [0,-1,1.5,NaN]) assert.throws(()=>createTrackingPreviewProtection({...defaults,[field]:value}))
   }
+})
+test('preview policy headers omit partition fingerprints on success and rejection', async t => {
+  const f = await fixture(t, {}, () => 0)
+  const first = await f.get('private-fixture-token', '192.0.2.1')
+  const otherIp = await f.get('private-fixture-token', '192.0.2.2')
+  assert.equal(first.status, 200); assert.equal(otherIp.status, 200)
+  assert.equal(first.headers.get('ratelimit-policy'), otherIp.headers.get('ratelimit-policy'), 'Policy metadata must not identify the client')
+  assert.equal((await f.get('private-fixture-token', '192.0.2.1')).status, 200)
+  const rejected = await f.get('private-fixture-token', '192.0.2.1')
+  assert.equal(rejected.status, 429); assert.equal(rejected.headers.get('retry-after'), '60')
+  for (const response of [first, otherIp, rejected]) {
+    const policy = response.headers.get('ratelimit-policy')!
+    const remaining = response.headers.get('ratelimit')!
+    assert.ok(policy && remaining, 'Budget fields remain available to existing clients')
+    assert.doesNotMatch(policy + remaining, /;\s*pk\s*=/i)
+    for (const item of policy.split(', ')) assert.match(item, /^"preview-(?:link|ip|process)"; q=\d+; w=60$/)
+    for (const item of remaining.split(', ')) assert.match(item, /^"preview-(?:link|ip|process)"; r=\d+; t=60$/)
+    assert.doesNotMatch(policy + remaining, /private-fixture-token|192\.0\.2\./)
+  }
+})
+
+test('ten legitimate crawlers sharing one link and IP share the cap; another link and next window work', async t => {
+  let clock = 0
+  const f = await fixture(t, { linkMax: 10, ipMax: 30, globalMax: 600 }, () => clock)
+  for (let visitor = 1; visitor <= 10; visitor++) {
+    assert.equal((await f.get('shared-link', '192.0.2.1', { 'User-Agent': `FixtureCrawler/${visitor}` })).status, 200)
+  }
+  const eleventh = await f.get('shared-link', '192.0.2.1', { 'User-Agent': 'FixtureCrawler/11' })
+  assert.equal(eleventh.status, 429, 'The cap is for a shared link/IP, not for an individual visitor')
+  assert.equal(eleventh.headers.get('retry-after'), '60')
+  assert.equal(eleventh.headers.get('cache-control'), 'no-store')
+  assert.equal(eleventh.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')
+  assert.equal(f.queries(), 10)
+  assert.equal((await f.get('another-link', '192.0.2.1')).status, 200)
+  assert.equal(f.queries(), 11, 'Rejected legitimate crawler does not charge shared admission')
+  clock = 60000
+  assert.equal((await f.get('shared-link', '192.0.2.1', { 'User-Agent': 'FixtureCrawler/11' })).status, 200)
 })
