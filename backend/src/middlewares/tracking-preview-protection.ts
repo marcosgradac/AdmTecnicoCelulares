@@ -35,15 +35,15 @@ export function createTrackingPreviewProtection(options: Options, now: () => num
     // Preserve draft-8 budget headers without exposing raw tokens or client IPs.
     const setBudgetHeaders = () => {
       const budgets = [
-        { name: 'preview-link', key: linkKey, limit: options.linkMax, used: counters.get(linkKey) ?? 0 },
-        { name: 'preview-ip', key: ipKey, limit: options.ipMax, used: counters.get(ipKey) ?? 0 },
-        { name: 'preview-process', key: 'preview-process', limit: options.globalMax, used: accepted },
+        { name: 'preview-link', limit: options.linkMax, used: counters.get(linkKey) ?? 0 },
+        { name: 'preview-ip', limit: options.ipMax, used: counters.get(ipKey) ?? 0 },
+        { name: 'preview-process', limit: options.globalMax, used: accepted },
       ]
       res.setHeader('RateLimit', budgets.map(b => `"${b.name}"; r=${Math.max(0, b.limit - b.used)}; t=${seconds}`).join(', '))
-      res.setHeader('RateLimit-Policy', budgets.map(b => {
-        const partition = Buffer.from(createHash('sha256').update(b.key).digest('hex').slice(0, 12)).toString('base64')
-        return `"${b.name}"; q=${b.limit}; w=${Math.ceil(options.windowMs / 1000)}; pk=:${partition}:`
-      }).join(', '))
+      // pk is optional in draft-8. Omit it rather than publish stable IP/link fingerprints.
+      res.setHeader('RateLimit-Policy', budgets.map(b =>
+        `"${b.name}"; q=${b.limit}; w=${Math.ceil(options.windowMs / 1000)}`,
+      ).join(', '))
     }
     setBudgetHeaders()
     const linkCount = counters.get(linkKey) ?? 0

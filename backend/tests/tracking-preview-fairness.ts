@@ -119,3 +119,40 @@ test('configuration rejects invalid admission/capacity limits',()=>{
     for(const value of [0,-1,1.5,NaN]) assert.throws(()=>createTrackingPreviewProtection({...defaults,[field]:value}))
   }
 })
+test('preview policy headers omit partition fingerprints on success and rejection', async t => {
+  const f = await fixture(t, {}, () => 0)
+  const first = await f.get('private-fixture-token', '192.0.2.1')
+  const otherIp = await f.get('private-fixture-token', '192.0.2.2')
+  assert.equal(first.status, 200); assert.equal(otherIp.status, 200)
+  assert.equal(first.headers.get('ratelimit-policy'), otherIp.headers.get('ratelimit-policy'), 'Policy metadata must not identify the client')
+  assert.equal((await f.get('private-fixture-token', '192.0.2.1')).status, 200)
+  const rejected = await f.get('private-fixture-token', '192.0.2.1')
+  assert.equal(rejected.status, 429); assert.equal(rejected.headers.get('retry-after'), '60')
+  for (const response of [first, otherIp, rejected]) {
+    const policy = response.headers.get('ratelimit-policy')!
+    const remaining = response.headers.get('ratelimit')!
+    assert.ok(policy && remaining, 'Budget fields remain available to existing clients')
+    assert.doesNotMatch(policy + remaining, /;\s*pk\s*=/i)
+    for (const item of policy.split(', ')) assert.match(item, /^"preview-(?:link|ip|process)"; q=\d+; w=60$/)
+    for (const item of remaining.split(', ')) assert.match(item, /^"preview-(?:link|ip|process)"; r=\d+; t=60$/)
+    assert.doesNotMatch(policy + remaining, /private-fixture-token|192\.0\.2\./)
+  }
+})
+
+test('ten legitimate crawlers sharing one link and IP share the cap; another link and next window work', async t => {
+  let clock = 0
+  const f = await fixture(t, { linkMax: 10, ipMax: 30, globalMax: 600 }, () => clock)
+  for (let visitor = 1; visitor <= 10; visitor++) {
+    assert.equal((await f.get('shared-link', '192.0.2.1', { 'User-Agent': `FixtureCrawler/${visitor}` })).status, 200)
+  }
+  const eleventh = await f.get('shared-link', '192.0.2.1', { 'User-Agent': 'FixtureCrawler/11' })
+  assert.equal(eleventh.status, 429, 'The cap is for a shared link/IP, not for an individual visitor')
+  assert.equal(eleventh.headers.get('retry-after'), '60')
+  assert.equal(eleventh.headers.get('cache-control'), 'no-store')
+  assert.equal(eleventh.headers.get('x-robots-tag'), 'noindex, nofollow, noarchive')
+  assert.equal(f.queries(), 10)
+  assert.equal((await f.get('another-link', '192.0.2.1')).status, 200)
+  assert.equal(f.queries(), 11, 'Rejected legitimate crawler does not charge shared admission')
+  clock = 60000
+  assert.equal((await f.get('shared-link', '192.0.2.1', { 'User-Agent': 'FixtureCrawler/11' })).status, 200)
+})

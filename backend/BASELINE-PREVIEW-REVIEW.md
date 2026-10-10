@@ -43,7 +43,9 @@ por concurrencia no crea claves ni cobra ningún presupuesto. La plaza no se
 libera por desconexión HTTP, solo al terminar la promesa de DB. Ventana monotónica.
 429 mantiene Retry-After, no-store y noindex. Se conservan cabeceras draft-8 de
 presupuesto, ahora identificando enlace, IP y proceso; nunca contienen tokens
-ni IPs en texto. No se añaden logs de preview, caché ni confianza en User-Agent.
+ni IPs en texto. Se omite pk: no se publican hashes ni identificadores estables
+de IP/enlace. Los hashes internos acotados siguen siendo privados en memoria.
+No se añaden logs de preview, caché ni confianza en User-Agent.
 Open Graph, token histórico, vencimiento y privacy fallback siguen igual.
 
 ## Evaluación de abuso y límites que permanecen
@@ -74,7 +76,7 @@ Vercel siguen pendientes. No recuperar IP de visitantes con cabeceras arbitraria
 
 ## Verificación aislada
 
-npm run test ejecuta las regresiones de identidad/auth, las siete pruebas 4M
+npm run test ejecuta las regresiones de identidad/auth, las nueve pruebas de protección
 para CF y baseline, y el test HTTP nuevo del servidor real con Prisma simulado.
 Este demuestra otros enlaces tras abuso, tokens inválidos, techo agregado IP y
 proceso, cuatro consultas simultáneas, presupuesto intacto después de rechazos,
@@ -84,3 +86,45 @@ desconexión. Las suites health, tracking-preview, rate-limit, public-api-origin
 tracking-links conservan sus regresiones locales. Typecheck, build y diff check
 completan las verificaciones; CI del PR repite las comprobaciones aisladas.
 No se usa PostgreSQL real ni se hacen solicitudes funcionales a producción.
+
+## Ajuste de revisión: privacidad y política inicial
+
+RateLimit-Policy conserva nombre de política, cuota q y ventana w; RateLimit
+conserva restante r y reinicio t. pk es opcional en el draft-8 utilizado:
+https://www.ietf.org/archive/id/draft-ietf-httpapi-ratelimit-headers-08.html#section-3
+No hay consumidores de pk en el frontend actual. La regresión comprueba que
+éxitos y rechazos siguen exponiendo campos de presupuesto con formato correcto,
+pero no identificadores por IP/enlace; la política es idéntica entre dos IPs.
+Esto no modifica cabeceras ni limitadores de otras rutas. Los valores de saldo
+siguen describiendo presupuestos compartidos: omitir pk no oculta esa propiedad.
+
+10/enlace+IP es una política inicial de aislamiento, no un límite por persona:
+reserva, mientras no se hayan usado otras admisiones, dos tercios del techo IP
+para enlaces distintos. Un crawler repetitivo del mismo enlace no puede cobrar
+los 30 solo con ese enlace. Elevarlo a 15 dejaría margen para solo otro enlace;
+elevarlo a 30 anularía el aislamiento. Bajarlo aumenta falsos rechazos. Sin datos
+de tráfico no hay fundamento para afirmar que 10 sea óptimo ni aumentarlo ahora.
+
+La contrapartida funcional es explícita: hasta diez consultas admitidas al mismo
+enlace e IP en una ventana; el undécimo visitante/crawler legítimo recibe 429
+aunque exista saldo IP/proceso. No se distingue por UA, cookies o IP inventada;
+el seguimiento interactivo del navegador tiene su presupuesto separado. En una
+ventana simulada, diez crawlers con UA distintos reciben 200, el undécimo 429,
+otro enlace 200 y el primero vuelve a 200 al reset de ventana. Reintentos también
+consumen el límite. No prometer previews de WhatsApp para todos los visitantes.
+
+600/proceso es un techo preventivo frente a la ausencia anterior de un techo de
+baseline por proceso. Equivale a veinte presupuestos completos de 30/IP, conserva
+el límite individual y evita una admisión ilimitada al rotar IPs. Permite que un
+solo proxy, acotado a 30, no bloquee todas las otras IPs. Es una elección inicial
+de política con margen para fuentes independientes, NO capacidad PostgreSQL
+medida ni garantía de disponibilidad. Su coincidencia con el límite global de
+API no demuestra capacidad. El límite de cuatro consultas simultáneas mantiene
+el trabajo pendiente acotado; no acota su duración ni asegura latencia adecuada.
+
+Recomendación: GO de código para merge con aceptación expresa de esta política
+inicial y sus falsos rechazos posibles; no activar cf ni modificar variables.
+Después de un merge autorizado, observar 429 y disponibilidad mediante señales
+agregadas sin tokens/IPs, y revertir el cambio si perjudica previews legítimas.
+No aumentar límites sin evidencia de tráfico/capacidad. El riesgo de agotamiento
+por enlaces rotados, varias IPs, reinicios o varios procesos permanece.
