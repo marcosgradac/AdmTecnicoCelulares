@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { createOriginAuthMiddleware } from './middlewares/origin-auth'
 import { PreviewCapacityError, rejectTrackingPreview } from './middlewares/tracking-preview-protection'
 import { clientIp, clientIpConfig, clientRiskKey, createClientIpMiddleware } from './middlewares/client-ip'
 import express, { type NextFunction, type Request, type Response } from 'express'
@@ -52,6 +53,7 @@ import { authenticatedApiLimiter, authenticatedWriteLimiter, globalApiLimiter, h
 import { TurnstileUnavailableError, verifyTurnstileToken } from './services/antiBot/turnstile.service'
 
 export const app = express()
+app.use(createOriginAuthMiddleware())
 app.set('trust proxy', clientIpConfig.mode === 'cf' ? false : 1)
 app.use(helmet())
 const allowedOrigins = (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173')
