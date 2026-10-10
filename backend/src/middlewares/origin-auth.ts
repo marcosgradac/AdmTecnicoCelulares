@@ -6,10 +6,14 @@ const configurationError = () => new Error('Origin authentication configuration 
 export function createOriginAuthMiddleware(environment: NodeJS.ProcessEnv = process.env): RequestHandler {
   const flag = environment.ORIGIN_AUTH_ENABLED
   if (flag !== undefined && flag !== 'false' && flag !== 'true') throw configurationError()
-  if (flag !== 'true') return (_req, _res, next) => next()
+  if (flag !== 'true') {
+    console.info('[origin-auth] disabled')
+    return (_req, _res, next) => next()
+  }
   const configuredSecret = environment.ORIGIN_AUTH_SECRET
   if (!configuredSecret || !/^[a-f0-9]{64}$/.test(configuredSecret)) throw configurationError()
   const expected = Buffer.from(configuredSecret, 'ascii')
+  console.info('[origin-auth] enabled')
   return (req, res, next) => {
     // Exact liveness path only; HEAD, OPTIONS and readiness are not exempt.
     if (req.method === 'GET' && req.path === '/health') return next()
