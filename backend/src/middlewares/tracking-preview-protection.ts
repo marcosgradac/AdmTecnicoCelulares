@@ -32,6 +32,20 @@ export function createTrackingPreviewProtection(options: Options, now: () => num
     const ip = clientIpKey(req)
     const ipKey = `ip:${ip}`
     const linkKey = `link:${ip}:${createHash('sha256').update(String(req.params.token ?? '').slice(0, 128)).digest('hex')}`
+    // Preserve draft-8 budget headers without exposing raw tokens or client IPs.
+    const setBudgetHeaders = () => {
+      const budgets = [
+        { name: 'preview-link', key: linkKey, limit: options.linkMax, used: counters.get(linkKey) ?? 0 },
+        { name: 'preview-ip', key: ipKey, limit: options.ipMax, used: counters.get(ipKey) ?? 0 },
+        { name: 'preview-process', key: 'preview-process', limit: options.globalMax, used: accepted },
+      ]
+      res.setHeader('RateLimit', budgets.map(b => `"${b.name}"; r=${Math.max(0, b.limit - b.used)}; t=${seconds}`).join(', '))
+      res.setHeader('RateLimit-Policy', budgets.map(b => {
+        const partition = Buffer.from(createHash('sha256').update(b.key).digest('hex').slice(0, 12)).toString('base64')
+        return `"${b.name}"; q=${b.limit}; w=${Math.ceil(options.windowMs / 1000)}; pk=:${partition}:`
+      }).join(', '))
+    }
+    setBudgetHeaders()
     const linkCount = counters.get(linkKey) ?? 0
     // Reject an exhausted link BEFORE charging either shared budget.
     if (linkCount >= options.linkMax) return void rejectTrackingPreview(res, seconds)
@@ -44,6 +58,7 @@ export function createTrackingPreviewProtection(options: Options, now: () => num
     // between them. Reject full capacity before creating entries or charging budgets.
     if (active >= maxConcurrent) return void rejectTrackingPreview(res, 1)
     counters.set(linkKey, linkCount + 1); counters.set(ipKey, ipCount + 1); accepted++
+    setBudgetHeaders()
     next()
   }
   const runLookup = async <T>(query: () => Promise<T>): Promise<T> => {

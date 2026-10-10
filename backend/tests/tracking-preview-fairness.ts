@@ -5,11 +5,13 @@ import express from 'express'
 import { createClientIpMiddleware } from '../src/middlewares/client-ip'
 import { createTrackingPreviewProtection, PreviewCapacityError, rejectTrackingPreview } from '../src/middlewares/tracking-preview-protection'
 
+const baseline = process.argv.includes('baseline')
+
 type Options = Parameters<typeof createTrackingPreviewProtection>[0]
 const defaults: Options = { windowMs: 60000, linkMax: 2, ipMax: 6, globalMax: 10 }
 async function fixture(t: TestContext, options: Partial<Options> = {}, now?: () => number, query?: () => Promise<string>) {
   const guard = createTrackingPreviewProtection({ ...defaults, ...options }, now)
-  const app = express(); app.use(createClientIpMiddleware({ mode: 'cf' }))
+  const app = express(); app.set('trust proxy', baseline ? 1 : false); app.use(createClientIpMiddleware({ mode: baseline ? 'baseline' : 'cf' }))
   let queries = 0
   app.get('/probe/:token', guard.middleware, async (_req, res) => {
     try { const result = await guard.runLookup(() => { queries++; return query ? query() : Promise.resolve('metadata') }); res.json({ ok: true, result }) }
@@ -19,7 +21,9 @@ async function fixture(t: TestContext, options: Partial<Options> = {}, now?: () 
   t.after(() => new Promise<void>(done => server.close(() => done())))
   const address = server.address() as { port: number }
   const get = (token: string, ip = '192.0.2.1', extra: Record<string,string> = {}, signal?: AbortSignal) =>
-    fetch(`http://127.0.0.1:${address.port}/probe/${token}`, { headers: { 'CF-Connecting-IP': ip, ...extra }, signal })
+    fetch(`http://127.0.0.1:${address.port}/probe/${token}`, { headers: baseline
+      ? { 'CF-Connecting-IP': '203.0.113.99', ...extra, 'X-Forwarded-For': `${extra['X-Forwarded-For'] ?? '198.51.100.99'}, ${ip}` }
+      : { 'CF-Connecting-IP': ip, ...extra }, signal })
   return { guard, get, queries: () => queries }
 }
 test('one abused link does not consume the shared IP/process budget for other links', async t => {

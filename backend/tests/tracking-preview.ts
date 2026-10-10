@@ -5,7 +5,10 @@ import { resolve } from 'node:path'
 process.env.NODE_ENV = 'test'
 process.env.JWT_SECRET = 'local-preview-test-only'
 process.env.RATE_LIMIT_GLOBAL_MAX = '1'
+process.env.CLIENT_IP_MODE = 'baseline'
 process.env.RATE_LIMIT_TRACKING_PREVIEW_MAX = '30'
+// This metadata suite deliberately makes many requests to the same fixture link.
+process.env.RATE_LIMIT_TRACKING_PREVIEW_BASELINE_LINK_MAX = '30'
 process.env.DATABASE_URL = 'postgresql://local:local@127.0.0.1:1/local_preview_not_connected'
 
 async function main() {

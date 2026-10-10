@@ -70,8 +70,9 @@
     "test:supabase-public-access": "node tests/supabase-public-access.mjs",
     "build": "tsc",
     "start": "node scripts/start-production.cjs",
-    "test": "npm run test:client-ip && npm run test:tracking-preview-fairness",
-    "test:tracking-preview-fairness": "tsx tests/tracking-preview-fairness.ts",
+    "test": "npm run test:client-ip && npm run test:tracking-preview-fairness && npm run test:tracking-preview-baseline",
+    "test:tracking-preview-baseline": "tsx tests/tracking-preview-baseline.ts",
+    "test:tracking-preview-fairness": "tsx tests/tracking-preview-fairness.ts && tsx tests/tracking-preview-fairness.ts baseline",
     "test:client-ip": "tsx tests/client-ip.ts && tsx tests/client-ip-http.ts && tsx tests/password-reset-client-ip.ts && tsx tests/password-reset-client-ip.ts baseline",
     "test:rate-limit": "tsx tests/rate-limit-multiuser.ts"
   },
