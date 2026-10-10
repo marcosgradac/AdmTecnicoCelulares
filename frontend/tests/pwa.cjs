@@ -1151,8 +1151,8 @@ test('22. El token es el único secreto: el slug nunca se envía al backend', ()
     assert.doesNotMatch(llamada, /clientSlug/, 'nunca el slug')
   }
   // Y el backend busca exclusivamente por token.
-  const server = fs.readFileSync(path.resolve(ROOT, '../backend/src/server.ts'), 'utf8')
-  assert.match(server, /findUnique\(\{ where: \{ trackingToken:/, 'la búsqueda es por token')
+  const trackingRoutes = fs.readFileSync(path.resolve(ROOT, '../backend/src/modules/tracking/tracking.routes.ts'), 'utf8')
+  assert.match(trackingRoutes, /findUnique\(\{ where: \{ trackingToken:/, 'la búsqueda es por token')
 })
 
 test('23. La app declara las dos rutas de seguimiento', () => {
