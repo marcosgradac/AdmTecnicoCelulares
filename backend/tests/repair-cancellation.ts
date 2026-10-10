@@ -133,10 +133,13 @@ async function main() {
       request('POST',`/repairs/${race.id}/cancel`,{reviewFee:20000,refundMethod:'CASH'},owner2.token),
       request('POST',`/repairs/${race.id}/cancel`,{reviewFee:0,refundMethod:'TRANSFER'},owner2.token),
     ])
-    assert.ok([raceA.status, raceB.status].includes(200),'una request concurrente debe concretar la cancelación')
-    assert.ok([raceA.status, raceB.status].every(status => status === 200 || status === 409),`estados inesperados: ${raceA.status}/${raceB.status}`)
+    assert.deepEqual([raceA.status, raceB.status].sort(), [200, 409], 'exactamente una cancelación debe ganar la carrera')
     assert.equal((await movementsOf(race.id)).filter(m => m.type === 'EXPENSE').length,1,'las requests concurrentes no pueden duplicar el egreso')
-    assert.equal(balanceOf(await movementsOf(race.id)),20000)
+    const expectedReviewFee = raceA.status === 200 ? 20000 : 0
+    assert.equal(balanceOf(await movementsOf(race.id)), expectedReviewFee, 'la caja conserva la revisión de la solicitud ganadora')
+    const raceDb = await prisma.repair.findUniqueOrThrow({ where: { id: race.id } })
+    assert.equal(raceDb.cancellationReviewFee, expectedReviewFee)
+    assert.equal(raceDb.cancellationRefundAmount, 50000 - expectedReviewFee)
 
     // 9) reparación de otro businessId no accesible
     const foreign = await createRepair(owner2.token, 70000)

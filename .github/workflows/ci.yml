@@ -50,6 +50,8 @@ jobs:
         run: node node_modules/tsx/dist/cli.mjs tests/tracking-links-unit.ts
       - name: Public API origin (mocked Prisma)
         run: npm run test:public-api-origin
+      - name: Tenant isolation (disposable local PostgreSQL)
+        run: npm run test:tenant-isolation-complete
 
   frontend:
     name: Frontend CI
