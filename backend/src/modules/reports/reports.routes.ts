@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import { getReportsOverview, reportPeriodSchema } from './reports.service'
+import { reportResponse } from './reports.response'
 import { assertFeatureAccess } from '../billing/billing.service'
 
 export const reportsRouter = Router()
@@ -11,7 +12,7 @@ reportsRouter.get('/overview', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Período de reporte inválido' })
   try {
     await assertFeatureAccess(authOf(req).businessId, 'advancedReports')
-    return res.json(await getReportsOverview(authOf(req).businessId, parsed.data))
+    return res.json(reportResponse(authOf(req), await getReportsOverview(authOf(req).businessId, parsed.data)))
   } catch (error) {
     if (error instanceof Error && error.message === 'INVALID_PERIOD') return res.status(400).json({ success: false, message: 'Período de reporte inválido' })
     if (typeof error === 'object' && error && 'statusCode' in error) return res.status(Number(error.statusCode)).json({ success: false, message: error instanceof Error ? error.message : 'Función no disponible' })
