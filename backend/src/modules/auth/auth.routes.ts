@@ -19,6 +19,7 @@ export function createAuthRoutes() {
   if (!jwtSecret) throw new Error('JWT_SECRET es obligatorio')
 
   const signToken = (auth: AuthData) => jwt.sign(auth, jwtSecret, {
+    algorithm: 'HS256',
     expiresIn: (process.env.JWT_EXPIRES_IN ?? '8h') as SignOptions['expiresIn']
   })
   const unauthorized = (res: Response, message = 'No autorizado') => res.status(401).json({ success: false, message })

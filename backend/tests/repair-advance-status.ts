@@ -277,7 +277,7 @@ async function main() {
     assert.equal((await request('PATCH', `/repairs/${cancelled.id}/status`, { status: 'REVIEW' }, ownerA.token)).status, 409, 'Cancelado no cambia de estado')
     // 13/15. «Corregir entrega»: sólo OWNER, atómica y bloqueada si hay reclamos de garantía.
     const technician = await prisma.user.create({ data: { businessId: ownerA.businessId, name: 'Técnico QA', email: `advance-tech-${suffix}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.view', 'repairs.changeStatus'] } })
-    const technicianToken = jwt.sign({ userId: technician.id, businessId: technician.businessId, role: technician.role, platformRole: technician.platformRole, tokenVersion: technician.tokenVersion }, process.env.JWT_SECRET!)
+    const technicianToken = jwt.sign({ userId: technician.id, businessId: technician.businessId, role: technician.role, platformRole: technician.platformRole, tokenVersion: technician.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     assert.equal((await request('POST', `/repairs/${delivery.id}/delivery/correction`, { reason: 'Entrega cargada por error' }, technicianToken)).status, 403, 'un técnico no puede corregir la entrega')
     assert.equal((await request('POST', `/repairs/${delivery.id}/delivery/correction`, { reason: 'x' }, ownerA.token)).status, 400, 'el motivo es obligatorio')
     const undone = await request('POST', `/repairs/${delivery.id}/delivery/correction`, { reason: 'Se entregó el equipo equivocado' }, ownerA.token)

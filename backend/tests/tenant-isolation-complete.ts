@@ -25,7 +25,7 @@ async function main() {
   const suffix = randomUUID()
   const businessIds: string[] = []
   let checks = 0
-  const sign = (user: { id: string; businessId: string; role: string; platformRole: string; tokenVersion: number }, extra = {}) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, ...extra }, process.env.JWT_SECRET!)
+  const sign = (user: { id: string; businessId: string; role: string; platformRole: string; tokenVersion: number }, extra = {}) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, ...extra }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const request = async (token: string | undefined, method: string, path: string, body?: object) => {
     const response = await fetch(`${base}${path}`, { method, redirect: 'error', headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined })
     const text = await response.text()

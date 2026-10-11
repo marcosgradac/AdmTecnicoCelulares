@@ -79,7 +79,7 @@ async function main() {
       },
     })
     businesses.push(business.id)
-    return jwt.sign({ userId: user.id, businessId: business.id, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!)
+    return jwt.sign({ userId: user.id, businessId: business.id, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   }
 
   try {

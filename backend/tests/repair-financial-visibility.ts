@@ -30,7 +30,7 @@ async function main() {
     })
     return { status: response.status, body: await response.json() as any }
   }
-  const tokenFor = (user: any) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!)
+  const tokenFor = (user: any) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   try {
     const business = await prisma.business.create({ data: { name: `Visibility ${randomUUID()}` } }); businesses.push(business.id)
     const other = await prisma.business.create({ data: { name: `Other ${randomUUID()}` } }); businesses.push(other.id)

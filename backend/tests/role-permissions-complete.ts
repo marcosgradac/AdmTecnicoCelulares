@@ -21,7 +21,7 @@ async function main() {
   const address = server.address(); assert.ok(address && typeof address === 'object')
   let checks = 0
   const failures: string[] = []
-  const sign = (user: any, extra = {}) => jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: user.tokenVersion, role: user.role, platformRole: user.platformRole, ...extra }, process.env.JWT_SECRET!)
+  const sign = (user: any, extra = {}) => jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: user.tokenVersion, role: user.role, platformRole: user.platformRole, ...extra }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const call = async (token: string | undefined, method: string, path: string, body?: object) => {
     const response = await fetch(`http://127.0.0.1:${address.port}/api${path}`, { method, redirect: 'error', headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
     const text = await response.text()
@@ -195,8 +195,10 @@ async function main() {
       await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{permissions:['clients.view']});await expect(old,'GET','/clients',200)
       await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{role:'OWNER'});await expect(old,'GET','/dashboard/overview',200)
       await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{role:'TECHNICIAN'});await expect(old,'GET','/dashboard/overview',403)
-      await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{isActive:false});await expect(old,'GET','/clients',403)
-      await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{isActive:true});await expect(old,'GET','/clients',200)
+      await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{isActive:false});await expect(old,'GET','/clients',401)
+      await expect(sign(A.owner),'PATCH',`/team/${A.partial.id}`,200,{isActive:true});await expect(old,'GET','/clients',401)
+      const fresh=await expect(undefined,'POST','/auth/login',200,{email:A.partial.email,password})
+      await expect(fresh.token,'GET','/clients',200)
       await expect(sign(A.owner),'POST',`/team/${A.partial.id}/reset-password`,200,{password:'NewSyntheticPassword8'})
       await expect(old,'GET','/clients',401)
       const login=await expect(undefined,'POST','/auth/login',200,{email:A.partial.email,password:'NewSyntheticPassword8'})

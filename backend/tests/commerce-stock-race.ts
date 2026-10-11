@@ -9,9 +9,15 @@ const database = new URL(process.env.DATABASE_URL ?? '')
 assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(database.hostname), 'Use only a local test database')
 
 const prisma = new PrismaClient()
-const BASE = 'http://127.0.0.1:3000/api'
+let BASE = ''
 
 async function main() {
+  const { app } = await import('../src/app')
+  const server = app.listen(0, '127.0.0.1')
+  await new Promise<void>(resolve => server.once('listening', resolve))
+  const address = server.address()
+  assert.ok(address && typeof address === 'object')
+  BASE = `http://127.0.0.1:${address.port}/api`
   const suffix = randomBytes(6).toString('hex')
   const jwt = (await import('jsonwebtoken')).default
   // Ids are declared up front and filled as records are created, so the finally block can
@@ -23,7 +29,7 @@ async function main() {
     const owner = await prisma.user.create({ data: { business: { create: { name: `Stock ${suffix}` } }, name: 'Owner', email: `stock-${suffix}@local.test`, passwordHash: 'unused', role: 'OWNER' } })
     businessId = owner.businessId
     ownerId = owner.id
-    const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
+    const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const call = async (method: string, path: string, body?: object) => {
       const res = await fetch(`${BASE}${path}`, { method, headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined })
       return { status: res.status, text: await res.text() }
@@ -53,6 +59,7 @@ async function main() {
     console.log(`  ok  double cancel -> stock=${restored.currentStock}, reversals=${reversals} (statuses ${c1.status}/${c2.status})`)
     console.log('PASS: stock never goes negative and cancellation restores exactly once')
   } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()))
     // Only this test's own records. Each step is skipped when its id was never assigned.
     if (businessId) {
       await prisma.cashMovement.deleteMany({ where: { businessId } })

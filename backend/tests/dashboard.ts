@@ -110,7 +110,7 @@ async function main() {
     assert.ok(address && typeof address === 'object')
     const owner = await db.user.create({ data: { businessId: a, name: 'Owner', email: a + '@example.com', passwordHash: 'test', role: 'OWNER' } })
     const tech = await db.user.create({ data: { businessId: b, name: 'Tech', email: b + '@example.com', passwordHash: 'test', role: 'TECHNICIAN' } })
-    const get = (path: string, user?: typeof owner) => fetch(`http://127.0.0.1:${address.port}/api/dashboard/overview${path}`, { headers: user ? { authorization: 'Bearer ' + jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!) } : {} })
+    const get = (path: string, user?: typeof owner) => fetch(`http://127.0.0.1:${address.port}/api/dashboard/overview${path}`, { headers: user ? { authorization: 'Bearer ' + jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' }) } : {} })
     assert.equal((await get('', owner)).status, 200)
     const tampered = await get('?businessId=' + b, owner)
     assert.equal((await tampered.json()).current.pending, 800, 'tenant always comes from authenticated user')

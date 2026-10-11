@@ -22,7 +22,7 @@ async function main() {
     const owner = await prisma.user.create({ data: { businessId: business.id, role: 'OWNER', name: 'Fixture', email: `${suffix}@example.test`, passwordHash: 'fixture' } })
     const tech = await prisma.user.create({ data: { businessId: business.id, role: 'TECHNICIAN', name: 'Fixture tech', email: `tech-${suffix}@example.test`, passwordHash: 'fixture', permissions: ['repairs.view', 'repairs.update'] } })
     const foreign = await prisma.user.create({ data: { businessId: other.id, role: 'OWNER', name: 'Other', email: `other-${suffix}@example.test`, passwordHash: 'fixture' } })
-    const token = (user: typeof owner) => jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: 0 }, process.env.JWT_SECRET!)
+    const token = (user: typeof owner) => jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: 0 }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const client = await prisma.client.create({ data: { businessId: business.id, name: 'Fixture client' } })
     const replacement = await prisma.client.create({ data: { businessId: business.id, name: 'New client' } })
     let number = 1000

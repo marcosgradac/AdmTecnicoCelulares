@@ -24,7 +24,7 @@ async function main() {
     try { await test(); console.log(`OK ${++passed}: ${label}`) }
     catch (error) { failures.push(label); console.error(`FAIL ${label}:`, error) }
   }
-  const tokenFor = (user: { id: string; businessId: string; role: string; tokenVersion: number }) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!)
+  const tokenFor = (user: { id: string; businessId: string; role: string; tokenVersion: number }) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const call = async (token: string, id: string, route: string, body?: object) => {
     const response = await fetch(`${base}/repairs/${id}/${route}`, { method: 'PATCH', headers: { authorization: `Bearer ${token}`, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined })
     return { status: response.status, body: await response.json() as any }

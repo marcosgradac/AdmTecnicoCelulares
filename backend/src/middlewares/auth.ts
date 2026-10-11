@@ -4,6 +4,7 @@ import type { PlatformRole, UserRole } from '@prisma/client'
 import { prisma } from '../lib/prisma'
 import { permissionsFor, type Permission } from '../config/permissions'
 import { getAccountAccessStatus, type AccountAccessStatus } from '../modules/billing/billing.service'
+import { sessionClaims } from '../modules/auth/token-claims'
 
 export interface AuthData { userId: string; businessId: string; role: UserRole; platformRole: PlatformRole; tokenVersion: number; permissions?: Permission[] }
 
@@ -47,18 +48,21 @@ export const isRenewalPathAllowed = (originalUrl: string) => {
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : ''
   if (!token) return unauthorized(res)
+  let payload: ReturnType<typeof sessionClaims.parse>
   try {
-    const verified = jwt.verify(token, jwtSecret)
+    const verified = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] })
     // Capability JWTs (deletion, password-change, etc.) are never ordinary Bearer sessions.
     if (typeof verified !== 'object' || Object.prototype.hasOwnProperty.call(verified, 'purpose')) return unauthorized(res, 'Token de propósito específico no válido para esta API')
-    const payload = verified as unknown as AuthData
+    payload = sessionClaims.parse(verified)
+  } catch { return unauthorized(res, 'Token inválido o expirado') }
+  try {
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, tokenVersion: true, permissions: true, business: { select: { isActive: true, subscription: true } } },
+      select: { id: true, businessId: true, role: true, platformRole: true, isActive: true, deletedAt: true, tokenVersion: true, permissions: true, business: { select: { isActive: true, subscription: true } } },
     })
-    if (!user || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
-    if ((payload.tokenVersion ?? 0) !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
-    if (!user.isActive) return res.status(403).json({ success: false, message: 'Usuario inactivo' })
+    if (!user || user.deletedAt || user.businessId !== payload.businessId) return unauthorized(res, 'Sesión inválida')
+    if (payload.tokenVersion !== user.tokenVersion) return unauthorized(res, 'La sesión fue invalidada')
+    if (!user.isActive) return res.status(403).json({ success: false, code: 'USER_INACTIVE', message: 'Usuario inactivo' })
     if (!user.business.isActive && user.platformRole !== 'SUPER_ADMIN') return res.status(403).json({ success: false, message: 'El negocio se encuentra desactivado', code: 'BUSINESS_BLOCKED', audience: user.role })
     req.accountAccess = user.platformRole === 'SUPER_ADMIN'
       ? null
@@ -74,7 +78,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     req.auth = { userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, permissions: permissionsFor(user.role, user.permissions) }
     next()
   } catch {
-    return unauthorized(res, 'Token inválido o expirado')
+    return res.status(503).json({ success: false, message: 'No pudimos verificar la sesión. Intentá nuevamente.' })
   }
 }
 

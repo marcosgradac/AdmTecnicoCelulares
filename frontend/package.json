@@ -12,7 +12,8 @@
     "test:repair-edit": "node tests/repair-edit.cjs",
     "test:platform-admin-metrics": "node tests/platform-admin-metrics.cjs",
     "test:expired-owner-renewal-ui": "node tests/expired-owner-renewal-ui.cjs",
-    "test:account-deletion": "node tests/account-deletion.cjs",
+    "test:account-deletion": "node tests/browser-security-runner.cjs --account",
+    "test:session-security": "node tests/browser-security-runner.cjs",
     "test:cash-groups": "node tests/cash-groups.cjs",
     "test:encoding": "node tests/encoding.cjs",
     "test:pwa": "node tests/pwa.cjs",
@@ -36,6 +37,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.7.0",
+    "playwright": "1.62.1",
     "sass": "^1.89.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.6"

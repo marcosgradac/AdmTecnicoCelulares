@@ -104,10 +104,16 @@ export async function updateTeamMember(businessId: string, actorId: string, id: 
         ...(input.phone !== undefined ? { phone: normalizePhone(input.phone) } : {}),
         ...(input.role !== undefined ? { role: input.role } : {}),
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+        ...(input.isActive === false && user.isActive ? { tokenVersion: { increment: 1 } } : {}),
         ...(input.permissions !== undefined && (input.role ?? user.role) === 'TECHNICIAN' ? { permissions: input.permissions } : {}),
         ...(firstName && lastName ? { name: `${firstName} ${lastName}` } : {}),
       },
     })
+    if (input.isActive === false && user.isActive) {
+      await tx.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null }, data: { usedAt: new Date() },
+      })
+    }
     return serializeTeamMember(updated)
   }, { timeout: 15_000 })
 }

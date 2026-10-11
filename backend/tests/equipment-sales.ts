@@ -19,7 +19,7 @@ async function main() {
   assert.ok(address && typeof address === 'object')
   const root = `http://127.0.0.1:${address.port}/api`
   const businesses: string[] = []
-  const sign = (user: any) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!)
+  const sign = (user: any) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const request = async (method: string, path: string, token: string, body?: object) => {
     const response = await fetch(root + path, { method, headers: { authorization: `Bearer ${token}`, ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined })
     const text = await response.text()

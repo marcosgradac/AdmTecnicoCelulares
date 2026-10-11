@@ -169,7 +169,7 @@ async function assertSuperAdminAuthenticationSkipsLifecycleSettings() {
   }) as typeof originalSettingsFindUnique
   try {
     const { authenticate } = await import('../src/middlewares/auth')
-    const token = jwt.sign({ userId: 'super-admin-user', businessId: base.businessId, role: 'OWNER', platformRole: 'SUPER_ADMIN', tokenVersion: 0 }, process.env.JWT_SECRET!)
+    const token = jwt.sign({ userId: 'super-admin-user', businessId: base.businessId, role: 'OWNER', platformRole: 'SUPER_ADMIN', tokenVersion: 0 }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const req = { headers: { authorization: `Bearer ${token}` } } as Request
     const res = {
       status() { return this },

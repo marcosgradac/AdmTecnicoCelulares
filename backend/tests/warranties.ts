@@ -86,7 +86,7 @@ async function main() {
     assert.equal(cash.body.summary.balance, -20000)
     assert.ok(cash.body.items.some((item: any) => item.id === expense.body.cashMovementId))
     const tech = await prisma.user.create({ data: { businessId: ownerA.businessId, name: 'Técnico sin acceso a caja', email: `warranty-tech-${suffix}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.view', 'repairs.update'] } })
-    const techToken = jwt.sign({ userId: tech.id, businessId: tech.businessId, role: tech.role, platformRole: tech.platformRole, tokenVersion: tech.tokenVersion }, process.env.JWT_SECRET!)
+    const techToken = jwt.sign({ userId: tech.id, businessId: tech.businessId, role: tech.role, platformRole: tech.platformRole, tokenVersion: tech.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     assert.equal((await request('POST', `${claimPath}/expenses`, { ...expenseInput, idempotencyKey: 'forbidden-expense' }, techToken)).status, 403)
     assert.equal((await request('POST', `${claimPath}/delivery`, { warrantyDurationDays: 7 }, techToken)).status, 403)
     const techList = (await request('GET', '/warranties', undefined, techToken)).body
@@ -181,7 +181,7 @@ async function main() {
     assert.equal((await request('POST',`/warranties/claims/${initialClaim.body.id}/expenses`,{concept:'Adhesivo',amount:3000,method:'TRANSFER',idempotencyKey:`extra-${suffix}`},ownerA.token)).status,201)
     assert.equal(await prisma.cashMovement.count({where:{repairId:initialRepair.body.id}}),2,'a repeated expense never double-charges')
     const noCashUser = await prisma.user.create({ data: { businessId: ownerA.businessId, name: 'Sin caja', email: `warranty-nocash-${suffix}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.view', 'repairs.update'] } })
-    const noCashToken = jwt.sign({ userId: noCashUser.id, businessId: noCashUser.businessId, role: noCashUser.role, platformRole: noCashUser.platformRole, tokenVersion: noCashUser.tokenVersion }, process.env.JWT_SECRET!)
+    const noCashToken = jwt.sign({ userId: noCashUser.id, businessId: noCashUser.businessId, role: noCashUser.role, platformRole: noCashUser.platformRole, tokenVersion: noCashUser.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     assert.equal((await request('POST',`/warranties/${initialRepair.body.id}/claims`,{description:'Gasto sin permiso de caja',initialExpense:{concept:'Módulo',amount:5000,method:'CASH',idempotencyKey:`nocash-${suffix}`}},noCashToken)).status,403)
     assert.equal(await prisma.cashMovement.count({where:{repairId:initialRepair.body.id}}),2)
     console.log('WARRANTY TESTS PASSED: original coverage, initial and later expenses with their cash movements, rollback, idempotent retries, renewal from delivery, no-warranty history, rejection, permissions and tenant isolation')

@@ -128,13 +128,13 @@ export function SettingsPage() {
         <Stack spacing={3}>
           <Box><Typography variant="h6" mb={1}>Datos personales</Typography><Button variant="outlined" onClick={() => navigate('/admin/perfil')}>Editar mis datos</Button></Box>
           <PasswordChangeFlow onCompleted={() => { logout(); navigate('/login', { replace: true }) }} />
-          <Box><Typography variant="h6" mb={1}>Otras sesiones</Typography><Button color="warning" variant="outlined" onClick={() => setConfirm('sessions')}>Cerrar otras sesiones</Button></Box>
+          <Box><Typography variant="h6" mb={1}>Todas las sesiones</Typography><Button color="warning" variant="outlined" onClick={() => setConfirm('sessions')}>Cerrar todas las sesiones</Button></Box>
           {owner && user?.platformRole !== 'SUPER_ADMIN' && <AccountDeletionSection />}
         </Stack>
       </SettingsSection>
       <SettingsSection id="tutorial" title="Tutorial de TecnoDesk" description="Volvé a recorrer las funciones principales del sistema."><Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={1.5}><Button variant="outlined" startIcon={<SchoolRounded />} onClick={openGuidedTutorial}>Ver tutorial</Button>{user?.tutorialSeen && <Typography variant="body2" color="success.main" fontWeight={750}>Completado ✓</Typography>}</Stack></SettingsSection>
     </Stack></Box>
     <ConfirmDialog open={confirm === 'logo'} title="Eliminar logo" text="El logo actual se quitará de tu negocio. Esta acción no se puede deshacer." confirmLabel="Eliminar" onClose={() => setConfirm(null)} onConfirm={() => void removeLogo()} />
-    <ConfirmDialog open={confirm === 'sessions'} title="Cerrar otras sesiones" text="Se cerrará tu sesión en todos los demás dispositivos. Tendrás que iniciar sesión nuevamente en ellos." confirmLabel="Cerrar sesiones" onClose={() => setConfirm(null)} onConfirm={() => void logoutOtherSessions().then(() => { logout(); navigate('/login', { replace: true }) })} />
+    <ConfirmDialog open={confirm === 'sessions'} title="Cerrar sesiones" text="Se cerrarán todas tus sesiones, incluida la de este dispositivo. Tendrás que iniciar sesión nuevamente." confirmLabel="Cerrar sesiones" onClose={() => setConfirm(null)} onConfirm={() => void logoutOtherSessions().then(() => { logout(); navigate('/login', { replace: true }) })} />
   </Box>
 }

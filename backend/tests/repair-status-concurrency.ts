@@ -40,7 +40,7 @@ async function main() {
     const outsider = await user(b.id)
     const denied = await user(a.id, 'TECHNICIAN', ['repairs.view'])
     const technician = await user(a.id, 'TECHNICIAN', ['repairs.view', 'repairs.changeStatus'])
-    const tokenFor = (actor: typeof actors[number]) => jwt.sign({ userId: actor.id, businessId: actor.businessId, role: actor.role, tokenVersion: actor.tokenVersion }, process.env.JWT_SECRET!)
+    const tokenFor = (actor: typeof actors[number]) => jwt.sign({ userId: actor.id, businessId: actor.businessId, role: actor.role, tokenVersion: actor.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const client = await prisma.client.create({ data: { businessId: a.id, name: 'Client' } })
     let number = 1000
     const fixture = (status: RepairStatus) => prisma.repair.create({ data: { businessId: a.id, clientId: client.id, number: ++number, deviceBrand: 'Test', deviceModel: 'Concurrent', issue: 'Status race', status, warrantyEnabled: true, warrantyDurationDays: 30, partsCost: 1000, laborCost: 500, laborCharge: 2000, total: 3500 } })

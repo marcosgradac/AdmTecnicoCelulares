@@ -53,7 +53,7 @@ async function main() {
     try {
       const address = server.address()
       assert.ok(address && typeof address === 'object')
-      const token = jwt.sign({ userId: owner.id, businessId: business.id, tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
+      const token = jwt.sign({ userId: owner.id, businessId: business.id, tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
       const threshold = getArgentinaCalendarDayBounds(1900, 1, 1).start
       const sell = async (soldAt: string) => fetch(`http://127.0.0.1:${address.port}/api/equipment-sales/missing/sell`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ expectedVersion: 0, actualSalePrice: 100, salePaymentMethod: 'CASH', soldAt }) })
       assert.equal((await sell(new Date(threshold.getTime() - 1).toISOString())).status, 400, '1899 in Argentina is rejected even if UTC is already 1900')

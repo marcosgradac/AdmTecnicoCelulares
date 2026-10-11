@@ -176,7 +176,7 @@ async function main() {
     assert.equal(finalReport.body.finance.expenses, 120000)
     const technician = await prisma.user.create({ data: { businessId: businesses[0], name: 'Técnico sin cobros', email: `tech-${randomUUID()}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.create', 'repairs.view'] } })
     const jwt = (await import('jsonwebtoken')).default
-    const technicianToken = jwt.sign({ userId: technician.id, businessId: businesses[0], tokenVersion: technician.tokenVersion }, process.env.JWT_SECRET!)
+    const technicianToken = jwt.sign({ userId: technician.id, businessId: businesses[0], tokenVersion: technician.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const beforeDenied = await snapshot()
     for (const amounts of [
       { partsCost: 30000, laborCharge: 0, advanceAmount: 0 },

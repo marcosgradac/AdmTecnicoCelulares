@@ -87,6 +87,7 @@ async function main() {
       const token = jwt.sign(
         { userId: user.id, businessId: user.businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: user.tokenVersion },
         process.env.JWT_SECRET!,
+        { expiresIn: '8h' },
       )
       accounts.push({ userId: user.id, businessId: user.businessId, token })
     }
