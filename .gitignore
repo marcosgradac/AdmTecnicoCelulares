@@ -1,6 +1,14 @@
 backend/.env
 **/.env
 backend/backups/
+**/backup-output/
+**/backup-*/manifest.json
+**/.backup-work-*/
+**/*.tdbackup
+**/*.tdbackup.json
+**/*.backup-key
+**/backup.config.local.json
+backend/.security9-tools/
 backend/generated/
 backend/.postgres-data/
 backend/.postgres-iso-data/
