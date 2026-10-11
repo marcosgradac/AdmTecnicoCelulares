@@ -22,7 +22,7 @@ async function main() {
     const business = await prisma.business.create({ data: { name: `Cost correction ${label}` } })
     businesses.push(business.id)
     const user = await prisma.user.create({ data: { businessId: business.id, name: 'QA', email: `${label}-${suffix}@example.test`, passwordHash: 'test-only', role: 'OWNER' } })
-    const token = jwt.sign({ userId: user.id, businessId: business.id, tokenVersion: 0 }, process.env.JWT_SECRET!)
+    const token = jwt.sign({ userId: user.id, businessId: business.id, tokenVersion: 0 }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     return { business, user, token }
   }
   const request = async (id: string, body: object, token: string) => {
@@ -109,7 +109,7 @@ async function main() {
     const protectedState = await snapshot(r.id)
     assert.equal((await request(r.id, { amount: 0 }, b.token)).status, 404)
     const tech = await prisma.user.create({ data: { businessId: a.business.id, name: 'Tech', email: `tech-${suffix}@example.test`, passwordHash: 'test-only', role: 'TECHNICIAN', permissions: ['repairs.view', 'repairs.update'] } })
-    const techToken = jwt.sign({ userId: tech.id, businessId: a.business.id, tokenVersion: 0 }, process.env.JWT_SECRET!)
+    const techToken = jwt.sign({ userId: tech.id, businessId: a.business.id, tokenVersion: 0 }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     assert.equal((await request(r.id, { amount: 0 }, techToken)).status, 403)
     const readTech = async (path: string) => {
       const response = await fetch(`http://127.0.0.1:${address.port}/api/repairs/${r.id}${path}`, { headers: { authorization: `Bearer ${techToken}` } })

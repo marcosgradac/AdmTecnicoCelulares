@@ -25,7 +25,7 @@ async function main() {
   const root = `http://127.0.0.1:${(server.address() as { port: number }).port}`
   let passed = 0
   const check = (label: string) => console.log(`OK ${++passed}: ${label}`)
-  const sign = (u: any) => jwt.sign({ userId: u.id, businessId: u.businessId, tokenVersion: u.tokenVersion }, process.env.JWT_SECRET!)
+  const sign = (u: any) => jwt.sign({ userId: u.id, businessId: u.businessId, tokenVersion: u.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const request = async (method: string, path: string, token?: string, data?: object, ip = '127.0.0.1') => {
     const response = await fetch(root + path, { method, headers: { 'content-type': 'application/json', 'x-forwarded-for': ip, ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: data ? JSON.stringify(data) : undefined })
     return { status: response.status, data: await response.json().catch(() => null) }

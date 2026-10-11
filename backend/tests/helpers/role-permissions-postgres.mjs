@@ -38,14 +38,18 @@ try {
   finally { await client.end() }
   // Temp cwd prevents Prisma CLI from loading the developer's backend/.env.
   await run([join(backend, 'node_modules/prisma/build/index.js'), 'migrate', 'deploy', '--schema', join(backend, 'prisma/schema.prisma')], directory)
-  const suites = accountDeletion ? ['account-deletion.ts'] : process.argv.includes('--regressions') ? [
+  const suites = accountDeletion ? ['account-deletion.ts'] : process.argv.includes('--extended') ? [
+    'rate-limit-multiuser.ts', 'cash-pagination.ts', 'commerce-stock-race.ts', 'dashboard-overview-contract.ts', 'dashboard.ts',
+    'money-concurrency.ts', 'performance-access.ts', 'repair-advance-status.ts', 'repair-creation-finance.ts',
+    'repair-edit.ts', 'repair-initial-cost.ts', 'repair-legacy-status-endpoints.ts', 'timezone-cleanup.ts',
+  ] : process.argv.includes('--regressions') ? [
     'reports.ts', 'reports-timezone.ts', 'repair-financial-visibility.ts', 'settings-team.ts',
     'team-password-reset.ts', 'expired-owner-renewal.ts', 'billing.ts', 'subscription-fallback.ts',
     'billing-quota-concurrency.ts', 'pending-payment-concurrency.ts', 'platform-admin-user-redaction.ts',
     'platform-admin-customer-metrics.ts', 'platform-admin-subscription-actions.ts', 'manual-payment-review.ts',
     'password-change.ts', 'password-reset.ts', 'repair-cancellation.ts', 'repair-status-concurrency.ts',
     'warranties.ts', 'commerce.ts', 'equipment-sales.ts', 'tenant-isolation-complete.ts',
-  ] : ['role-permissions-complete.ts']
+  ] : process.argv.includes('--sessions') ? ['session-security-complete.ts'] : ['role-permissions-complete.ts']
   for (const suite of suites) {
     console.log(`RUN regression ${suite}`)
     console.log((await run(['--import', 'tsx', `tests/${suite}`], backend)).trim())

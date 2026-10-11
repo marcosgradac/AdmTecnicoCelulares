@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getMe, login as loginRequest, markTutorialSeen as markTutorialSeenRequest, register as registerRequest, updateProfile as updateProfileRequest, type AuthUser, type ProfileInput, type RegisterInput } from '../services/auth'
 
 const TOKEN_KEY = 'cellufix_access_token'
@@ -53,11 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => { restoreSession() }, [restoreSession])
   useEffect(() => {
     const expire = () => clearSession()
-    const syncSession = (event: StorageEvent) => { if (event.key === TOKEN_KEY && event.newValue === null) clearSession() }
+    const syncSession = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage || (event.key !== TOKEN_KEY && event.key !== null)) return
+      // Read current storage, not a possibly stale event from a previous login.
+      if (!localStorage.getItem(TOKEN_KEY)) { clearSession(); return }
+      sessionGeneration.current += 1
+      setUser(null)
+      restoreSession()
+    }
     window.addEventListener('cellufix:unauthorized', expire)
     window.addEventListener('storage', syncSession)
     return () => { window.removeEventListener('cellufix:unauthorized', expire); window.removeEventListener('storage', syncSession) }
-  }, [clearSession])
+  }, [clearSession, restoreSession])
   const login = async (email: string, password: string, turnstileToken?: string) => {
     const generation = ++sessionGeneration.current
     const result = await loginRequest({ email, password, turnstileToken })
@@ -90,7 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isCurrentSession(generation, token)) setUser(current => current ? { ...current, tutorialSeen: true } : current)
   }
   const value = useMemo(() => ({ user, loading, login, register, updateProfile, markTutorialSeen, refreshUser, logout: clearSession, connectionError, retrySession }), [user, loading, clearSession, connectionError, retrySession])
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  // A different account must not inherit mounted components containing the old account's data.
+  return <AuthContext.Provider value={value}><Fragment key={user?.id ?? 'signed-out'}>{children}</Fragment></AuthContext.Provider>
 }
 export const useAuth = () => {
   const context = useContext(AuthContext)

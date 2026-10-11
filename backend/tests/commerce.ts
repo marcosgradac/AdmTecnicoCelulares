@@ -33,7 +33,7 @@ async function main() {
     const user = await prisma.user.create({ data: { businessId: business.id, name: 'Commerce Owner', firstName: 'Commerce', lastName: 'Owner', email: `commerce-${planCode}-${suffix}@example.com`, passwordHash: 'test', role: 'OWNER' } })
     await prisma.subscription.create({ data: { businessId: business.id, planCode, status: 'ACTIVE', trialStartedAt: now, trialEndsAt: new Date(now.getTime() - 86_400_000), trialConsumedAt: now, currentPeriodStart: now, currentPeriodEnd: new Date(now.getTime() + 30 * 86_400_000), accessExpiresAt: new Date(now.getTime() + 30 * 86_400_000) } })
     businessIds.push(business.id)
-    return jwt.sign({ userId: user.id, businessId: business.id, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!)
+    return jwt.sign({ userId: user.id, businessId: business.id, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   }
   try {
     const completeToken = await createTenant('COMPLETE')
@@ -92,9 +92,9 @@ async function main() {
     assert.equal(await prisma.commerceSale.count({ where: { businessId: businessIds[0] } }), beforeFailedSale)
     assert.equal((await prisma.commerceProduct.findUniqueOrThrow({ where: { id: product.body.id } })).currentStock, 3)
     const staff = await prisma.user.create({ data: { businessId: businessIds[0], name: 'Vendedor', firstName: 'Vendedor', lastName: 'Prueba', email: `commerce-staff-${suffix}@example.com`, passwordHash: 'test', role: 'TECHNICIAN', permissions: ['commerce.view', 'commerce.sell'] } })
-    const staffToken = jwt.sign({ userId: staff.id, businessId: staff.businessId, role: staff.role, platformRole: staff.platformRole, tokenVersion: staff.tokenVersion }, process.env.JWT_SECRET!)
+    const staffToken = jwt.sign({ userId: staff.id, businessId: staff.businessId, role: staff.role, platformRole: staff.platformRole, tokenVersion: staff.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const legacyStaff = await prisma.user.create({ data: { businessId: businessIds[0], name: 'Técnico antiguo', email: `commerce-legacy-${suffix}@example.com`, passwordHash: 'test', role: 'TECHNICIAN' } })
-    const legacyToken = jwt.sign({ userId: legacyStaff.id, businessId: legacyStaff.businessId, role: legacyStaff.role, platformRole: legacyStaff.platformRole, tokenVersion: legacyStaff.tokenVersion }, process.env.JWT_SECRET!)
+    const legacyToken = jwt.sign({ userId: legacyStaff.id, businessId: legacyStaff.businessId, role: legacyStaff.role, platformRole: legacyStaff.platformRole, tokenVersion: legacyStaff.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     for (const permissions of [null, []]) {
       if (permissions) await prisma.user.update({ where: { id: legacyStaff.id }, data: { permissions } })
       assert.equal((await request('GET', '/commerce/products', undefined, legacyToken)).status, 403)

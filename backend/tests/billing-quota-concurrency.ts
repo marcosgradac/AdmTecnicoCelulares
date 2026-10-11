@@ -29,7 +29,7 @@ async function main() {
     const client = await prisma.client.create({ data: { businessId: business.id, name: 'Cliente cuota' } })
     await prisma.subscription.create({ data: { businessId: business.id, planCode, status: 'ACTIVE', trialConsumedAt: start, trialStartedAt: new Date(start.getTime() - 40 * 86400_000), trialEndsAt: new Date(start.getTime() - 10 * 86400_000), currentPeriodStart: start, currentPeriodEnd: end, accessExpiresAt: end } })
     await prisma.repair.createMany({ data: Array.from({ length: repairs }, (_, i) => ({ businessId: business.id, clientId: client.id, number: 1001 + i, deviceBrand: 'QA', deviceModel: 'Test', issue: 'Quota seed', createdAt: now, trackingCreatedAt: i < tracked ? now : null, trackingEnabled: i < tracked, trackingToken: i < tracked ? randomUUID() : null, trackingExpiresAt: end })) })
-    const token = jwt.sign({ userId: user.id, businessId: business.id, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!)
+    const token = jwt.sign({ userId: user.id, businessId: business.id, tokenVersion: user.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     return { id: business.id, token, input: { clientId: client.id, deviceBrand: 'QA', deviceModel: 'Concurrent', issue: 'Quota concurrent', total: 0 } }
   }
   const post = async (f: { token: string }, path: string, body?: object) => {

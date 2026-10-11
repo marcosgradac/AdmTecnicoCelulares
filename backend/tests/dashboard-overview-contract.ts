@@ -37,7 +37,7 @@ async function main() {
     ownerId = owner.id
     const client = await prisma.client.create({ data: { businessId, name: 'Cliente Dashboard' } })
     clientId = client.id
-    const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!)
+    const token = jwt.sign({ userId: owner.id, businessId, role: 'OWNER', platformRole: 'USER', tokenVersion: owner.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
 
     // Dates and IDs deliberately interleave statuses; settled repairs are older.
     const ids = { received: `dash-${suffix}-b-received`, delivered: `dash-${suffix}-a-delivered`, review: `dash-${suffix}-z-review` }
@@ -77,7 +77,7 @@ async function main() {
     // This literal is deliberately retained solely to prove the removed endpoint is 404.
     assert.equal((await fetch(`${BASE}/dashboard/summary`, { headers: { authorization: `Bearer ${token}` } })).status, 404)
     const tech = await prisma.user.create({ data: { businessId, name: 'Technician', email: `tech-${suffix}@local.test`, passwordHash: 'unused', role: 'TECHNICIAN' } })
-    const techToken = jwt.sign({ userId: tech.id, businessId, tokenVersion: tech.tokenVersion }, process.env.JWT_SECRET!)
+    const techToken = jwt.sign({ userId: tech.id, businessId, tokenVersion: tech.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     assert.equal((await fetch(`${BASE}/dashboard/overview`, { headers: { authorization: `Bearer ${techToken}` } })).status, 403)
     const body = await response.json() as Overview
 

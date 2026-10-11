@@ -49,6 +49,7 @@
     "test:tenant-isolation": "tsx tests/tenant-isolation.ts",
     "test:tenant-isolation-complete": "node tests/helpers/tenant-isolation-postgres.mjs",
     "test:role-permissions-complete": "node tests/helpers/role-permissions-postgres.mjs",
+    "test:session-security": "node tests/helpers/role-permissions-postgres.mjs --sessions",
     "test:money-concurrency": "tsx tests/money-concurrency.ts",
     "test:commerce-stock-race": "tsx tests/commerce-stock-race.ts",
     "test:billing": "tsx tests/billing.ts",

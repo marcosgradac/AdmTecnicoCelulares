@@ -24,7 +24,12 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
-    if (error.response?.status === 401 && !String(error.config?.url).includes('/auth/login')) {
+    const token = localStorage.getItem('cellufix_access_token')
+    const authorization = error.config?.headers?.get?.('Authorization') ?? error.config?.headers?.Authorization
+    const sessionRejected = error.response?.status === 401 ||
+      (error.response?.status === 403 && error.response.data?.code === 'USER_INACTIVE')
+    // A response from a previous login must never retire the current credential.
+    if (sessionRejected && token && authorization === `Bearer ${token}` && !String(error.config?.url).includes('/auth/login')) {
       localStorage.removeItem('cellufix_access_token')
       window.dispatchEvent(new Event('cellufix:unauthorized'))
     }

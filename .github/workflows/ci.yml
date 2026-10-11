@@ -54,6 +54,8 @@ jobs:
         run: npm run test:tenant-isolation-complete
       - name: Role and permission authorization (disposable local PostgreSQL)
         run: npm run test:role-permissions-complete
+      - name: Sessions and JWT security (disposable local PostgreSQL)
+        run: npm run test:session-security
 
   frontend:
     name: Frontend CI
@@ -96,3 +98,9 @@ jobs:
         run: npm run test:pwa
       - name: API domain preparation (offline)
         run: npm run test:api-domain-prep
+      - name: Install Chromium for isolated browser tests
+        run: npx playwright install --with-deps chromium
+      - name: Session restoration and cross-tab revocation (real React, mocked API)
+        run: npm run test:session-security
+      - name: Account deletion UI (real React, mocked API)
+        run: npm run test:account-deletion

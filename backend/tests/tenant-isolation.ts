@@ -36,8 +36,8 @@ async function main() {
       issue: 'Aislamiento', total: 20000, status: 'RECEIVED', trackingToken: `tenant-${suffix}`, trackingEnabled: false, updatedAt: new Date(),
     } })
 
-    const tokenA = jwt.sign({ userId: ownerA.id, businessId: businessA, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerA.tokenVersion }, process.env.JWT_SECRET!)
-    const tokenB = jwt.sign({ userId: ownerB.id, businessId: businessB, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerB.tokenVersion }, process.env.JWT_SECRET!)
+    const tokenA = jwt.sign({ userId: ownerA.id, businessId: businessA, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerA.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
+    const tokenB = jwt.sign({ userId: ownerB.id, businessId: businessB, role: 'OWNER', platformRole: 'USER', tokenVersion: ownerB.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
     const call = async (method: string, path: string, body?: object, token = tokenB) => {
       const res = await fetch(`${BASE}${path}`, { method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), authorization: `Bearer ${token}` }, body: body ? JSON.stringify(body) : undefined })
       return { status: res.status, text: await res.text() }
