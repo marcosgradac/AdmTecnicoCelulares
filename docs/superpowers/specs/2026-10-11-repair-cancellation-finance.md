@@ -76,3 +76,5 @@ Las regresiones de backups 9A/9B restauraron únicamente clústeres locales prop
 La validación visual usa servidores locales y respuestas sintéticas; los tests unitarios de UI verifican presupuesto separado de compra, confirmación real, vista previa, cuatro opciones y reintentos con UUID estable. Los avisos de chunks grandes y service worker en modo desarrollo son límites preexistentes de herramientas. El resultado final de ambos jobs de CI debe confirmarse en el PR antes de cualquier futura autorización de integración.
 
 Resultado final local: 16 suites financieras, compilación/typecheck de backend y frontend, UI financiera, 9 grupos de XSS/recuperación, CSP y 21 controles visuales de sesiones aprobados. El primer timeout de carga visual no se reprodujo al ejecutar la suite aislada. CI incluye automáticamente las regresiones nuevas, siempre sobre bases locales ficticias.
+
+CI detectó una expectativa previa de cash-period que construía el primer día del mes en la zona local del runner. Se sustituyó por el instante argentino explícito del fixture y se verificó la suite con TZ=UTC. No cambió el cálculo productivo de períodos.

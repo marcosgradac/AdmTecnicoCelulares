@@ -112,7 +112,7 @@ async function main() {
     const ranges = Object.fromEntries(CASH_PERIODS.map(period => [period, cashPeriodRange(period, now)]))
     assert.equal(ranges.TODAY.start.getTime(), today.start.getTime(), 'HOY arranca a la medianoche de hoy')
     assert.equal(ranges.TODAY.end.getTime(), today.end.getTime(), 'HOY cierra con el día de hoy')
-    assert.equal(ranges.MONTH.start.getTime(), getArgentinaDayBounds(new Date(now.getFullYear(), now.getMonth(), 1)).start.getTime(), 'MES arranca el día 1')
+    assert.equal(ranges.MONTH.start.getTime(), new Date('2026-09-01T03:00:00.000Z').getTime(), 'MES arranca el día 1 de Argentina, independiente de la zona del runner')
     assert.equal(Math.round((ranges.TODAY.end.getTime() - ranges.TODAY.start.getTime()) / DAY), 1, 'HOY es un día exacto')
     for (const [period, days] of [['7D', 7], ['15D', 15], ['30D', 30]] as const) {
       const range = ranges[period]
