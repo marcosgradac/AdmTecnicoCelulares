@@ -56,6 +56,8 @@ jobs:
         run: npm run test:role-permissions-complete
       - name: Sessions and JWT security (disposable local PostgreSQL)
         run: npm run test:session-security
+      - name: Browser hardening and stored fields (disposable local PostgreSQL)
+        run: npm run test:browser-hardening
 
   frontend:
     name: Frontend CI
@@ -104,3 +106,7 @@ jobs:
         run: npm run test:session-security
       - name: Account deletion UI (real React, mocked API)
         run: npm run test:account-deletion
+      - name: XSS rendering and recovery URL (real React, mocked API)
+        run: npm run test:browser-hardening
+      - name: Compiled CSP compatibility (isolated resource fixtures)
+        run: npm run test:csp-compatibility
