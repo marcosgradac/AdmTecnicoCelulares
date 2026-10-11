@@ -92,7 +92,7 @@ async function main() {
     assert.equal(overview.finance.collected, 110, 'same boundaries for Payment.createdAt')
     assert.equal(overview.finance.expenses, 110, 'same boundaries for CashMovement.createdAt')
     assert.deepEqual(overview.clients.topByBilled.map(row => row.name).sort(), ['Boundary 1', 'Boundary 2'])
-    assert.deepEqual(overview.finance.timeline, [{ label: '2026-10-05', billed: 110, collected: 110, expenses: 110, partsCost: 0, repairs: 2 }])
+    assert.deepEqual(overview.finance.timeline, [{ label: '2026-10-05', billed: 110, collected: 110, expenses: 110, accountingAdjustment: 0, partsCost: 0, repairs: 2 }])
     // Check each timestamp alone: catches swapped inclusions even when totals coincide.
     for (const [i, instant] of instants.entries()) {
       await prisma.repair.updateMany({ where: { businessId }, data: { createdAt: new NativeDate(instant), deliveredAt: new NativeDate(instant) } })

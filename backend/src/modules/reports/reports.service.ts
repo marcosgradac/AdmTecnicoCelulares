@@ -147,15 +147,19 @@ async function getReportsOverviewInTransaction(tx: Prisma.TransactionClient, bus
   }
   const clientRows = [...clientStats.values()]
   const granularity = groupByDay(period.from, period.toExclusive)
-  const timelineMap = new Map<string, { label: string; billed: number; collected: number; expenses: number; partsCost: number; repairs: number }>()
+  const timelineMap = new Map<string, { label: string; billed: number; collected: number; expenses: number; accountingAdjustment: number; partsCost: number; repairs: number }>()
   const timelineRow = (date: Date) => {
     const label = bucketKey(date, granularity)
-    const current = timelineMap.get(label) ?? { label, billed: 0, collected: 0, expenses: 0, partsCost: 0, repairs: 0 }
+    const current = timelineMap.get(label) ?? { label, billed: 0, collected: 0, expenses: 0, accountingAdjustment: 0, partsCost: 0, repairs: 0 }
     timelineMap.set(label, current); return current
   }
   for (const repair of validRepairs) { const row = timelineRow(repair.createdAt); row.billed += repair.total; row.partsCost += actualCost(repair); row.repairs += 1 }
   for (const payment of payments) timelineRow(payment.createdAt).collected += payment.amount
-  for (const expense of expenses) timelineRow(expense.createdAt).expenses += expense.amount
+  for (const expense of expenses) {
+    const row = timelineRow(expense.createdAt)
+    if (expense.accountingOnly) row.accountingAdjustment -= expense.amount
+    else row.expenses += expense.amount
+  }
   const profitability = validRepairs.map(repair => ({ id: repair.id, number: repair.number, label: `#${repair.number} · ${repair.deviceBrand} ${repair.deviceModel}`, billed: repair.total, profit: repair.total - actualCost(repair) - repair.laborCost, margin: repair.total ? (repair.total - actualCost(repair) - repair.laborCost) / repair.total : 0 }))
 
   return {

@@ -78,3 +78,9 @@ La validación visual usa servidores locales y respuestas sintéticas; los tests
 Resultado final local: 16 suites financieras, compilación/typecheck de backend y frontend, UI financiera, 9 grupos de XSS/recuperación, CSP y 21 controles visuales de sesiones aprobados. El primer timeout de carga visual no se reprodujo al ejecutar la suite aislada. CI incluye automáticamente las regresiones nuevas, siempre sobre bases locales ficticias.
 
 CI detectó una expectativa previa de cash-period que construía el primer día del mes en la zona local del runner. Se sustituyó por el instante argentino explícito del fixture y se verificó la suite con TZ=UTC. No cambió el cálculo productivo de períodos.
+
+## Revisión final de flujo monetario y despliegue pendiente
+
+finance.timeline.expenses excluye accountingOnly; timeline.accountingAdjustment conserva el ajuste por fecha, mientras balance y el ajuste agregado mantienen la conciliación. La regresión PostgreSQL reproduce -70000 en el gráfico antes del fix y exige cero ingresos/egresos hoy después, con gasto original ayer intacto y comparación de Caja/dashboard/reportes hoy y a siete días. Se conserva exactamente el filtrado de períodos.
+
+El checklist complementario `2026-10-11-repair-cancellation-deployment-checklist.md` exige un respaldo productivo cuya restauración se haya comprobado antes de autorizar la migración, con aprobación separada para tratar datos reales. Describe contratos de clientes antiguos, rechazo antes de escribir, reintentos idempotentes y actualización coordinada de cada pestaña/PWA durante una pausa operativa; no hay actualización remota obligatoria ni persistencia de solicitudes financieras a través de una recarga. No se ejecutó ninguna operación productiva.

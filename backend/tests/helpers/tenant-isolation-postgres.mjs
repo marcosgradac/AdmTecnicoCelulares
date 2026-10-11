@@ -40,5 +40,5 @@ try {
   await postgres.stop()
   assert.equal(dirname(resolve(directory)), temporaryRoot, 'Cleanup must stay in the temporary root')
   assert.ok(directory.startsWith(join(temporaryRoot, 'tecnodesk-tenant-isolation-')))
-  await rm(directory, { recursive: true, force: true })
+  await rm(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
 }
