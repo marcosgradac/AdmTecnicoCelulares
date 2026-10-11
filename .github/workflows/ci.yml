@@ -71,6 +71,10 @@ jobs:
         env:
           PG_BIN: /usr/lib/postgresql/17/bin
         run: npm run test:backup
+      - name: Streaming backup, strict TLS and recovery over 128 MiB (synthetic local cluster only)
+        env:
+          PG_BIN: /usr/lib/postgresql/17/bin
+        run: npm run test:backup-stream
 
   frontend:
     name: Frontend CI

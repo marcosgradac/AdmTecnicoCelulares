@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "backup:local": "node scripts/backup/cli.mjs",
+    "backup:stream": "node scripts/backup/stream-cli.mjs",
     "test:backup": "node tests/backup-unit.mjs && node tests/backup-engine.mjs && node tests/backup-recovery.mjs",
+    "test:backup-stream": "node tests/backup-stream-unit.mjs && node tests/backup-source-unit.mjs && node tests/backup-stream-engine.mjs && node tests/backup-stream-recovery.mjs",
     "postinstall": "prisma generate && prisma generate --schema prisma/sqlite/schema.prisma",
     "dev": "tsx watch src/server.ts",
     "migrate:existing": "tsx src/scripts/migrate-existing-data.ts",
