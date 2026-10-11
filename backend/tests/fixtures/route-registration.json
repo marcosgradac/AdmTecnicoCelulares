@@ -900,6 +900,17 @@
     ]
   },
   {
+    "path": "/api/repairs/:id/financial-operations",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
     "path": "/api/repairs",
     "methods": [
       "get"
@@ -996,6 +1007,7 @@
     ],
     "handlers": [
       "<anonymous>",
+      "<anonymous>",
       "<anonymous>"
     ]
   },
@@ -1003,6 +1015,16 @@
     "path": "/api/repairs/:id/initial-cost",
     "methods": [
       "patch"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/cancel-preview",
+    "methods": [
+      "post"
     ],
     "handlers": [
       "<anonymous>",
@@ -1025,6 +1047,18 @@
       "post"
     ],
     "handlers": [
+      "<anonymous>",
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
+    "path": "/api/repairs/:id/cancellation-refund",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
       "<anonymous>",
       "<anonymous>"
     ]
@@ -1125,6 +1159,7 @@
       "post"
     ],
     "handlers": [
+      "<anonymous>",
       "<anonymous>",
       "<anonymous>"
     ]

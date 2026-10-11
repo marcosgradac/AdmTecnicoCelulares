@@ -91,7 +91,9 @@
     "test:dashboard": "tsx tests/dashboard.ts && tsx tests/dashboard-sqlite.ts",
     "test:equipment-sales-timestamps": "tsx tests/equipment-sales-timestamps.ts",
     "test:manual-payment-review": "tsx tests/manual-payment-review.ts",
-    "test:payments-flow": "tsx tests/payments_flow.ts"
+    "test:payments-flow": "tsx tests/payments_flow.ts",
+    "test:repair-cancellation-finance": "node tests/helpers/repair-finance-postgres.mjs",
+    "test:repair-finance-regressions": "node tests/helpers/repair-finance-postgres.mjs repair-cancellation-finance.ts repair-creation-finance.ts repair-creation-finance-sqlite.ts repair-cancellation.ts repair-edit.ts repair-initial-cost.ts repair-advance-status.ts repair-financial-visibility.ts cash-groups.ts cash-period.ts cash-period-30d.ts dashboard.ts reports.ts reports-timezone.ts repair-status-concurrency.ts repair-legacy-status-endpoints.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

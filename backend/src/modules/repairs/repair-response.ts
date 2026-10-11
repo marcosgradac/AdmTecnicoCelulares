@@ -6,7 +6,7 @@ export const canViewRepairFinancials = (auth: AuthData) =>
 // Financial corrections contain private workshop/payment amounts, not operational status changes.
 export const repairHistoryResponse = <T extends { internalNote?: string | null }>(auth: AuthData, history: T[]) =>
   canViewRepairFinancials(auth) ? history : history.filter(item =>
-    !item.internalNote?.startsWith('Adelanto corregido de $') && !item.internalNote?.startsWith('Costo/gasto corregido de $'))
+    !item.internalNote?.startsWith('Adelanto corregido de $') && !item.internalNote?.startsWith('Costo/gasto corregido de $') && !item.internalNote?.startsWith('Liquidación financiera:') && !item.internalNote?.startsWith('Presupuesto de repuestos'))
 
 /** HTTP boundary only: never mutate the model used by transactions/calculations.
  * Total, paid and cancellation summary amounts are operational in the existing UI.
@@ -14,6 +14,7 @@ export const repairHistoryResponse = <T extends { internalNote?: string | null }
 export function repairResponse<T extends object>(auth: AuthData, repair: T | null) {
   if (!repair || canViewRepairFinancials(auth)) return repair
   const result = { ...repair } as Record<string, unknown>
+  for (const field of ['financialSummary', 'financialMovements', 'expenseEntries', 'cancellationRequestId', 'cancellationRequestPayload']) delete result[field]
   for (const field of ['partsCost', 'laborCost', 'laborCharge', 'initialCostMovementId', 'payments', 'cancellationRefundMethod', 'cancellationRefundMovementId']) delete result[field]
   if (Array.isArray(result.statusHistory)) result.statusHistory = repairHistoryResponse(auth, result.statusHistory)
   return result

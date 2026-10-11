@@ -34,6 +34,11 @@ export interface RepairPayment {
 }
 
 export interface Repair {
+  financeVersion?: number | null
+  cancellationRefundPaid?: number | null
+  financialSummary?: { income: number; expense: number; net: number; cashExpense: number; cashNet: number; accountingAdjustment: number; customerCollected: number; customerRefund: number; supplierRecovery: number; reviewBalance: number; refundBalance: number; unresolvedExpenses: number }
+  expenseEntries?: Array<{ id: string; amount: number; remaining: number; description: string; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' | null; createdAt: string; historical: boolean }>
+  financialMovements?: Array<{ id: string; type: 'INCOME' | 'EXPENSE'; amount: number; description: string; createdAt: string; accountingOnly: boolean; relatedMovementId: string | null; method: string | null; repairFinanceKind: string | null }>
   id: string
   number: number
   clientId: string
@@ -84,4 +89,4 @@ export const cancellationReviewBalance = (repair: Pick<Repair, 'cancellationRevi
   Math.max(0, (repair.cancellationReviewFee ?? 0) - (repair.cancellationReviewPaid ?? 0) - (repair.cancellationPaidAmount ?? 0))
 
 /** Resultado económico final de una reparación cancelada: sólo el costo de revisión. */
-export const cancellationNetAmount = (repair: Pick<Repair, 'cancellationReviewFee'>) => repair.cancellationReviewFee ?? 0
+export const cancellationNetAmount = (repair: Pick<Repair, 'financialSummary'>) => repair.financialSummary?.net ?? null

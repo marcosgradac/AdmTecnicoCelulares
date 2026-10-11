@@ -34,12 +34,13 @@ export function registerCashRoutes(app: Express) {
     const createdAt = cashPeriodWhere(period, now)
     const where = { businessId, ...(parsed.data.origin ? { origin: parsed.data.origin } : {}), createdAt }
     // El resumen usa exactamente el mismo rango que el listado: tarjetas y tabla no se contradicen.
-    const summaryQuery = prisma.cashMovement.groupBy({ by: ['type'], where, orderBy: { type: 'asc' }, _sum: { amount: true } })
+    const summaryQuery = prisma.cashMovement.groupBy({ by: ['type', 'accountingOnly'], where, orderBy: { type: 'asc' }, _sum: { amount: true } })
     const countQuery = prisma.cashMovement.count({ where })
-    const buildSummary = (grouped: { type: CashMovementType; _sum: { amount: number | null } }[], totalMovements: number) => {
-      const income = grouped.find(row => row.type === CashMovementType.INCOME)?._sum?.amount ?? 0
-      const expense = grouped.find(row => row.type === CashMovementType.EXPENSE)?._sum?.amount ?? 0
-      return { income, expense, balance: income - expense, totalMovements }
+    const buildSummary = (grouped: { type: CashMovementType; accountingOnly: boolean; _sum: { amount: number | null } }[], totalMovements: number) => {
+      const income = grouped.filter(row => row.type === CashMovementType.INCOME).reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
+      const expense = grouped.filter(row => row.type === CashMovementType.EXPENSE).reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
+      const accountingAdjustment = -grouped.filter(row => row.accountingOnly).reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
+      return { income, expense, balance: income - expense, cashExpense: expense + accountingAdjustment, cashBalance: income - expense - accountingAdjustment, accountingAdjustment, totalMovements }
     }
 
     if (parsed.data.groupByRepair) {

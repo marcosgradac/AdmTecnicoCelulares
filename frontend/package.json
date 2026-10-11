@@ -21,7 +21,8 @@
     "test:pwa": "node tests/pwa.cjs",
     "test:api-domain-prep": "node tests/api-domain-prep.cjs",
     "build:icons": "node scripts/generate-pwa-icons.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:repair-cancellation-finance": "node tests/repair-cancellation-finance.cjs && node tests/repair-financial-operations.cjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

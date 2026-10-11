@@ -6,7 +6,7 @@ export type DashboardOrigin = 'REPAIR' | 'COMMERCE' | 'EQUIPMENT' | 'GENERAL'
 export interface DashboardOverview {
   generatedAt: string
   period: { key: DashboardPeriod; start: string; end: string; timeZone: string }
-  financial: { income: number; expense: number; balance: number }
+  financial: { income: number; expense: number; balance: number; cashBalance?: number; accountingAdjustment?: number; cashExpense?: number }
   current: { activeRepairs: number; readyRepairs: number; pending: number }
   charts: null | {
     cashFlow: Array<{ label: string; income: number; expense: number }>
@@ -19,7 +19,7 @@ export interface DashboardOverview {
     commerce: null | { sales: number; revenue: number; grossProfit: number }
     equipment: { ready: number; inProcess: number; sales: number; revenue: number; profit: number }
   }
-  activity: Array<{ id: string; type: 'INCOME' | 'EXPENSE'; amount: number; origin: DashboardOrigin; description: string; createdAt: string; href: string }>
+  activity: Array<{ id: string; accountingOnly?: boolean; type: 'INCOME' | 'EXPENSE'; amount: number; origin: DashboardOrigin; description: string; createdAt: string; href: string }>
 }
 
 export const getDashboardOverview = async (period: DashboardPeriod, signal?: AbortSignal) =>

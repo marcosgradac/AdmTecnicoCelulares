@@ -6,6 +6,9 @@ export const repairMoney = z.number().int().min(0).max(2_147_483_647)
 export const repairInitialCostSchema = z.object({ amount: repairMoney, method: z.nativeEnum(PaymentMethod).optional() })
 export const initialRepairFinanceSchema = z.object({
   partsCost: repairMoney.default(0),
+  initialExpenseAmount: repairMoney.default(0),
+  initialExpenseMethod: z.nativeEnum(PaymentMethod).optional(),
+  expenseConfirmed: z.boolean().default(false),
   // El gasto inicial y el adelanto son dos movimientos distintos de Caja: cada uno tiene su
   // propio medio de pago. Un costo sin método informado se guarda con `method` en NULL y Caja
   // lo muestra como "Sin medio informado": nunca se inventa cómo se pagó.
@@ -31,16 +34,19 @@ export async function recordInitialRepairFinance(
   tx: Prisma.TransactionClient,
   repair: { id: string; businessId: string; number: number; clientId: string; partsCost: number; createdAt: Date },
   clientName: string,
-  input: Pick<z.infer<typeof initialRepairFinanceSchema>, 'advanceAmount' | 'advanceMethod' | 'partsCostMethod'>,
+  input: Pick<z.infer<typeof initialRepairFinanceSchema>, 'advanceAmount' | 'advanceMethod' | 'partsCostMethod'> & Partial<Pick<z.infer<typeof initialRepairFinanceSchema>, 'initialExpenseAmount' | 'initialExpenseMethod' | 'expenseConfirmed'>>,
+  performedByUserId?: string,
 ) {
   const { id: repairId, businessId, number, clientId, createdAt } = repair
   let initialCostMovementId: string | undefined
-  if (repair.partsCost > 0) {
+  if ((input.initialExpenseAmount ?? 0) > 0) {
+    if (!input.expenseConfirmed || !input.initialExpenseMethod) throw new RepairFinanceError(400, 'Confirmá la compra real y su medio de pago')
     // El gasto inicial guarda su propio medio de pago, independiente del adelanto. Sin método
     // informado el movimiento queda con `method` en NULL y Caja muestra "Sin medio informado".
     const movement = await tx.cashMovement.create({ data: {
       businessId, repairId, clientName, type: 'EXPENSE', origin: 'REPAIR',
-      description: `Costo inicial reparación #${number}`, amount: repair.partsCost, method: input.partsCostMethod, createdAt,
+      description: `Compra real repuestos reparación #${number}`, amount: input.initialExpenseAmount!, method: input.initialExpenseMethod, createdAt,
+      repairFinanceKind: 'PURCHASE', performedByUserId,
     } })
     initialCostMovementId = movement.id
   }
@@ -50,7 +56,7 @@ export async function recordInitialRepairFinance(
     // caja quedan unidos desde el origen, sin depender del texto de la descripción.
     const movement = await tx.cashMovement.create({ data: {
       businessId, repairId, clientName, type: 'INCOME', origin: 'REPAIR',
-      description: advanceDescription(number), amount: input.advanceAmount, method: input.advanceMethod, createdAt,
+      description: advanceDescription(number), amount: input.advanceAmount, method: input.advanceMethod, createdAt, repairFinanceKind: 'ADVANCE', performedByUserId,
     } })
     await tx.payment.create({ data: {
       businessId, repairId, clientId, amount: input.advanceAmount, method: input.advanceMethod,
@@ -77,53 +83,6 @@ export const advanceCorrectionNote = (previousAmount: number, amount: number) =>
 export const initialCostCorrectionNote = (previousAmount: number, amount: number) => {
   const pesos = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 })
   return `Costo/gasto corregido de $${pesos.format(previousAmount)} a $${pesos.format(amount)}`
-}
-
-/** Runs in the transaction holding the Repair row lock. Never touches client payments. */
-export async function correctInitialRepairCost(
-  tx: Prisma.TransactionClient,
-  repair: { id: string; businessId: string; number: number; partsCost: number; initialCostMovementId: string | null },
-  clientName: string,
-  input: { amount: number; method?: PaymentMethod },
-) {
-  const { id: repairId, businessId, number, initialCostMovementId, partsCost: previousAmount } = repair
-  const where = { businessId, repairId, type: 'EXPENSE' as const, origin: 'REPAIR' as const }
-  const include = { initialCostRepair: { select: { id: true } }, repairPayment: { select: { id: true } }, warrantyExpense: { select: { id: true } } }
-  const description = `Costo inicial reparación #${number}`
-  let movement
-  if (initialCostMovementId) {
-    // The linked ID wins even if its description was edited. A corrupt link is never guessed away.
-    movement = await tx.cashMovement.findFirst({ where: { ...where, id: initialCostMovementId }, include })
-    if (!movement) throw new RepairFinanceError(409, 'El egreso inicial vinculado no corresponde a esta reparación. Revisá la Caja antes de corregirlo.')
-  } else {
-    const candidates = await tx.cashMovement.findMany({ where: { ...where, description }, include, take: 2 })
-    if (candidates.length > 1) throw new RepairFinanceError(409, 'Esta reparación tiene varios egresos de costo que no se pueden distinguir. Revisá la Caja antes de corregirlo.')
-    movement = candidates[0] ?? null
-  }
-  if (movement && (movement.repairPayment || movement.warrantyExpense ||
-    (movement.initialCostRepair && movement.initialCostRepair.id !== repairId))) {
-    throw new RepairFinanceError(409, 'El egreso está vinculado a otra operación. Revisá la Caja antes de corregirlo.')
-  }
-  if (input.amount === 0) {
-    // RESTRICT requires releasing the link before deleting only this expense.
-    if (previousAmount !== 0 || initialCostMovementId || movement) {
-      await tx.repair.update({ where: { id: repairId, businessId }, data: { partsCost: 0, initialCostMovementId: null } })
-      if (movement) await tx.cashMovement.delete({ where: { id: movement.id, businessId } })
-    }
-  } else {
-    if (movement) {
-      if (movement.amount !== input.amount || (input.method !== undefined && movement.method !== input.method)) {
-        await tx.cashMovement.update({ where: { id: movement.id, businessId }, data: { amount: input.amount, ...(input.method ? { method: input.method } : {}) } })
-      }
-    } else {
-      if (!input.method) throw new RepairFinanceError(400, 'Seleccioná el medio de pago del gasto para crear el egreso inicial')
-      movement = await tx.cashMovement.create({ data: { businessId, repairId, clientName, type: 'EXPENSE', origin: 'REPAIR', description, amount: input.amount, method: input.method }, include })
-    }
-    if (previousAmount !== input.amount || initialCostMovementId !== movement.id) {
-      await tx.repair.update({ where: { id: repairId, businessId }, data: { partsCost: input.amount, initialCostMovementId: movement.id } })
-    }
-  }
-  return { previousAmount }
 }
 
 /**
@@ -163,26 +122,20 @@ async function findAdvanceMovement(
   return { movement: candidates[0] ?? null, ambiguous: false }
 }
 
-/**
- * Corrige el adelanto inicial de una reparación ya creada.
- *
- * El adelanto es un único Payment (`isAdvance`) vinculado por ID a su único CashMovement INCOME.
- * Corregirlo actualiza ambos registros en su lugar: nunca crea un segundo adelanto ni duplica
- * la caja. `Repair.paid` se recalcula como la suma real de todos los pagos válidos, así que los
- * pagos posteriores quedan intactos y el saldo siempre sigue al total realmente cobrado.
- *
- * Debe ejecutarse dentro de la transacción que ya tomó la reparación.
- */
+/** Registra un primer adelanto explícito; nunca modifica ni reconstruye cobros existentes. */
 export async function correctInitialRepairAdvance(
   tx: Prisma.TransactionClient,
   repair: { id: string; businessId: string; number: number; clientId: string; total: number },
   clientName: string,
   input: { amount: number; method?: PaymentMethod },
+  performedByUserId?: string,
 ) {
   const { id: repairId, businessId, number, clientId, total } = repair
   if (input.amount > total) throw new RepairFinanceError(400, 'El adelanto no puede superar el total al cliente')
 
   const payments = await tx.payment.findMany({ where: { repairId, businessId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] })
+  const recorded = await tx.repair.findFirstOrThrow({ where: { id: repairId, businessId }, select: { paid: true } })
+  if (recorded.paid !== validPaymentsTotal(payments)) throw new RepairFinanceError(409, 'Los pagos históricos necesitan conciliación explícita; no se modifica el saldo registrado.')
   const advances = payments.filter(payment => payment.isAdvance)
   if (advances.length > 1) throw new RepairFinanceError(409, 'Esta reparación tiene más de un adelanto registrado. Revisá los pagos antes de corregirlo.')
   const currentAdvance = advances[0] ?? null
@@ -199,26 +152,11 @@ export async function correctInitialRepairAdvance(
   // Con más de un ingreso homónimo no se puede saber cuál es el del adelanto: se frena.
   if (ambiguous) throw new RepairFinanceError(409, 'Esta reparación tiene varios ingresos de Caja que no se pueden distinguir del adelanto. Revisá la Caja antes de corregirlo.')
 
-  if (input.amount === 0) {
-    // Sin adelanto no queda ni pago ni ingreso de caja. Se borran por ID y nunca por texto.
-    // El orden importa: RESTRICT impide borrar una caja que todavía está referenciada, así que
-    // primero se suelta el vínculo del pago y recién después se elimina el movimiento.
-    if (currentAdvance) await tx.payment.delete({ where: { id: currentAdvance.id } })
-    if (movement) await tx.cashMovement.delete({ where: { id: movement.id } })
-  } else if (currentAdvance) {
-    // El movimiento de caja es el mismo: se actualiza su importe para que Caja nunca duplique el adelanto.
-    if (movement) {
-      await tx.cashMovement.update({ where: { id: movement.id }, data: { amount: input.amount, method: input.method! } })
-      await tx.payment.update({ where: { id: currentAdvance.id }, data: { amount: input.amount, method: input.method!, cashMovementId: movement.id } })
-    } else {
-      // El pago existe pero su ingreso no: se recupera el vínculo creando el movimiento que faltaba.
-      const created = await tx.cashMovement.create({ data: { businessId, repairId, clientName, type: 'INCOME', origin: 'REPAIR', description, amount: input.amount, method: input.method! } })
-      await tx.payment.update({ where: { id: currentAdvance.id }, data: { amount: input.amount, method: input.method!, cashMovementId: created.id } })
-    }
-  } else {
-    // La reparación se creó sin adelanto: se registra el pago y su ingreso vinculados por ID.
-    const created = await tx.cashMovement.create({ data: { businessId, repairId, clientName, type: 'INCOME', origin: 'REPAIR', description, amount: input.amount, method: input.method! } })
-    await tx.payment.create({ data: { businessId, repairId, clientId, amount: input.amount, method: input.method!, isAdvance: true, note: description, cashMovementId: created.id } })
+  if (currentAdvance || movement) throw new RepairFinanceError(409, 'Los pagos y sus movimientos se conservan. Usá la liquidación explícita; no se modifica ni reconstruye un cobro histórico.')
+  if (input.amount > 0) {
+    if (!input.method) throw new RepairFinanceError(400, 'Indicá el medio del cobro real')
+    const created = await tx.cashMovement.create({ data: { businessId, repairId, clientName, type: 'INCOME', origin: 'REPAIR', description, amount: input.amount, method: input.method, repairFinanceKind: 'ADVANCE', performedByUserId } })
+    await tx.payment.create({ data: { businessId, repairId, clientId, amount: input.amount, method: input.method, isAdvance: true, note: description, cashMovementId: created.id } })
   }
 
   const settled = await tx.payment.findMany({ where: { repairId, businessId } })

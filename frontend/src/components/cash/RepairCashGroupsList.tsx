@@ -11,7 +11,7 @@ const methodIcons = { CASH: PaymentsRounded, TRANSFER: SwapHorizRounded, CARD: C
 
 /** Importes con signo: verde para ingresos, rojo para egresos. */
 export const signedMoney = (amount: number, kind: 'income' | 'expense' | 'net') => {
-  const sign = kind === 'expense' ? '−' : kind === 'income' ? '+' : amount > 0 ? '+' : amount < 0 ? '−' : ''
+  const sign = kind === 'expense' ? amount < 0 ? '+' : '−' : kind === 'income' ? '+' : amount > 0 ? '+' : amount < 0 ? '−' : ''
   const color = kind === 'expense' ? 'error.dark' : kind === 'income' ? 'success.dark' : amount > 0 ? 'success.dark' : amount < 0 ? 'error.dark' : 'text.primary'
   return { text: `${sign}${formatMoney(Math.abs(amount))}`, color }
 }
@@ -25,17 +25,22 @@ const paymentMethod = (method: GroupedCashMovement['method']) => {
 }
 
 const movementType = (movement: GroupedCashMovement) => {
+  if (movement.accountingOnly) return <Chip size="small" variant="outlined" label="Ajuste sin dinero"/>
   const income = movement.type === 'INCOME'
   return <Chip size="small" variant="outlined" label={income ? 'Ingreso' : 'Egreso'} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: income ? 'success.dark' : 'error.dark', fontWeight: 700 }} />
 }
 
 const movementAmount = (movement: GroupedCashMovement) => {
+  if (movement.accountingOnly) return <Typography fontWeight={800} color="text.secondary">Ajuste {formatMoney(Math.abs(movement.amount))}</Typography>
   const income = movement.type === 'INCOME'
   return <Typography variant="body2" fontWeight={800} color={income ? 'success.dark' : 'error.dark'} sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{income ? '+' : '−'}{formatMoney(movement.amount)}</Typography>
 }
 
 /** Datos comunes de un grupo, sea una reparación o el bloque de movimientos sueltos. */
 export interface CashGroupSummary {
+  status?: string | null
+  accountingAdjustment?: number
+  cashNet?: number
   key: string
   title: string
   /** Cliente y equipo por separado: la tabla los muestra en celdas distintas. */
@@ -79,9 +84,9 @@ const device = (group: RepairCashGroup) =>
 /** Movimientos de un grupo desplegado. En escritorio usan tabla; en móvil, tarjetas apiladas. */
 const MovementDetails = ({ movements, mobile }: { movements: GroupedCashMovement[]; mobile: boolean }) => {
   if (mobile) return <Stack spacing={1.25} sx={{ pt: 1.5 }}>{movements.map(movement => <Box key={movement.id} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2.5, p: 1.5, bgcolor: 'background.default', minWidth: 0 }}>
-    <Typography variant="body2" fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{movement.description}</Typography>
+    <Typography variant="body2" fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{movement.description}{movement.relatedMovementId && <Typography component="span" variant="caption"> · Vinculado a #{movement.relatedMovementId.slice(-6).toUpperCase()}</Typography>}</Typography>
     <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" sx={{ mt: .5 }}>
-      {paymentMethod(movement.method)}
+      {movement.accountingOnly ? 'No mueve dinero' : paymentMethod(movement.method)}
       <Typography variant="caption" color="text.secondary">{formatShortDate(movement.createdAt)} {formatShortTime(movement.createdAt)}</Typography>
     </Stack>
     <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1} sx={{ mt: 1 }}>
@@ -129,10 +134,11 @@ const GroupHeader = ({ group, expanded, onToggle }: { group: CashGroupSummary; e
       <Box minWidth={0} flex={1}>
         <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
           <Typography component="span" fontWeight={800} sx={{ overflowWrap: 'anywhere' }}>{group.title}</Typography>
+          {group.status === 'CANCELLED' && <Chip label="Cancelada" size="small" color="error" variant="outlined"/>}
           <Chip size="small" variant="outlined" label={`${group.movementCount} ${group.movementCount === 1 ? 'movimiento' : 'movimientos'}`} sx={{ borderColor: 'divider' }} />
         </Stack>
         {group.subtitle && <Typography component="span" variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{group.subtitle}</Typography>}
-        <Box sx={{ mt: .75 }}>{totalsRow(group)}</Box>
+        <Box sx={{ mt: .75 }}>{totalsRow(group)}{Boolean(group.accountingAdjustment) && <Typography variant="caption">Ajuste sin dinero: {formatMoney(group.accountingAdjustment ?? 0)} · flujo registrado: {formatMoney(group.cashNet ?? 0)}</Typography>}</Box>
       </Box>
       <Stack direction="row" alignItems="center" gap={.75} sx={{ flexShrink: 0, color: 'text.secondary', justifyContent: { xs: 'flex-end', sm: 'initial' } }}>
         <Typography component="span" variant="caption" sx={{ whiteSpace: 'nowrap' }}>{formatShortDate(group.lastMovementAt)}</Typography>
@@ -146,6 +152,7 @@ const toSummary = (group: RepairCashGroup): CashGroupSummary => {
   const model = device(group)
   return {
     key: group.repairId,
+    status: group.status, accountingAdjustment: group.accountingAdjustment, cashNet: group.cashNet,
     title: group.repairNumber ? `Reparación #${group.repairNumber}` : 'Reparación eliminada',
     clientName: group.clientName,
     deviceLabel: model || undefined,
@@ -196,6 +203,7 @@ const RepairTable = ({ summaries, openKey, onToggle }: { summaries: CashGroupSum
                 sx={{ display: 'block', width: '100%', textAlign: 'left', bgcolor: 'transparent', border: 0, p: 0, m: 0, cursor: 'pointer', color: 'inherit', font: 'inherit', borderRadius: 1, '&:focus-visible': { outline: 2, outlineColor: 'primary.main', outlineOffset: 2 } }}
               >
                 <Typography component="span" variant="body2" fontWeight={800} sx={{ overflowWrap: 'anywhere' }}>{group.title}</Typography>
+                {group.status === 'CANCELLED' && <Chip label="Cancelada" size="small" color="error" variant="outlined"/>}
               </Box>
             </TableCell>
             <TableCell>
@@ -205,7 +213,7 @@ const RepairTable = ({ summaries, openKey, onToggle }: { summaries: CashGroupSum
             <TableCell>{movementBadge(group.movementCount)}</TableCell>
             <TableCell align="right"><AmountCell amount={group.income} kind="income" /></TableCell>
             <TableCell align="right"><AmountCell amount={group.expense} kind="expense" /></TableCell>
-            <TableCell align="right"><AmountCell amount={group.net} kind="net" /></TableCell>
+            <TableCell align="right"><AmountCell amount={group.net} kind="net" />{Boolean(group.accountingAdjustment) && <Typography variant="caption">Incluye ajuste sin dinero {formatMoney(group.accountingAdjustment ?? 0)}</Typography>}</TableCell>
             <TableCell>
               <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{formatShortDate(group.lastMovementAt)}</Typography>
               <Typography variant="caption" color="text.disabled" sx={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }} display="block">{formatShortTime(group.lastMovementAt)}</Typography>

@@ -52,6 +52,8 @@ jobs:
         run: npm run test:public-api-origin
       - name: Tenant isolation (disposable local PostgreSQL)
         run: npm run test:tenant-isolation-complete
+      - name: Repair financial ledger and cancellation regressions (owned disposable PostgreSQL and SQLite)
+        run: npm run test:repair-finance-regressions
       - name: Role and permission authorization (disposable local PostgreSQL)
         run: npm run test:role-permissions-complete
       - name: Sessions and JWT security (disposable local PostgreSQL)
@@ -105,6 +107,8 @@ jobs:
         run: npm run test:repair-flow
       - name: Repair editing (mocked services)
         run: npm run test:repair-edit
+      - name: Cancellation and financial operations (mocked services)
+        run: npm run test:repair-cancellation-finance
       - name: Cash groups (local component harness)
         run: npm run test:cash-groups
       - name: Platform admin metrics (mocked hooks)

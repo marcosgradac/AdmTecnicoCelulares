@@ -18,15 +18,17 @@ const paymentMethod = (method: CashMovement['method']) => {
 
 /** Subtítulo del movimiento: aclara de qué trata cuando la descripción es genérica. */
 const movementSubject = (item: CashMovement) =>
-  item.resaleDeviceId ? `Equipo #${item.resaleDeviceId.slice(-6).toUpperCase()}` : item.clientName || null
+  item.relatedMovementId ? 'Ajusta movimiento #' + item.relatedMovementId.slice(-6).toUpperCase() : item.resaleDeviceId ? `Equipo #${item.resaleDeviceId.slice(-6).toUpperCase()}` : item.clientName || null
 
 export function CashMovementList({ movements, showOrigin = true, emptyTitle = 'Todavía no hay movimientos vinculados.', emptyHint = 'Cuando se registre un cobro, una venta o una compra, va a aparecer acá con su origen identificado.' }: { movements: CashMovement[]; showOrigin?: boolean; emptyTitle?: string; emptyHint?: string }) {
   const mobile = useCashMobile()
   const amount = (item: CashMovement) => {
+    if (item.accountingOnly) return <Typography fontWeight={800} color="text.secondary">Ajuste {formatMoney(Math.abs(item.amount))}</Typography>
     const income = item.type === 'INCOME'
     return <Typography variant="body2" fontWeight={800} color={income ? 'success.dark' : 'error.dark'} sx={{ fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{income ? '+' : '−'}{formatMoney(item.amount)}</Typography>
   }
   const type = (item: CashMovement) => {
+    if (item.accountingOnly) return <Chip size="small" variant="outlined" label="Ajuste sin dinero"/>
     const income = item.type === 'INCOME'
     return <Chip size="small" variant="outlined" label={income ? 'Ingreso' : 'Egreso'} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: income ? 'success.dark' : 'error.dark', fontWeight: 700 }} />
   }
@@ -35,8 +37,8 @@ export function CashMovementList({ movements, showOrigin = true, emptyTitle = 'T
     title={item.description}
     status={<Stack direction="row" gap={.75} flexWrap="wrap">{type(item)}{showOrigin && <Chip size="small" variant="outlined" label={CASH_ORIGIN_LABELS[item.origin] ?? item.origin} />}</Stack>}
     subtitle={movementSubject(item)}>
-    <RecordField label="Importe" color={item.type === 'INCOME' ? 'success.dark' : 'error.dark'}>{`${item.type === 'INCOME' ? '+' : '−'}${formatMoney(item.amount)}`}</RecordField>
-    <RecordField label="Medio de pago">{paymentMethod(item.method)}</RecordField>
+    <RecordField label="Importe">{amount(item)}</RecordField>
+    <RecordField label="Medio de pago">{item.accountingOnly ? 'No mueve dinero' : paymentMethod(item.method)}</RecordField>
     <RecordField label="Fecha">{formatShortDate(item.createdAt)}</RecordField>
     <RecordField label="Hora">{formatShortTime(item.createdAt)}</RecordField>
   </RecordCard>)}</Stack>

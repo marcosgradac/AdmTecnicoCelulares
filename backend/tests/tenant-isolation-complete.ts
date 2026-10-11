@@ -27,6 +27,11 @@ async function main() {
   let checks = 0
   const sign = (user: { id: string; businessId: string; role: string; platformRole: string; tokenVersion: number }, extra = {}) => jwt.sign({ userId: user.id, businessId: user.businessId, role: user.role, platformRole: user.platformRole, tokenVersion: user.tokenVersion, ...extra }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const request = async (token: string | undefined, method: string, path: string, body?: object) => {
+    // Authorization probes submit a valid explicit financial command under the new contract.
+    if (method === 'POST' && path.endsWith('/payments') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+    if (method === 'POST' && path.endsWith('/cancel') && body) body = { requestId: randomUUID(), expenses: [], refundConfirmed: Boolean((body as any).refundMethod), ...body }
+    if (method === 'POST' && path.endsWith('/cancellation-payment') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+
     const response = await fetch(`${base}${path}`, { method, redirect: 'error', headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), ...(body ? { 'content-type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined })
     const text = await response.text()
     return { status: response.status, text, body: response.headers.get('content-type')?.includes('application/json') ? JSON.parse(text) as any : text }
@@ -84,7 +89,8 @@ async function main() {
       await expect(tenant.token, 'PATCH', `/clients/${client.id}`, 200, { name: client.name, phone: client.phone })
       await expect(tenant.token, 'PATCH', `/repairs/${repair.id}/edit`, 200, { diagnosis: `Private-diagnosis-${tenant.business.id}` })
       await expect(tenant.token, 'PATCH', `/repairs/${repair.id}/status/advance`, 200, { publicMessage: 'Public update', internalNote: `Private-note-${tenant.business.id}` })
-      await expect(tenant.token, 'POST', `/repairs/${repair.id}/payments`, 201, { amount: tenant === a ? 100 : 900, method: 'CASH', businessId: admin.business.id })
+      await expect(tenant.token, 'POST', `/repairs/${repair.id}/payments`, 400, { amount: tenant === a ? 100 : 900, method: 'CASH', businessId: admin.business.id })
+        await expect(tenant.token, 'POST', `/repairs/${repair.id}/payments`, 201, { amount: tenant === a ? 100 : 900, method: 'CASH' })
       const category = await expect(tenant.token, 'POST', '/commerce/categories', 201, { name: `Private-category-${tenant.business.id}` })
       const product = await expect(tenant.token, 'POST', '/commerce/products', 201, { ...productInput, name: `Private-product-${tenant.business.id}`, category: category.name, businessId: admin.business.id })
       const key = randomUUID()
@@ -123,7 +129,7 @@ async function main() {
       assert.equal(products.total, 1)
       assert.equal((await expect(own.token, 'GET', '/commerce/summary', 200)).sales, 1)
       const cash = await expect(own.token, 'GET', '/cash/movements', 200)
-      assert.deepEqual(cash.summary, { income: own === A ? 300 : 1100, expense: 170, balance: own === A ? 130 : 930, totalMovements: 6 })
+      assert.deepEqual(cash.summary, { income: own === A ? 300 : 1100, expense: 170, balance: own === A ? 130 : 930, totalMovements: 6, accountingAdjustment: 0, cashExpense: 170, cashBalance: own === A ? 130 : 930 })
       const equipment = await expect(own.token, 'GET', '/equipment-sales/summary', 200)
       assert.equal(equipment.readyForSale, 1)
       assert.equal(equipment.totalInvested, 120)

@@ -16,11 +16,7 @@ try {
         INSERT INTO "Repair" (id,businessId,number,clientId,deviceBrand,deviceModel,issue,trackingToken,updatedAt)
           VALUES ('legacy','a',1001,'ca','Samsung','A14','Pantalla','legacy-token',CURRENT_TIMESTAMP);`)
     }
-    db.exec(readFileSync(file, 'utf8'))
-  }
-  db.exec('PRAGMA foreign_keys=ON')
-  const legacy = db.prepare('SELECT partsCost,laborCost,laborCharge,initialCostMovementId FROM Repair WHERE id=?').get('legacy')!
-  assert.deepEqual({ ...legacy }, { partsCost: 0, laborCost: 0, laborCharge: 0, initialCostMovementId: null })
+    if (name === '20261011190000_repair_financial_ledger') {
   db.exec(`BEGIN;
     INSERT INTO "Repair" (id,businessId,number,clientId,deviceBrand,deviceModel,issue,trackingToken,updatedAt,partsCost,laborCharge,total)
       VALUES ('new','a',1002,'ca','Samsung','A14','Pantalla','new-token',CURRENT_TIMESTAMP,30000,30000,60000);
@@ -29,6 +25,13 @@ try {
     INSERT INTO "Payment" (id,businessId,repairId,clientId,amount,method,isAdvance,"cashMovementId") VALUES ('advance','a','new','ca',20000,'CASH',1,'income');
     UPDATE "Repair" SET paid=20000,initialCostMovementId='cost' WHERE id='new';
     COMMIT;`)
+    }
+    db.exec(readFileSync(file, 'utf8'))
+  }
+  db.exec('PRAGMA foreign_keys=ON')
+  const legacy = db.prepare('SELECT partsCost,laborCost,laborCharge,initialCostMovementId FROM Repair WHERE id=?').get('legacy')!
+  assert.deepEqual({ ...legacy }, { partsCost: 0, laborCost: 0, laborCharge: 0, initialCostMovementId: null })
+
   const repair = db.prepare('SELECT total,paid,partsCost,laborCharge,laborCost FROM Repair WHERE id=?').get('new')!
   assert.equal(Number(repair.total) - Number(repair.partsCost), 30000)
   assert.equal(Number(repair.total) - Number(repair.paid), 40000)
@@ -51,6 +54,16 @@ try {
     assert.throws(() => db.exec(`UPDATE "Repair" SET initialCostMovementId='missing' WHERE id='legacy'`), /FOREIGN KEY/)
   } finally { db.exec('ROLLBACK') }
   assert.equal(db.prepare('SELECT COUNT(*) AS count FROM CashMovement').get()!.count, before)
+  assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
+
+  assert.equal(db.prepare('SELECT financeVersion,cancellationRequestId,cancellationRefundPaid FROM Repair WHERE id=?').get('legacy')!.financeVersion, null, 'No guessed historical backfill')
+  db.exec(`INSERT INTO "CashMovement" (id,businessId,type,origin,repairId,description,amount,accountingOnly,repairFinanceKind,relatedMovementId,reason,operationKey) VALUES ('correction','a','EXPENSE','REPAIR','new','Correction without money',-30000,1,'EXPENSE_CORRECTION','cost','Purchase never occurred','synthetic-correction');`)
+  assert.equal(db.prepare("SELECT SUM(CASE WHEN type='INCOME' THEN amount ELSE -amount END) AS net FROM CashMovement WHERE repairId='new'").get()!.net, 20000)
+  assert.throws(() => db.exec(`INSERT INTO "CashMovement" (id,businessId,type,repairId,description,amount,accountingOnly,relatedMovementId,reason) VALUES ('unclassified-adjustment','a','EXPENSE','new','Missing classification',-1,1,'cost','Synthetic reason')`), /CHECK/)
+  assert.throws(() => db.exec(`INSERT INTO "CashMovement" (id,businessId,type,repairId,description,amount,accountingOnly,repairFinanceKind,relatedMovementId) VALUES ('bad-shape','a','INCOME','new','Wrong adjustment',1,1,'EXPENSE_CORRECTION','cost')`), /CHECK/)
+  db.exec(`INSERT INTO "Business" (id,name,updatedAt) VALUES ('b','B',CURRENT_TIMESTAMP)`)
+  assert.throws(() => db.exec(`INSERT INTO "CashMovement" (id,businessId,type,description,amount,relatedMovementId) VALUES ('cross-tenant','b','INCOME','Invalid link',1,'cost')`), /FOREIGN KEY/)
+  assert.throws(() => db.exec(`DELETE FROM "CashMovement" WHERE id='cost'`), /FOREIGN KEY/)
   assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(), [])
   console.log('REPAIR FINANCE SQLITE PASSED: complete migration chain, existing records preserved, costs/advance, unique cost link, FK protection and rollback')
 } finally { db.close() }

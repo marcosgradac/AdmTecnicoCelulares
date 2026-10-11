@@ -32,7 +32,7 @@ function DashboardContent() {
   }, [period, retry])
 
   const metrics = summary ? [
-    { label: 'Resultado de Caja', value: formatMoney(summary.financial.balance), helper: `${periodLabels[period]} · ingresos menos egresos`, icon: <AccountBalanceWalletRounded />, tone: summary.financial.balance < 0 ? 'warning' as const : 'primary' as const, to: '/admin/caja' },
+    { label: 'Saldo conciliado', value: formatMoney(summary.financial.balance), helper: `${periodLabels[period]} · ajuste sin dinero ${formatMoney(summary.financial.accountingAdjustment ?? 0)}`, icon: <AccountBalanceWalletRounded />, tone: summary.financial.balance < 0 ? 'warning' as const : 'primary' as const, to: '/admin/caja' },
     { label: 'Reparaciones activas', value: String(summary.current.activeRepairs), helper: 'Ahora · sin entregadas ni canceladas', icon: <BuildRounded />, tone: 'info' as const, to: '/admin/reparaciones' },
     { label: 'Listos para entregar', value: String(summary.current.readyRepairs), helper: 'Ahora · pendientes de retiro', icon: <TaskAltRounded />, tone: 'success' as const, to: '/admin/reparaciones?status=ready' },
     { label: 'Saldo pendiente', value: formatMoney(summary.current.pending), helper: 'Ahora · total por cobrar en reparaciones', icon: <PendingActionsRounded />, tone: 'warning' as const, to: '#atencion-pending' },

@@ -24,6 +24,7 @@ async function main() {
   const address = server.address(); assert.ok(address && typeof address === 'object')
   const businesses: string[] = []
   const call = async (token: string, method: string, path: string, body?: object) => {
+    if (method === 'POST' && path.endsWith('/cancel') && body) body = { requestId: randomUUID(), expenses: [], refundConfirmed: Boolean((body as any).refundMethod), ...body }
     const response = await fetch(`http://127.0.0.1:${address.port}/api${path}`, {
       method, headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
@@ -46,11 +47,12 @@ async function main() {
     const noView = tokenFor(noViewUser)
     const client = await prisma.client.create({ data: { businessId: business.id, name: 'Client' } })
     const input = { clientId: client.id, deviceBrand: 'Test', deviceModel: 'Phone', issue: 'Broken screen', total: 10000, warrantyEnabled: true, warrantyDurationDays: 30 }
-    const created = await call(owner, 'POST', '/repairs', { ...input, partsCost: 2000, partsCostMethod: 'CASH', laborCharge: 5000, advanceAmount: 1000, advanceMethod: 'TRANSFER' })
+    const created = await call(owner, 'POST', '/repairs', { ...input, partsCost: 2000, partsCostMethod: 'CASH', initialExpenseAmount: 2000, initialExpenseMethod: 'CASH', expenseConfirmed: true, laborCharge: 5000, advanceAmount: 1500, advanceMethod: 'TRANSFER' })
     assert.equal(created.status, 201, JSON.stringify(created.body))
     const id = created.body.id
     await prisma.repair.update({ where: { id }, data: { laborCost: 500 } })
-    assert.equal((await call(owner, 'PATCH', `/repairs/${id}/advance`, { amount: 1500, method: 'TRANSFER' })).status, 200)
+    assert.equal((await call(owner, 'PATCH', `/repairs/${id}/advance`, { amount: 2000, method: 'TRANSFER' })).status, 409)
+    await prisma.repairStatusHistory.create({ data: { repairId: id, previousStatus: 'RECEIVED', newStatus: 'RECEIVED', internalNote: 'Adelanto corregido de $1.000 a $1.500', changedByUserId: (await prisma.user.findFirstOrThrow({ where: { businessId: business.id, role: 'OWNER' } })).id } })
     await prisma.repairStatusHistory.create({ data: { repairId: id, previousStatus: 'RECEIVED', newStatus: 'REVIEW', internalNote: 'Diagnóstico operativo', changedByUserId: (await prisma.user.findFirstOrThrow({ where: { businessId: business.id, role: 'OWNER' } })).id } })
     for (const token of [owner, authorized]) {
       const detail = await call(token, 'GET', `/repairs/${id}`)
@@ -117,7 +119,8 @@ async function main() {
     const warranties = await call(technician, 'GET', '/warranties'); assert.equal(warranties.status, 200); warranties.body.forEach(safe)
     const warrantyEdit = await call(technician, 'PATCH', `/warranties/${id}`, { durationDays: 45 })
     assert.equal(warrantyEdit.status, 200); safe(warrantyEdit.body)
-    const ownerCancel = await call(owner, 'POST', `/repairs/${id}/cancel`, { reviewFee: 500, refundMethod: 'CASH' })
+    const originalExpense = await prisma.cashMovement.findFirstOrThrow({ where: { repairId: id, type: 'EXPENSE' } })
+    const ownerCancel = await call(owner, 'POST', `/repairs/${id}/cancel`, { reviewFee: 500, refundMethod: 'CASH', expenses: [{ movementId: originalExpense.id, disposition: 'KEEP', stockDisposition: 'LOST' }] })
     assert.equal(ownerCancel.status, 200); assert.ok(ownerCancel.body.cancellationRefundMovementId)
     const cancelledView = await call(technician, 'GET', `/repairs/${id}`); safe(cancelledView.body)
     assert.equal(cancelledView.body.cancellationReviewFee, 500); assert.equal(cancelledView.body.cancellationRefundAmount, 1000)

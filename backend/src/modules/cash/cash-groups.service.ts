@@ -8,6 +8,9 @@ import { cashPeriodWhere } from './cash-period'
  * `createdAt` viaja como ISO string: es la misma convención que usa el resto de la API.
  */
 export interface GroupedMovement {
+  accountingOnly: boolean
+  relatedMovementId: string | null
+  repairFinanceKind: string | null
   id: string
   type: CashMovement['type']
   description: string
@@ -20,6 +23,9 @@ export interface GroupedMovement {
 }
 
 export interface RepairCashGroup {
+  status: string | null
+  accountingAdjustment: number
+  cashNet: number
   repairId: string
   repairNumber: number
   clientName: string
@@ -48,6 +54,7 @@ export interface LooseRepairMovements {
 }
 
 const movementColumns = {
+  accountingOnly: true, relatedMovementId: true, repairFinanceKind: true,
   id: true, type: true, description: true, amount: true, method: true,
   createdAt: true, repairId: true, clientName: true, origin: true,
 } as const
@@ -56,7 +63,11 @@ const toGrouped = (movement: {
   id: string; type: CashMovement['type']; description: string; amount: number
   method: CashMovement['method']; createdAt: Date; repairId: string | null
   clientName: string | null; origin: CashMovement['origin']
+  accountingOnly?: boolean; relatedMovementId?: string | null; repairFinanceKind?: string | null
 }): GroupedMovement => ({
+  accountingOnly: movement.accountingOnly ?? false,
+  relatedMovementId: movement.relatedMovementId ?? null,
+  repairFinanceKind: movement.repairFinanceKind ?? null,
   id: movement.id,
   type: movement.type,
   description: movement.description,
@@ -76,22 +87,23 @@ const toGrouped = (movement: {
  */
 async function repairTotals(businessId: string, createdAt: Prisma.CashMovementWhereInput['createdAt']) {
   const rows = await prisma.cashMovement.groupBy({
-    by: ['repairId', 'type'],
+    by: ['repairId', 'type', 'accountingOnly'],
     where: { businessId, origin: 'REPAIR', repairId: { not: null }, createdAt },
     _sum: { amount: true },
     _count: { _all: true },
     _max: { createdAt: true },
   })
-  const totals = new Map<string, { income: number; expense: number; movementCount: number; lastMovementAt: Date }>()
+  const totals = new Map<string, { income: number; expense: number; adjustment: number; movementCount: number; lastMovementAt: Date }>()
   // Época como base: cualquier fecha real la supera, así el máximo siempre es el último movimiento.
   const epoch = new Date(0)
   for (const row of rows) {
     const repairId = row.repairId
     if (!repairId) continue
-    const current = totals.get(repairId) ?? { income: 0, expense: 0, movementCount: 0, lastMovementAt: epoch }
+    const current = totals.get(repairId) ?? { income: 0, expense: 0, adjustment: 0, movementCount: 0, lastMovementAt: epoch }
     const amount = row._sum.amount ?? 0
     if (row.type === CashMovementType.INCOME) current.income += amount
     else current.expense += amount
+    if (row.accountingOnly) current.adjustment -= amount
     current.movementCount += row._count._all
     // `_max` entrega la fecha más reciente del subconjunto agregado.
     const latest = row._max.createdAt as Date | null
@@ -116,6 +128,9 @@ async function repairTotals(businessId: string, createdAt: Prisma.CashMovementWh
 export async function repairCashGroups(businessId: string, page: number, pageSize: number, period: CashPeriod = 'TODAY', now = new Date()) {
   const createdAt = cashPeriodWhere(period, now)
   const totals = await repairTotals(businessId, createdAt)
+  // A cancelled order without money is still auditable and appears with net zero.
+  const emptyCancelled = await prisma.repair.findMany({ where: { businessId, status: 'CANCELLED', cancelledAt: createdAt }, select: { id: true, cancelledAt: true } })
+  for (const repair of emptyCancelled) if (!totals.has(repair.id)) totals.set(repair.id, { income: 0, expense: 0, adjustment: 0, movementCount: 0, lastMovementAt: repair.cancelledAt! })
   // Orden por última actividad y, a igualdad, por cantidad de movimientos como desempate estable.
   const ordered = [...totals.entries()].sort(([, a], [, b]) =>
     b.lastMovementAt.getTime() - a.lastMovementAt.getTime() || b.movementCount - a.movementCount)
@@ -144,6 +159,9 @@ export async function repairCashGroups(businessId: string, page: number, pageSiz
   const items: RepairCashGroup[] = pageEntries.map(([repairId, aggregate]) => {
     const repair = repairById.get(repairId)
     return {
+      status: repair?.status ?? null,
+      accountingAdjustment: aggregate.adjustment,
+      cashNet: aggregate.income - aggregate.expense - aggregate.adjustment,
       repairId,
       // Una reparación borrada con movimientos sueltos no se pierde: conserva su grupo.
       repairNumber: repair?.number ?? 0,
@@ -186,7 +204,7 @@ const manualFor = (origin: string | undefined) => {
 }
 
 /** Columnas que necesita la tabla secundaria de movimientos manuales. */
-export const looseColumns = { id: true, type: true, description: true, amount: true, method: true, createdAt: true, repairId: true, clientName: true, origin: true } as const
+export const looseColumns = { ...movementColumns } as const
 
 type LooseRow = {
   id: string; type: CashMovementType; description: string; amount: number

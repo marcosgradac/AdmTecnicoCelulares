@@ -10,6 +10,6 @@ export async function dashboardCashFlow(tx: Pick<Prisma.TransactionClient, '$que
   const columns = range.buckets.flatMap((bucket, index) => ['INCOME', 'EXPENSE'].map(type => Prisma.sql`
     COALESCE(SUM(CASE WHEN "createdAt" >= ${timestamp(bucket.start)} AND "createdAt" < ${timestamp(bucket.end)} AND CAST("type" AS TEXT) = ${type} THEN "amount" ELSE 0 END), 0) AS ${Prisma.raw(`"${type.toLowerCase()}_${index}"`)}
   `))
-  const rows = await tx.$queryRaw<Array<Record<string, number | bigint>>>(Prisma.sql`SELECT ${Prisma.join(columns)} FROM "CashMovement" WHERE "businessId" = ${businessId} AND "createdAt" >= ${timestamp(range.start)} AND "createdAt" < ${timestamp(range.end)}`)
+  const rows = await tx.$queryRaw<Array<Record<string, number | bigint>>>(Prisma.sql`SELECT ${Prisma.join(columns)} FROM "CashMovement" WHERE "businessId" = ${businessId} AND "accountingOnly" = false AND "createdAt" >= ${timestamp(range.start)} AND "createdAt" < ${timestamp(range.end)}`)
   return range.buckets.map((bucket, index) => ({ label: bucket.label, income: Number(rows[0][`income_${index}`]), expense: Number(rows[0][`expense_${index}`]) }))
 }

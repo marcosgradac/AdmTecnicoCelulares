@@ -18,6 +18,7 @@ const react = {
       if (!reactCallbacks.has(key)) reactCallbacks.set(key, fn)
       return reactCallbacks.get(key)
     },
+    useMemo(fn) { return fn() },
     useState(initial) {
       const i = cursor++
       if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial
@@ -37,9 +38,10 @@ const react = {
     {
       exports,
       require(name) {
+        if (name.endsWith('/admin/AdminVisualScope')) return { useAdminVisual: () => false }
         if (name === 'react') return react
         if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
-        if (name === 'axios') return { isAxiosError: e => !!e.isAxiosError }
+        if (name === 'axios') { const axios = { isAxiosError: e => !!e.isAxiosError }; return { ...axios, default: axios } }
         if (name.endsWith('/services/repairs')) return services
         if (name.endsWith('/utils/format')) return { formatMoney: value => `$${value}`, formatDate: value => value }
         // La página de detalle pide sesión, navegación y permisos: se simulan en la frontera.
@@ -61,6 +63,7 @@ const react = {
       // La página arma enlaces de seguimiento y WhatsApp con el origen del navegador.
       window: { location: { origin: 'https://taller.test' }, open: () => {} },
       navigator: { clipboard: { writeText: async () => {} } },
+      crypto: require('node:crypto').webcrypto,
     },
   )
   const Component = exports[exportName]
@@ -304,9 +307,9 @@ const stale = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, 
 await stale.settle()
 assert.ok(!JSON.stringify(stale.root()).includes('Adelanto recibido'))
 assert.ok(!JSON.stringify(stale.root()).includes('Adelanto corregido de'))
-const noFinanceCancel = harness('src/components/repairs/RepairCancellationDialog.tsx', 'RepairCancellationDialog', { repair: repair('received'), onClose() {}, onCancelled() {} }, {}, false)
+const noFinanceCancel = harness('src/components/repairs/RepairCancellationDialog.tsx', 'RepairCancellationDialog', { repair: repair('received'), onClose() {}, onCancelled() {} }, { getRepair: async () => repair('received') }, false)
 await noFinanceCancel.settle()
-assert.ok(buttonsOf(noFinanceCancel.root()).find(node => node.props.children === 'Confirmar cancelación').props.disabled)
+assert.ok(!buttonsOf(noFinanceCancel.root()).some(node => node.props.children === 'Confirmar cancelación'), 'No cancellation can be submitted before a server preview')
 assert.ok(!JSON.stringify(noFinanceCancel.root()).includes('Medio de devolución'))
 
 console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y edición unificada sin botones duplicados')

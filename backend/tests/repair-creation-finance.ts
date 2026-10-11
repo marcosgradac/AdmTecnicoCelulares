@@ -24,6 +24,10 @@ async function main() {
   const businesses: string[] = []
   const triggerName = `qa_costs_${randomUUID().replaceAll('-', '')}`
   const request = async (method: string, path: string, body?: object, token?: string) => {
+    // These legacy cash fixtures represent actual purchases, now explicit rather than inferred budgets.
+    if (method === 'POST' && path === '/repairs' && body && Number((body as any).partsCost) > 0 && (body as any).partsCostMethod) body = { ...body, initialExpenseAmount: (body as any).partsCost, initialExpenseMethod: (body as any).partsCostMethod, expenseConfirmed: true }
+    if (method === 'POST' && path.endsWith('/payments') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+
     const response = await fetch(`http://127.0.0.1:${address.port}/api${path}`, {
       method, headers: { 'content-type': 'application/json', 'X-Turnstile-Token': 'test-token', ...(token ? { authorization: `Bearer ${token}` } : {}) },
       body: body ? JSON.stringify(body) : undefined,
@@ -92,9 +96,9 @@ async function main() {
     await prisma.cashMovement.update({ where: { id: created.body.initialCostMovementId }, data: { createdAt: new Date('2026-02-15T12:00:00Z') } })
     const january = await request('GET', '/reports/overview?period=custom&from=2026-01-01&to=2026-01-31', undefined, token)
     const february = await request('GET', '/reports/overview?period=custom&from=2026-02-01&to=2026-02-28', undefined, token)
-    assert.equal(january.body.finance.estimatedProfit, 30000)
+    assert.equal(january.body.finance.estimatedProfit, 60000)
     assert.equal(february.body.finance.expenses, 30000)
-    assert.equal(february.body.finance.estimatedProfit, 0)
+    assert.equal(february.body.finance.estimatedProfit, -30000)
     await prisma.repair.update({ where: { id: created.body.id }, data: { createdAt: originalDate } })
     await prisma.cashMovement.update({ where: { id: created.body.initialCostMovementId }, data: { createdAt: originalDate } })
 
@@ -132,7 +136,7 @@ async function main() {
       counter: (await prisma.business.findUniqueOrThrow({ where: { id: businesses[0] } })).lastRepairNumber,
     })
     const beforeInvalid = await snapshot()
-    for (const invalid of [{ advanceAmount: 60001, advanceMethod: 'CASH' }, { advanceAmount: 1 }, { advanceAmount: 1, advanceMethod: 'INVALID' }, { partsCost: -1 }, { laborCharge: -1 }, { total: -1 }, { advanceAmount: -1 }, { partsCost: .5 }, { total: 2147483648 }, { advanceAmount: 1, advanceMethod: 'CASH', status: 'CANCELLED' }, { partsCost: 30000, partsCostMethod: undefined }, { partsCost: 30000, partsCostMethod: 'INVALID' }]) {
+    for (const invalid of [{ advanceAmount: 60001, advanceMethod: 'CASH' }, { advanceAmount: 1 }, { advanceAmount: 1, advanceMethod: 'INVALID' }, { partsCost: -1 }, { laborCharge: -1 }, { total: -1 }, { advanceAmount: -1 }, { partsCost: .5 }, { total: 2147483648 }, { advanceAmount: 1, advanceMethod: 'CASH', status: 'CANCELLED' }, { initialExpenseAmount: 30000, expenseConfirmed: true, partsCostMethod: undefined }, { partsCost: 30000, partsCostMethod: 'INVALID' }]) {
       assert.equal((await request('POST', '/repairs', { ...baseInput, ...invalid }, token)).status, 400, JSON.stringify(invalid))
     }
     assert.deepEqual(await snapshot(), beforeInvalid)
@@ -154,7 +158,7 @@ async function main() {
     // Historic laborCost remains a true cost; never reclassify it as laborCharge.
     await prisma.repair.create({ data: { businessId: businesses[1], clientId: otherClient.body.id, number: 9001, deviceBrand: 'Legacy', deviceModel: 'Test', issue: 'Histórico', partsCost: 20000, laborCost: 10000, total: 100000 } })
     await prisma.cashMovement.create({ data: { businessId: businesses[1], type: 'EXPENSE', description: 'Servicio externo', amount: 5000 } })
-    assert.equal((await request('GET', '/reports/overview?period=this_month', undefined, other.body.token)).body.finance.estimatedProfit, 65000)
+    assert.equal((await request('GET', '/reports/overview?period=this_month', undefined, other.body.token)).body.finance.estimatedProfit, 85000)
 
     // Actual PostgreSQL failures after earlier writes prove the whole transaction rolls back.
     for (const type of ['EXPENSE', 'INCOME']) {
@@ -206,7 +210,7 @@ async function main() {
     assert.equal(transferCost.cash.find(row => row.type === 'EXPENSE')?.method, 'TRANSFER')
     // Caso 3: costo cargado sin medio de pago se rechaza y no deja rastros.
     const beforeMissingMethod = await snapshot()
-    const missingMethod = await request('POST', '/repairs', { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Sin metodo', partsCost: 30000, partsCostMethod: undefined, laborCharge: 30000, total: 60000 }, token)
+    const missingMethod = await request('POST', '/repairs', { initialExpenseAmount: 30000, expenseConfirmed: true, clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Sin metodo', partsCost: 30000, partsCostMethod: undefined, laborCharge: 30000, total: 60000 }, token)
     assert.equal(missingMethod.status, 400, 'un gasto sin medio de pago no se puede crear')
     assert.deepEqual(await snapshot(), beforeMissingMethod, 'el rechazo no deja movimientos a medias')
     // Caso 4: sin costo no hace falta metodo y no se crea el egreso.

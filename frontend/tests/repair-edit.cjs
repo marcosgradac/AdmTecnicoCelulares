@@ -23,7 +23,7 @@ async function main() {
   assert.ok(titles.indexOf('Equipo y cliente') < titles.indexOf('Resumen de pago'))
   assert.ok(titles.indexOf('Resumen de pago') < titles.indexOf('Garantía'))
   assert.ok(titles.indexOf('Garantía') < titles.indexOf('Historial'))
-  assert.equal(collect(page.root(), n => n.props?.label === 'Costo / gasto de la reparación')[0].props.color, 'error.main')
+  assert.equal(collect(page.root(), n => n.props?.label === 'Presupuesto de costos de la reparación')[0].props.color, 'error.main')
   assert.equal(collect(page.root(), n => n.props?.label === 'Mano de obra cobrada')[0].props.color, 'success.main')
   drawer.props.onUpdated({ ...repair, partsCost: 20000, laborCharge: 35000, paid: 15000, total: 50000 }); await page.settle()
   assert.equal(collect(page.root(), n => n.type === 'EditRepairDrawer')[0].props.open, false)
@@ -40,7 +40,7 @@ async function main() {
     editRepair: async (id, input) => { calls.push({ id, input }); return repair },
   })
   await view.settle()
-  assert.equal(money(view, 'Costo / gasto de la reparación').props.value, 30000, 'Fetch detail instead of defaulting missing summary finances to zero')
+  assert.equal(money(view, 'Presupuesto de repuestos').props.value, 30000, 'Fetch detail instead of defaulting missing summary finances to zero')
   assert.equal(money(view, 'Mano de obra cobrada').props.value, 30000)
   assert.equal(money(view, 'Adelanto recibido (opcional)').props.value, 20000)
   assert.equal(money(view, 'Total al cliente').props.value, 55000)
@@ -54,7 +54,7 @@ async function main() {
   const alias = harness('src/components/repairs/EditRepairDrawer.tsx', 'EditRepairDrawer', { open: true, repair, onClose() {}, onUpdated() {} }, { getRepair: async () => ({ ...repair, deviceBrand: 'iPhone' }), editRepair: async (_, input) => { aliasCalls.push(input); return repair } })
   await alias.settle(); editForm(alias).props.onSubmit(); await alias.settle()
   assert.equal(JSON.stringify(aliasCalls[0]), '{}', 'Opening an existing alias does not rewrite the historical brand')
-  money(view, 'Costo / gasto de la reparación').props.onValueChange(20000); await view.settle()
+  money(view, 'Presupuesto de repuestos').props.onValueChange(20000); await view.settle()
   money(view, 'Mano de obra cobrada').props.onValueChange(40000); await view.settle()
   assert.equal(money(view, 'Total al cliente').props.value, 55000, 'Costs never silently overwrite the agreed total')
   assert.ok(money(view, 'Total al cliente').props.helperText.includes('$60000'))
@@ -69,9 +69,9 @@ async function main() {
   for (const financial of [false, true]) {
     const restricted = harness('src/components/repairs/EditRepairDrawer.tsx', 'EditRepairDrawer', { open: true, repair, onClose() {}, onUpdated() {} }, { getRepair: async () => ({ ...repair, status: financial ? 'cancelled' : 'received' }) }, financial)
     await restricted.settle()
-    if (financial) assert.equal(money(restricted, 'Costo / gasto de la reparación').props.disabled, true)
+    if (financial) assert.equal(money(restricted, 'Presupuesto de repuestos').props.disabled, true)
     else {
-      assert.ok(!money(restricted, 'Costo / gasto de la reparación')); assert.ok(!money(restricted, 'Mano de obra cobrada')); assert.ok(!money(restricted, 'Adelanto recibido (opcional)'))
+      assert.ok(!money(restricted, 'Presupuesto de repuestos')); assert.ok(!money(restricted, 'Mano de obra cobrada')); assert.ok(!money(restricted, 'Adelanto recibido (opcional)'))
       assert.ok(find(restricted, 'TextField', 'Modelo')); assert.ok(money(restricted, 'Total al cliente'))
     }
   }

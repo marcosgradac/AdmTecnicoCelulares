@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import { randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { app } from '../src/server'
@@ -13,7 +14,12 @@ async function main() {
       : nativeFetch(input, init)) as typeof fetch
   const server = app.listen(0); await new Promise<void>(resolve => server.once('listening', resolve)); const address = server.address(); assert.ok(address && typeof address === 'object')
   const base = `http://127.0.0.1:${(address as any).port}/api`, suffix = Date.now(), businesses: string[] = []
-  const request = async (method: string, path: string, body?: object, token?: string) => { const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? JSON.parse(text) : null } }
+  const request = async (method: string, path: string, body?: object, token?: string) => {
+    if (method === 'POST' && (path.endsWith('/cancel') || path.endsWith('/cancellation-payment')) && body) body = { requestId: randomUUID(), ...(path.endsWith('/cancel') ? { expenses: [], refundConfirmed: Boolean((body as any).refundMethod) } : { confirmed: true }), ...body }
+    // These legacy cash fixtures represent actual purchases, now explicit rather than inferred budgets.
+    if (method === 'POST' && path === '/repairs' && body && Number((body as any).partsCost) > 0 && (body as any).partsCostMethod) body = { ...body, initialExpenseAmount: (body as any).partsCost, initialExpenseMethod: (body as any).partsCostMethod, expenseConfirmed: true }
+    if (method === 'POST' && path.endsWith('/payments') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+ const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type':'application/json' } : {}), ...(token ? { authorization:`Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined }); const text = await response.text(); return { status:response.status, body:text ? JSON.parse(text) : null } }
   const register = async (label: string) => { const password = `Qa-${randomBytes(12).toString('base64url')}9!`; const result = await request('POST','/auth/register',validRegistrationPayload({firstName:'Cancel',lastName:label,email:`cancel-${label}-${suffix}@example.com`,password,businessName:`Cancel ${label}`})); assert.equal(result.status,201); businesses.push(result.body.user.business.id); return { token:result.body.token as string, businessId:result.body.user.business.id as string } }
   const clientIds = new Map<string,string>()
   const clientFor = async (token: string) => { if (!clientIds.has(token)) { const created = await request('POST','/clients',{name:'Cliente cancelación',phone:`30${String(Math.floor(Math.random()*1e8)).padStart(8,'0')}`},token); assert.equal(created.status,201); clientIds.set(token, created.body.id) } return clientIds.get(token)! }
@@ -110,7 +116,7 @@ async function main() {
     assert.equal(balanceOf(await movementsOf(owe.id)),10000,'la caja sólo cuenta lo cobrado')
 
     // 7) refund > 0 sin refundMethod
-    assert.equal((await request('POST',`/repairs/${negative.id}/cancel`,{reviewFee:20000},owner2.token)).status,400)
+    assert.equal((await request('POST',`/repairs/${negative.id}/cancel`,{reviewFee:20000,refundConfirmed:true},owner2.token)).status,400)
     assert.notEqual((await prisma.repair.findUnique({ where: { id: negative.id } }))?.status,'CANCELLED')
     assert.equal(await movementsOf(negative.id).then(rows => rows.filter(m => m.type === 'EXPENSE').length),0)
     assert.equal(await prisma.payment.count({ where: { repairId: negative.id } }),1)
@@ -167,7 +173,7 @@ async function main() {
     // 14) repairId correcto
     const expense = (await movementsOf(review.id)).find(m => m.type === 'EXPENSE')
     assert.equal(expense?.repairId,review.id)
-    assert.equal(expense?.description,`Devolución por cancelación reparación #${review.number}`)
+    assert.equal(expense?.description,`Devolución real al cliente por cancelación #${review.number}`)
 
     // 15) tracking deshabilitado
     assert.equal((await prisma.repair.findUnique({ where: { id: review.id } }))?.trackingEnabled,false)

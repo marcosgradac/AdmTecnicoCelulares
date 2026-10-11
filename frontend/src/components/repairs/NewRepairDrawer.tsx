@@ -1,7 +1,7 @@
 import { FormSection } from '../admin/AdminPatterns'
 import { useAdminVisual } from '../admin/AdminVisualScope'
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Autocomplete, Box, Button, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Autocomplete, Box, Button, Checkbox, FormControlLabel, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { createRepair } from '../../services/repairs'
 import { getClientOptions, type ClientOption } from '../../services/operations'
 import type { Repair, RepairStatus } from '../../types'
@@ -22,6 +22,7 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   const modern = useAdminVisual()
   const { user } = useAuth()
   const canManageFinancials = canAccess(user, 'repairs.viewFinancials')
+  const canRegisterCash = canManageFinancials && canAccess(user, 'cash.create')
   const [clients, setClients] = useState<ClientOption[]>([])
   const [clientId, setClientId] = useState(initialClientId ?? '')
   const [form, setForm] = useState(initial)
@@ -30,6 +31,8 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [clientDrawerOpen, setClientDrawerOpen] = useState(false)
+  const [actualExpense, setActualExpense] = useState(0)
+  const [expenseConfirmed, setExpenseConfirmed] = useState(false)
   useEffect(() => { if (open) void getClientOptions().then(items => { setClients(items); setClientId(initialClientId ?? '') }).catch(() => setError('No pudimos cargar los clientes.')) }, [open, initialClientId])
   const client = useMemo(() => clients.find(item => item.id === clientId) ?? null, [clients, clientId])
   const suggestedTotal = form.partsCost + form.laborCharge
@@ -42,22 +45,22 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
     return { ...normalized, total: current.totalEdited ? current.total : normalized.partsCost + normalized.laborCharge }
   })
   const change = (key: keyof typeof initial) => (event: React.ChangeEvent<HTMLInputElement>) => setForm(current => ({ ...current, [key]: key === 'total' ? Number(event.target.value) : event.target.value }))
-  const close = () => { if (!saving) { setError(''); setForm(initial); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }
+  const close = () => { if (!saving) { setError(''); setForm(initial); setActualExpense(0); setExpenseConfirmed(false); setWarrantyPreset('0'); setCustomWarrantyDays(30); setClientDrawerOpen(false); onClose() } }
   const save = async () => {
     const brand = normalizeDeviceBrand(form.brand === OTHER_DEVICE_BRAND ? form.customBrand : form.brand), model = form.model.trim(), issue = form.issue.trim()
     if (!clientId) return setError('Seleccioná un cliente existente.')
     if (!brand) return setError('Elegí una marca de la lista o tocá «Otra» para escribirla.')
     if (!model || !issue) return setError('Completá el modelo y la falla informada.')
     if (form.total == null) return setError('Ingresá un monto')
-    if ([form.total, form.partsCost, form.laborCharge, form.advanceAmount].some(value => !Number.isInteger(value) || value < 0 || value > 2_147_483_647)) return setError('Los montos deben ser enteros entre $0 y $2.147.483.647.')
+    if ([form.total, form.partsCost, actualExpense, form.laborCharge, form.advanceAmount].some(value => !Number.isInteger(value) || value < 0 || value > 2_147_483_647)) return setError('Los montos deben ser enteros entre $0 y $2.147.483.647.')
     if (advanceExceedsTotal) return setError('El adelanto no puede superar el total al cliente.')
-    if (form.partsCost > 0 && !form.partsCostMethod) return setError('Seleccioná el medio de pago del gasto.')
+    if (actualExpense > 0 && (!expenseConfirmed || !form.partsCostMethod)) return setError('Confirmá la compra real y elegí su medio de pago.')
     if (form.advanceAmount > 0 && !form.advanceMethod) return setError('Seleccioná el medio de pago del adelanto.')
     setSaving(true); setError('')
     try {
       const warrantyDurationDays = warrantyPreset === 'custom' ? customWarrantyDays : Number(warrantyPreset)
-      const repair = await createRepair({ clientId, deviceBrand: brand, deviceModel: model, imei: form.imei.trim() || undefined, color: form.color.trim() || undefined, issue, diagnosis: form.diagnosis.trim() || undefined, notes: form.notes.trim() || undefined, total: form.total, partsCost: form.partsCost, partsCostMethod: form.partsCost > 0 ? form.partsCostMethod || undefined : undefined, laborCharge: form.laborCharge, advanceAmount: form.advanceAmount, advanceMethod: form.advanceAmount > 0 ? form.advanceMethod || undefined : undefined, estimatedDeliveryDate: form.estimatedDeliveryDate || undefined, status: form.status, warrantyEnabled: warrantyDurationDays > 0, warrantyDurationDays: warrantyDurationDays > 0 ? warrantyDurationDays : undefined })
-      setForm(initial); onCreated(repair)
+      const repair = await createRepair({ clientId, deviceBrand: brand, deviceModel: model, imei: form.imei.trim() || undefined, color: form.color.trim() || undefined, issue, diagnosis: form.diagnosis.trim() || undefined, notes: form.notes.trim() || undefined, total: form.total, partsCost: form.partsCost, ...(actualExpense > 0 ? { initialExpenseAmount: actualExpense, initialExpenseMethod: form.partsCostMethod || undefined, expenseConfirmed } : {}), laborCharge: form.laborCharge, advanceAmount: form.advanceAmount, advanceMethod: form.advanceAmount > 0 ? form.advanceMethod || undefined : undefined, estimatedDeliveryDate: form.estimatedDeliveryDate || undefined, status: form.status, warrantyEnabled: warrantyDurationDays > 0, warrantyDurationDays: warrantyDurationDays > 0 ? warrantyDurationDays : undefined })
+      setForm(initial); setActualExpense(0); setExpenseConfirmed(false); onCreated(repair)
     } catch (saveError) { setError(axios.isAxiosError<{ message?: string }>(saveError) ? saveError.response?.data?.message ?? 'No pudimos crear la reparación.' : 'No pudimos crear la reparación. Revisá los datos e intentá nuevamente.') } finally { setSaving(false) }
   }
   return <><FormDrawer open={open && !clientDrawerOpen} eyebrow="NUEVO INGRESO" title="Nueva reparación" saving={saving} submitLabel="Crear reparación" onClose={close} onSubmit={() => void save()}>
@@ -75,16 +78,18 @@ export function NewRepairDrawer({ open, initialClientId, onClose, onCreated }: {
         <TextField select label="Estado inicial" value={form.status} onChange={change('status')}>{[['received','Recibido'],['review','En revisión'],['budget','Presupuesto informado'],['approved','Presupuesto aceptado'],['repairing','En reparación']].map(([value,label])=><MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>
         </FormSection><FormSection legacyHeading legacyDivider title="Costos y cobro">
         {canManageFinancials && <Stack direction="column" spacing={2}>
-          <CurrencyField fullWidth label="Costo / gasto de la reparación" value={form.partsCost} onValueChange={value => changeCost('partsCost', value)} onEmpty={() => changeCost('partsCost', 0)} helperText="Se registra como egreso en Caja al crear la reparación." />
+          <CurrencyField fullWidth label="Presupuesto de repuestos" value={form.partsCost} onValueChange={value => changeCost('partsCost', value)} onEmpty={() => changeCost('partsCost', 0)} helperText="Es una estimación: no genera egresos en Caja." />
+          <CurrencyField disabled={!canRegisterCash} fullWidth label="Gasto realizado de repuestos" value={actualExpense} onValueChange={setActualExpense} onEmpty={() => setActualExpense(0)} helperText="Sólo dinero que realmente pagaste. Podés registrarlo más adelante." />
+          {actualExpense > 0 && <FormControlLabel control={<Checkbox checked={expenseConfirmed} onChange={event => setExpenseConfirmed(event.target.checked)}/>} label="Confirmo que pagué realmente esta compra."/>}
           <CurrencyField fullWidth label="Mano de obra cobrada" value={form.laborCharge} onValueChange={value => changeCost('laborCharge', value)} onEmpty={() => changeCost('laborCharge', 0)} helperText="Forma parte del total al cliente; no es un costo." />
         </Stack>}
-        {canManageFinancials && form.partsCost > 0 && <TextField required select fullWidth label="Medio de pago del gasto" value={form.partsCostMethod} onChange={event => setForm(current => ({ ...current, partsCostMethod: event.target.value as typeof current.partsCostMethod }))} error={Boolean(error) && !form.partsCostMethod} helperText="Es el egreso de Caja, independiente del medio de pago del adelanto.">
+        {canRegisterCash && actualExpense > 0 && <TextField required select fullWidth label="Medio de pago del gasto" value={form.partsCostMethod} onChange={event => setForm(current => ({ ...current, partsCostMethod: event.target.value as typeof current.partsCostMethod }))} error={Boolean(error) && !form.partsCostMethod} helperText="Es el egreso real, independiente del adelanto.">
           <MenuItem value="CASH">Efectivo</MenuItem><MenuItem value="TRANSFER">Transferencia</MenuItem><MenuItem value="CARD">Tarjeta</MenuItem><MenuItem value="OTHER">Otro</MenuItem>
         </TextField>}
         <CurrencyField required fullWidth label="Total al cliente" value={form.total} onValueChange={value => setForm(current => ({ ...current, total: value, totalEdited: true }))} onEmpty={() => setForm(current => ({ ...current, total: null, totalEdited: true }))} error={Boolean(error) && form.total == null} helperText={canManageFinancials ? `Sugerido: ${formatMoney(suggestedTotal)}. Podés editarlo para aplicar descuentos o ajustes.` : undefined} />
         {canManageFinancials && <>
         {form.totalEdited && <Button size="small" sx={{ alignSelf: 'flex-start' }} onClick={() => setForm(current => ({ ...current, total: suggestedTotal, totalEdited: false }))}>Usar total sugerido</Button>}
-        <CurrencyField fullWidth label="Adelanto recibido (opcional)" value={form.advanceAmount} onValueChange={value => setForm(current => ({ ...current, advanceAmount: value }))} onEmpty={() => setForm(current => ({ ...current, advanceAmount: 0 }))} error={advanceExceedsTotal} helperText={advanceExceedsTotal ? 'El adelanto no puede superar el total al cliente.' : 'Dejalo en $0 si todavía no recibiste un pago.'} />
+        <CurrencyField disabled={!canRegisterCash} fullWidth label="Adelanto recibido (opcional)" value={form.advanceAmount} onValueChange={value => setForm(current => ({ ...current, advanceAmount: value }))} onEmpty={() => setForm(current => ({ ...current, advanceAmount: 0 }))} error={advanceExceedsTotal} helperText={advanceExceedsTotal ? 'El adelanto no puede superar el total al cliente.' : 'Dejalo en $0 si todavía no recibiste un pago.'} />
         {form.advanceAmount > 0 && <TextField required select label="Medio de pago del adelanto" value={form.advanceMethod} onChange={event => setForm(current => ({ ...current, advanceMethod: event.target.value as typeof current.advanceMethod }))} error={Boolean(error) && !form.advanceMethod}>
           <MenuItem value="CASH">Efectivo</MenuItem><MenuItem value="TRANSFER">Transferencia</MenuItem><MenuItem value="CARD">Tarjeta</MenuItem><MenuItem value="OTHER">Otro</MenuItem>
         </TextField>}

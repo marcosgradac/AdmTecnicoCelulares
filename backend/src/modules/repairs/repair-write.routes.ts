@@ -10,6 +10,7 @@ import { trackingExpiryFrom } from '../tracking/tracking-expiry'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import { assertWithinLimitTx, lockBusinessQuota, PlanLimitError } from '../billing/billing.service'
 import type { Express } from 'express'
+import { lockRepair, withRepairLedger } from './repair-ledger'
 import { includeRepair } from './repair-query'
 
 export function registerRepairWriteRoutes(app: Express) {
@@ -23,18 +24,20 @@ export function registerRepairWriteRoutes(app: Express) {
     if (data.advanceAmount > data.total) context.addIssue({ code: 'custom', path: ['advanceAmount'], message: 'El adelanto no puede superar el total al cliente' })
     if (data.advanceAmount > 0 && !data.advanceMethod) context.addIssue({ code: 'custom', path: ['advanceMethod'], message: 'Seleccioná el medio de pago del adelanto' })
     // El gasto inicial es un egreso propio: con costo cargando necesita su medio de pago.
-    if (data.partsCost > 0 && !data.partsCostMethod) context.addIssue({ code: 'custom', path: ['partsCostMethod'], message: 'Seleccioná el medio de pago del gasto' })
+    if (data.initialExpenseAmount > 0 && (!data.expenseConfirmed || !data.initialExpenseMethod)) context.addIssue({ code: 'custom', path: ['initialExpenseAmount'], message: 'Confirmá la compra real y su medio de pago' })
+    if (data.initialExpenseAmount > 0 && data.status === RepairStatus.CANCELLED) context.addIssue({ code: 'custom', path: ['status'], message: 'No registres compras nuevas en una reparación cancelada' })
     if (data.advanceAmount > 0 && data.status === RepairStatus.CANCELLED) context.addIssue({ code: 'custom', path: ['status'], message: 'Una reparación cancelada no admite adelantos' })
   })
   app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) => {
     const parsed = createRepairSchema.safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ success: false, message: parsed.error.issues[0]?.message ?? 'Datos inválidos' })
     const auth = authOf(req)
-    if ((parsed.data.partsCost > 0 || parsed.data.laborCharge > 0 || parsed.data.advanceAmount > 0)
+    if ((parsed.data.partsCost > 0 || parsed.data.initialExpenseAmount > 0 || parsed.data.laborCharge > 0 || parsed.data.advanceAmount > 0)
       && auth.role !== 'OWNER' && !auth.permissions?.includes('repairs.viewFinancials')) {
       return res.status(403).json({ success: false, message: 'No tenés permisos para registrar costos o adelantos' })
     }
     const businessId = authOf(req).businessId
+    if ((parsed.data.initialExpenseAmount > 0 || parsed.data.advanceAmount > 0) && auth.role !== 'OWNER' && !auth.permissions?.includes('cash.create')) return res.status(403).json({ success: false, message: 'Necesitás permiso para registrar Caja' })
     try {
       const data = parsed.data
       const repair = await prisma.$transaction(async tx => {
@@ -55,8 +58,9 @@ export function registerRepairWriteRoutes(app: Express) {
         // Si la reparación nace entregada, el enlace vence con la misma regla de siempre.
         const trackingExpiresAt = trackingExpiryFrom(deliveredAt, data.warrantyEnabled)
         const created = await tx.repair.create({ data: { businessId, number, clientId: client.id, deviceId: null, deviceBrand: data.deviceBrand, deviceModel: data.deviceModel, imei: data.imei?.replace(/[\s-]/g, '') || null, color: data.color?.trim() || null, issue: data.issue, diagnosis: data.diagnosis?.trim() || null, notes: data.notes?.trim() || null, total: data.total, partsCost: data.partsCost, laborCharge: data.laborCharge, estimatedDeliveryDate: data.estimatedDeliveryDate, status: data.status, trackingToken: trackingAllowed ? generateTrackingToken() : null, trackingEnabled: trackingAllowed, trackingCreatedAt: trackingAllowed ? new Date() : null, trackingExpiresAt, deliveredAt, warrantyEnabled: data.warrantyEnabled, warrantyDurationDays: data.warrantyEnabled ? data.warrantyDurationDays : null, warrantyStartedAt, warrantyExpiresAt } })
-        await recordInitialRepairFinance(tx, created, client.name, data)
-        return tx.repair.findUniqueOrThrow({ where: { id: created.id }, include: includeRepair })
+        await tx.repair.update({ where: { id: created.id }, data: { financeVersion: 2 } })
+        await recordInitialRepairFinance(tx, created, client.name, data, auth.userId)
+        return withRepairLedger(tx, await tx.repair.findUniqueOrThrow({ where: { id: created.id }, include: includeRepair }))
       }, { timeout: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
       return res.status(201).json(repairResponse(authOf(req), repair))
     } catch (error) {
@@ -72,11 +76,11 @@ export function registerRepairWriteRoutes(app: Express) {
     try {
       const repair = await prisma.$transaction(async tx => {
         await editRepairInTransaction(tx, auth, repairId, parsed.data)
-        return tx.repair.findUniqueOrThrow({ where: { id: repairId, businessId: auth.businessId }, include: includeRepair })
+        return withRepairLedger(tx, await tx.repair.findUniqueOrThrow({ where: { id: repairId, businessId: auth.businessId }, include: includeRepair }))
       }, { timeout: 15_000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
       return res.json(repairResponse(auth, repair))
     } catch (error) {
-      if (error instanceof RepairFinanceError) return res.status(error.statusCode).json({ success: false, message: error.message })
+      if (error instanceof RepairFinanceError || error instanceof Error && 'statusCode' in error) return res.status(Number(error.statusCode)).json({ success: false, message: error.message })
       return res.status(500).json({ success: false, message: 'No pudimos guardar los cambios de la reparación.' })
     }
   })
@@ -89,12 +93,17 @@ export function registerRepairWriteRoutes(app: Express) {
   app.patch('/api/repairs/:id', requirePermission('repairs.update'), async (req, res) => {
     const parsed = updateRepairSchema.safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ success: false, message: 'Datos de reparación inválidos' })
-    const businessId = authOf(req).businessId
-    const current = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId } })
-    if (!current) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-    if (parsed.data.total < current.paid) return res.status(400).json({ success: false, message: 'El total no puede ser menor que el importe pagado' })
-    if (parsed.data.clientId && !await prisma.client.findFirst({ where: { id: parsed.data.clientId, businessId, deletedAt: null } })) return res.status(400).json({ success: false, message: 'El cliente seleccionado fue eliminado o no está disponible.' })
-    const repair = await prisma.repair.update({ where: { id: current.id }, data: { ...parsed.data, imei: parsed.data.imei || null, color: parsed.data.color || null, diagnosis: parsed.data.diagnosis || null, notes: parsed.data.notes || null }, include: includeRepair })
-    return res.json(repairResponse(authOf(req), repair))
+    try {
+      const auth = authOf(req), repairId = String(req.params.id)
+      const repair = await prisma.$transaction(async tx => {
+        await lockRepair(tx, auth.businessId, repairId)
+        await editRepairInTransaction(tx, auth, repairId, parsed.data)
+        return withRepairLedger(tx, await tx.repair.findUniqueOrThrow({ where: { id: repairId, businessId: auth.businessId }, include: includeRepair }))
+      }, { timeout: 15000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted })
+      return res.json(repairResponse(auth, repair))
+    } catch (error) {
+      const status = error && typeof error === 'object' && 'statusCode' in error ? Number(error.statusCode) : 500
+      return res.status(status).json({ success: false, message: error instanceof Error && status !== 500 ? error.message : 'No pudimos guardar la reparación' })
+    }
   })
 }

@@ -49,7 +49,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
     const delayed = { businessId, status: { notIn: ['DELIVERED', 'CANCELLED', 'READY'] as RepairStatus[] }, estimatedDeliveryDate: { lt: deliveryCutoff } }
     const warranty = { businessId, warrantyEnabled: true, warrantyDeletedAt: null, warrantyExpiresAt: { gte: now, lt: new Date(now.getTime() + 7 * 86400000) } }
     const [cash, status, pending, received, readyItems, delayedCount, delayedItems, warrantyCount, warrantyItems, deviceStatus, deviceSales, commerce, activity, equipmentItems] = await Promise.all([
-      tx.cashMovement.groupBy({ by: ['type', 'origin'], where: { businessId, createdAt }, _sum: { amount: true }, _count: true }),
+      tx.cashMovement.groupBy({ by: ['type', 'origin', 'accountingOnly'], where: { businessId, createdAt }, _sum: { amount: true }, _count: true }),
       tx.repair.groupBy({ by: ['status'], where: { businessId }, _count: true }),
       dashboardPending(tx, businessId),
       tx.repair.count({ where: { businessId, createdAt } }),
@@ -62,11 +62,12 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
       // Cash records the confirmation instant. soldAt can be a different accounting date.
       tx.resaleDevice.aggregate({ where: { businessId, status: 'SOLD', cashMovements: { some: { businessId, resaleKind: 'SALE', createdAt } } }, _count: true, _sum: { actualSalePrice: true, saleCostBasis: true } }),
       features.commerce ? tx.commerceSale.aggregate({ where: { businessId, createdAt, cancelledAt: null }, _count: true, _sum: { total: true, profit: true } }) : null,
-      tx.cashMovement.findMany({ where: { businessId, createdAt }, select: { id: true, type: true, amount: true, origin: true, description: true, createdAt: true, repairId: true, resaleDeviceId: true, commerceSaleId: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 6 }),
+      tx.cashMovement.findMany({ where: { businessId, createdAt }, select: { id: true, accountingOnly: true, type: true, amount: true, origin: true, description: true, createdAt: true, repairId: true, resaleDeviceId: true, commerceSaleId: true }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 6 }),
       tx.resaleDevice.findMany({ where: { businessId, status: 'READY_FOR_SALE' }, select: { id: true, brand: true, model: true }, orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }], take: 3 }),
     ])
     const income = cash.filter(row => row.type === 'INCOME').reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
     const expense = cash.filter(row => row.type === 'EXPENSE').reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
+    const accountingAdjustment = -cash.filter(row => row.accountingOnly).reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
     const countStatus = (value: RepairStatus) => status.find(row => row.status === value)?._count ?? 0
     const equipmentReady = deviceStatus.find(row => row.status === 'READY_FOR_SALE')?._count ?? 0
     const activeRepairs = status.filter(row => row.status !== 'DELIVERED' && row.status !== 'CANCELLED').reduce((sum, row) => sum + row._count, 0)
@@ -88,7 +89,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
     return {
       generatedAt: now.toISOString(),
       period: { key: period, start: range.start.toISOString(), end: range.end.toISOString(), timeZone: range.timeZone },
-      financial: { income, expense, balance: income - expense },
+      financial: { income, expense, balance: income - expense, cashExpense: expense + accountingAdjustment, cashBalance: income - expense - accountingAdjustment, accountingAdjustment },
       current: { activeRepairs, readyRepairs: countStatus('READY'), pending: pending.amount },
       charts,
       attention: attention.filter(group => group.count > 0),

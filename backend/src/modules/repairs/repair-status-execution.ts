@@ -6,6 +6,7 @@ import { statusError } from './repair-status'
 import { claimRepairStatusTransition } from './repair-status-transition'
 import { authOf } from '../../middlewares/auth'
 import { includeRepair } from './repair-query'
+import { lockRepair, withRepairLedger } from './repair-ledger'
 
 export const statusMessagesSchema = z.object({ publicMessage: z.string().trim().max(500).optional(), internalNote: z.string().trim().max(1000).optional() })
 export const statusFailure = (res: Response, error: unknown, fallback: string) => {
@@ -21,8 +22,9 @@ export const executeStatusChange = (
   target: RepairStatus | ((current: RepairStatus) => RepairStatus),
   messages: z.infer<typeof statusMessagesSchema>,
 ) => prisma.$transaction(async tx => {
+  await lockRepair(tx, auth.businessId, repairId)
   const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId } })
   if (!current) throw statusError(404, 'Reparación no encontrada')
   await claimRepairStatusTransition(tx, current, typeof target === 'function' ? target(current.status) : target, messages, auth.userId)
-  return tx.repair.findUniqueOrThrow({ where: { id: current.id }, include: includeRepair })
+  return withRepairLedger(tx, await tx.repair.findUniqueOrThrow({ where: { id: current.id }, include: includeRepair }))
 }, { timeout: 15_000 })

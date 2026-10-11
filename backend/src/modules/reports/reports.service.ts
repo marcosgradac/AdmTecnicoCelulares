@@ -1,4 +1,4 @@
-import { PaymentMethod, RepairStatus } from '@prisma/client'
+import { PaymentMethod, Prisma, RepairStatus } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '../../lib/prisma'
 import { ARGENTINA_TIME_ZONE, getArgentinaCalendarDate, getArgentinaCalendarDayBounds, getArgentinaCalendarDayNumber, getArgentinaDayBounds, getArgentinaDayRangeBack } from '../../lib/argentina-day'
@@ -88,39 +88,52 @@ const bucketKey = (date: Date, granularity: 'day' | 'week' | 'month') => {
   return day.toISOString().slice(0, 10)
 }
 
-export async function getReportsOverview(businessId: string, input: ReportPeriodInput) {
+export const getReportsOverview = (businessId: string, input: ReportPeriodInput) => prisma.$transaction(tx => getReportsOverviewInTransaction(tx, businessId, input), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 15000 })
+
+async function getReportsOverviewInTransaction(tx: Prisma.TransactionClient, businessId: string, input: ReportPeriodInput) {
   const period = resolveReportPeriod(input)
   const range = { gte: period.from, lt: period.toExclusive }
   const now = new Date()
   const [repairs, deliveredRepairs, payments, expenses, newClients] = await Promise.all([
-    prisma.repair.findMany({
+    tx.repair.findMany({
       where: { businessId, createdAt: range },
-      select: { id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, issue: true, status: true, total: true, paid: true, partsCost: true, laborCost: true, estimatedDeliveryDate: true, deliveredAt: true, createdAt: true, client: { select: { name: true } } },
+      select: { id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, issue: true, status: true, cancelledAt: true, cancellationRefundMovementId: true, total: true, paid: true, partsCost: true, financeVersion: true, laborCost: true, estimatedDeliveryDate: true, deliveredAt: true, createdAt: true, client: { select: { name: true } } },
       orderBy: { createdAt: 'asc' },
     }),
-    prisma.repair.findMany({ where: { businessId, deliveredAt: range }, select: { createdAt: true, deliveredAt: true } }),
-    prisma.payment.findMany({ where: { businessId, createdAt: range }, select: { amount: true, method: true, createdAt: true } }),
-    prisma.cashMovement.findMany({ where: { businessId, type: 'EXPENSE', createdAt: range }, select: { amount: true, createdAt: true, initialCostRepair: { select: { businessId: true, status: true } } } }),
-    prisma.client.count({ where: { businessId, createdAt: range } }),
+    tx.repair.findMany({ where: { businessId, deliveredAt: range }, select: { createdAt: true, deliveredAt: true } }),
+    tx.payment.findMany({ where: { businessId, createdAt: range }, select: { amount: true, method: true, createdAt: true } }),
+    tx.cashMovement.findMany({ where: { businessId, type: 'EXPENSE', createdAt: range }, select: { id: true, amount: true, repairId: true, accountingOnly: true, repairFinanceKind: true, createdAt: true } }),
+    tx.client.count({ where: { businessId, createdAt: range } }),
   ])
 
-  const validRepairs = repairs.filter(repair => repair.status !== 'CANCELLED')
+  const [cashIncomeRows, actualPartsEntries, cancelledBalances] = await Promise.all([
+    tx.cashMovement.findMany({ where: { businessId, type: 'INCOME', createdAt: range }, select: { amount: true, repairFinanceKind: true } }),
+    tx.cashMovement.findMany({ where: { businessId, repairId: { in: repairs.map(repair => repair.id) }, OR: [{ repairFinanceKind: { in: ['PURCHASE', 'SUPPLIER_REFUND', 'EXPENSE_CORRECTION'] } }, { repairFinanceKind: null, type: 'EXPENSE', warrantyExpense: { is: null } }], createdAt: { lt: period.toExclusive } }, select: { id: true, amount: true, repairId: true, repairFinanceKind: true, createdAt: true } }),
+    tx.repair.findMany({ where: { businessId, status: 'CANCELLED', cancellationReviewFee: { gt: 0 } }, select: { cancellationReviewFee: true, cancellationPaidAmount: true, cancellationReviewPaid: true } }),
+  ])
+  const cashIncome = cashIncomeRows.reduce((sum, row) => sum + row.amount, 0)
+  const supplierRecovery = cashIncomeRows.filter(row => row.repairFinanceKind === 'SUPPLIER_REFUND').reduce((sum, row) => sum + row.amount, 0)
+  const accountingAdjustment = -expenses.filter(row => row.accountingOnly).reduce((sum, row) => sum + row.amount, 0)
+  const unclassifiedExpenses = actualPartsEntries.filter(row => row.repairFinanceKind === null && !repairs.some(repair => repair.cancellationRefundMovementId === row.id)).length
+  const actualCost = (repair: typeof repairs[number]) => actualPartsEntries.filter(row => row.repairId === repair.id && row.id !== repair.cancellationRefundMovementId).reduce((sum, row) => sum + (row.repairFinanceKind === 'SUPPLIER_REFUND' ? -row.amount : row.amount), 0)
+
+  const validRepairs = repairs.filter(repair => repair.status !== 'CANCELLED' || repair.cancelledAt !== null && repair.cancelledAt >= period.toExclusive)
   const billed = validRepairs.reduce((sum, repair) => sum + repair.total, 0)
   const collected = payments.reduce((sum, payment) => sum + payment.amount, 0)
-  const outstanding = validRepairs.reduce((sum, repair) => sum + Math.max(0, repair.total - repair.paid), 0)
-  const repairPartsCost = validRepairs.reduce((sum, repair) => sum + repair.partsCost, 0)
+  const cancellationReceivable = cancelledBalances.reduce((sum, repair) => sum + Math.max(0, (repair.cancellationReviewFee ?? 0) - (repair.cancellationPaidAmount ?? 0) - repair.cancellationReviewPaid), 0)
+  const outstanding = validRepairs.reduce((sum, repair) => sum + Math.max(0, repair.total - repair.paid), 0) + cancellationReceivable
+  const repairPartsCost = validRepairs.reduce((sum, repair) => sum + actualCost(repair), 0)
   const laborCost = validRepairs.reduce((sum, repair) => sum + repair.laborCost, 0)
   const expensesTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0)
-  // partsCost is recognized with the repair, even when its cash entry falls in another
-  // period. Only the explicitly linked mirror is excluded; unrelated repair/warranty
-  // expenses remain deductible. Cancelled repairs are absent from billed/cost totals,
-  // so their cash expenses must still count here.
+  // Costs come from the dated ledger, never from an editable parts budget.
+  // Entries recognized in an order's costs must not be deducted a second time.
   const expensesAlreadyInRepairCosts = expenses.reduce((sum, expense) => sum + (
-    expense.initialCostRepair?.businessId === businessId && expense.initialCostRepair.status !== RepairStatus.CANCELLED
+    validRepairs.some(repair => repair.id === expense.repairId) && actualPartsEntries.some(row => row.id === expense.id && !repairs.some(repair => repair.cancellationRefundMovementId === row.id))
       ? expense.amount : 0
   ), 0)
   const additionalExpenses = expensesTotal - expensesAlreadyInRepairCosts
-  const estimatedProfit = billed - repairPartsCost - laborCost - additionalExpenses
+  const additionalRecoveries = supplierRecovery - actualPartsEntries.filter(row => row.repairFinanceKind === 'SUPPLIER_REFUND' && row.createdAt >= period.from && validRepairs.some(repair => repair.id === row.repairId)).reduce((sum, row) => sum + row.amount, 0)
+  const estimatedProfit = billed - repairPartsCost - laborCost - additionalExpenses + additionalRecoveries
   const active = repairs.filter(repair => activeStatuses.includes(repair.status)).length
   const overdue = repairs.filter(repair => activeStatuses.includes(repair.status) && repair.estimatedDeliveryDate && repair.estimatedDeliveryDate < now).length
   const averageDeliveryHours = deliveredRepairs.length
@@ -140,15 +153,16 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     const current = timelineMap.get(label) ?? { label, billed: 0, collected: 0, expenses: 0, partsCost: 0, repairs: 0 }
     timelineMap.set(label, current); return current
   }
-  for (const repair of validRepairs) { const row = timelineRow(repair.createdAt); row.billed += repair.total; row.partsCost += repair.partsCost; row.repairs += 1 }
+  for (const repair of validRepairs) { const row = timelineRow(repair.createdAt); row.billed += repair.total; row.partsCost += actualCost(repair); row.repairs += 1 }
   for (const payment of payments) timelineRow(payment.createdAt).collected += payment.amount
   for (const expense of expenses) timelineRow(expense.createdAt).expenses += expense.amount
-  const profitability = validRepairs.map(repair => ({ id: repair.id, number: repair.number, label: `#${repair.number} · ${repair.deviceBrand} ${repair.deviceModel}`, billed: repair.total, profit: repair.total - repair.partsCost - repair.laborCost, margin: repair.total ? (repair.total - repair.partsCost - repair.laborCost) / repair.total : 0 }))
+  const profitability = validRepairs.map(repair => ({ id: repair.id, number: repair.number, label: `#${repair.number} · ${repair.deviceBrand} ${repair.deviceModel}`, billed: repair.total, profit: repair.total - actualCost(repair) - repair.laborCost, margin: repair.total ? (repair.total - actualCost(repair) - repair.laborCost) / repair.total : 0 }))
 
   return {
     period: { key: period.key, timezone: period.timezone, from: period.from.toISOString(), to: period.to.toISOString(), granularity },
     summary: {
-      income: collected, expenses: expensesTotal, estimatedProfit, collected, receivable: outstanding,
+      income: cashIncome, expenses: expensesTotal, estimatedProfit, collected, receivable: outstanding,
+      cashBalance: cashIncome - expensesTotal - accountingAdjustment, accountingAdjustment, balance: cashIncome - expensesTotal,
       repairsIncoming: repairs.length, repairsDelivered: deliveredRepairs.length, repairsActive: active,
       averageTicket: validRepairs.length ? billed / validRepairs.length : 0,
       partsCost: repairPartsCost, estimatedMargin: billed ? estimatedProfit / billed : 0,
@@ -164,6 +178,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
       employees: { available: false, reason: 'Las reparaciones todavía no registran un técnico asignado.' },
     },
     finance: {
+      unclassifiedExpenses, cashIncome, supplierRecovery, cashExpenses: expensesTotal + accountingAdjustment, cashBalance: cashIncome - expensesTotal - accountingAdjustment, accountingAdjustment, balance: cashIncome - expensesTotal, cancellationReceivable,
       billed, collected, outstanding, partsCost: repairPartsCost, laborCost, expenses: expensesTotal, expensesAlreadyInRepairCosts, additionalExpenses, estimatedProfit,
       timeline: [...timelineMap.values()].sort((a, b) => a.label.localeCompare(b.label)),
       mostProfitable: [...profitability].sort((a, b) => b.profit - a.profit).slice(0, 7),

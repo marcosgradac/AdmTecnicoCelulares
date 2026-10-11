@@ -53,7 +53,7 @@ async function main() {
     assert.equal(report.body.summary.collected, 40_000)
     assert.equal(report.body.finance.billed, 100_000)
     assert.equal(report.body.summary.receivable, 60_000)
-    assert.equal(report.body.summary.estimatedProfit, 65_000)
+    assert.equal(report.body.summary.estimatedProfit, 85_000)
     assert.equal(report.body.repairs.overdue, 1)
 
     const isolated = await request('GET', '/reports/overview?period=this_month', undefined, ownerB.token)

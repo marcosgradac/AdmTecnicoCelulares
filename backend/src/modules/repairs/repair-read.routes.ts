@@ -5,12 +5,14 @@ import { repairResponse } from './repair-response'
 import { authOf, requirePermission } from '../../middlewares/auth'
 import type { Express } from 'express'
 import { includeRepair } from './repair-query'
+import { withRepairLedger } from './repair-ledger'
 
 const repairListSelect = {
   id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, imei: true, color: true, issue: true,
   diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true, trackingExpiresAt: true,
   cancelledAt: true, cancellationPaidAmount: true, cancellationReviewFee: true, cancellationReviewPaid: true, cancellationRefundAmount: true,
   cancellationRefundMethod: true, cancellationRefundMovementId: true,
+  cancellationRefundPaid: true,
   estimatedDeliveryDate: true, warrantyEnabled: true, warrantyDurationDays: true, warrantyStartedAt: true,
   warrantyExpiresAt: true, createdAt: true, updatedAt: true,
   client: { select: { id: true, name: true, phone: true, createdAt: true } },
@@ -51,7 +53,7 @@ export function registerRepairReadRoutes(app: Express) {
   })
   app.get('/api/repairs/:id', requirePermission('repairs.view'), async (req, res) => {
     const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId: authOf(req).businessId }, include: includeRepair })
-    return repair ? res.json(repairResponse(authOf(req), repair)) : res.status(404).json({ success: false, message: 'Reparación no encontrada' })
+    return repair ? res.json(repairResponse(authOf(req), await withRepairLedger(prisma, repair))) : res.status(404).json({ success: false, message: 'Reparación no encontrada' })
   })
 
 }

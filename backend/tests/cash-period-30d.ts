@@ -49,6 +49,10 @@ async function main() {
   const address = server.address(); assert.ok(address && typeof address === 'object')
   const base = `http://127.0.0.1:${address.port}/api`, suffix = Date.now(), businesses: string[] = []
   const request = async (method: string, path: string, body?: object, token?: string) => {
+    // These legacy cash fixtures represent actual purchases, now explicit rather than inferred budgets.
+    if (method === 'POST' && path === '/repairs' && body && Number((body as any).partsCost) > 0 && (body as any).partsCostMethod) body = { ...body, initialExpenseAmount: (body as any).partsCost, initialExpenseMethod: (body as any).partsCostMethod, expenseConfirmed: true }
+    if (method === 'POST' && path.endsWith('/payments') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+
     const response = await fetch(`${base}${path}`, { method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: body ? JSON.stringify(body) : undefined })
     const text = await response.text()
     return { status: response.status, body: text ? JSON.parse(text) as any : null }

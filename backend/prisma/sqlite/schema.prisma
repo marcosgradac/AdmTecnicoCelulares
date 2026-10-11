@@ -96,6 +96,10 @@ model Client {
 }
 
 model Repair {
+  financeVersion Int?
+  cancellationRequestId String?
+  cancellationRequestPayload String?
+  cancellationRefundPaid Int?
   warrantyEnabled Boolean @default(false)
   warrantyDurationDays Int?
   warrantyStartedAt DateTime?
@@ -144,6 +148,7 @@ model Repair {
 
   @@index([businessId])
   @@unique([businessId, number])
+  @@unique([businessId, cancellationRequestId])
   // Mismo índice que crea la migración 20261003120000_tracking_expiry en SQLite.
   @@index([trackingExpiresAt])
 }
@@ -207,6 +212,17 @@ model RepairPart {
 }
 
 model CashMovement {
+  accountingOnly Boolean @default(false)
+  repairFinanceKind String?
+  relatedMovementId String?
+  operationKey String?
+  operationPayload String?
+  performedByUserId String?
+  reason String?
+  relatedMovement CashMovement? @relation("RepairCompensation", fields: [relatedMovementId, businessId], references: [id, businessId], onDelete: Restrict, onUpdate: NoAction)
+  compensations CashMovement[] @relation("RepairCompensation")
+  @@unique([businessId, operationKey])
+  @@index([businessId, repairId, relatedMovementId])
   initialCostRepair Repair? @relation("RepairInitialCost")
   warrantyExpense WarrantyClaimExpense?
   repairPayment Payment? @relation("RepairPaymentCashMovement")

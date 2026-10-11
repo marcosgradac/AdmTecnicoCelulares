@@ -187,6 +187,10 @@ model Device {
 }
 
 model Repair {
+  financeVersion Int?
+  cancellationRequestId String?
+  cancellationRequestPayload String?
+  cancellationRefundPaid Int?
   id                    String                @id @default(cuid())
   businessId            String
   number                Int
@@ -250,6 +254,7 @@ model Repair {
   warrantyClaims        WarrantyClaim[]
 
   @@unique([businessId, number])
+  @@unique([businessId, cancellationRequestId])
   @@index([businessId])
   @@index([businessId, trackingCreatedAt])
   @@index([businessId, createdAt])
@@ -455,6 +460,17 @@ enum CashMovementType {
 }
 
 model CashMovement {
+  accountingOnly Boolean @default(false)
+  repairFinanceKind String?
+  relatedMovementId String?
+  operationKey String?
+  operationPayload String?
+  performedByUserId String?
+  reason String?
+  relatedMovement CashMovement? @relation("RepairCompensation", fields: [relatedMovementId, businessId], references: [id, businessId], onDelete: Restrict, onUpdate: NoAction)
+  compensations CashMovement[] @relation("RepairCompensation")
+  @@unique([businessId, operationKey])
+  @@index([businessId, repairId, relatedMovementId])
   initialCostRepair Repair? @relation("RepairInitialCost")
   warrantyExpense WarrantyClaimExpense?
   repairPayment Payment? @relation("RepairPaymentCashMovement")

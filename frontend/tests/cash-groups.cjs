@@ -128,7 +128,7 @@ async function main() {
   // 2. Contenido de la fila principal: cada dato en su propia celda.
   const [header] = headers()
   assert.ok(header, 'la reparación se muestra como una fila activable')
-  assert.equal(header.props.children.props.children, 'Reparación #1033', 'la columna Reparación muestra el número')
+  assert.ok(JSON.stringify(header).includes('Reparación #1033'), 'la columna Reparación muestra el número')
   const mainRow = bodyRows()[0]
   const rowText = JSON.stringify(mainRow)
   assert.ok(rowText.includes('Bruno Acosta'), 'la columna Cliente / equipo muestra el cliente')
@@ -198,7 +198,7 @@ async function main() {
   assert.equal(mainTables(two.root()).length, 1, 'ambas reparaciones comparten la misma tabla: las columnas quedan alineadas')
   const twoHeaders = () => collect(two.root(), node => node.type === 'Box' && node.props?.component === 'button')
   assert.equal(twoHeaders().length, 2, 'cada reparación tiene su fila')
-  assert.deepEqual(twoHeaders().map(node => node.props.children.props.children), ['Reparación #1033', 'Reparación #1032'], 'en el orden que llegan del backend')
+  assert.deepEqual(twoHeaders().map(node => collect(node, child => child.type === 'Typography')[0].props.children), ['Reparación #1033', 'Reparación #1032'], 'en el orden que llegan del backend')
   assert.deepEqual(twoHeaders().map(node => node.props['aria-expanded']), [false, false], 'ambas arrancan plegadas')
   click(twoHeaders()[1])
   await two.settle()

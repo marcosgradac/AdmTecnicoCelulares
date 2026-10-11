@@ -21,6 +21,9 @@ export interface ClientRecord extends ClientOption {
 }
 
 export interface CashMovement {
+  accountingOnly?: boolean
+  relatedMovementId?: string | null
+  repairFinanceKind?: string | null
   id: string
   type: 'INCOME' | 'EXPENSE'
   description: string
@@ -36,6 +39,9 @@ export interface CashMovement {
 }
 
 export interface CashMovementsSummary {
+  accountingAdjustment?: number
+  cashBalance?: number
+  cashExpense?: number
   income: number
   expense: number
   /** Ingresos - egresos del período seleccionado. */
@@ -66,6 +72,9 @@ export interface CashMovementsPage {
 
 /** Movimiento dentro de un grupo de reparación. */
 export interface GroupedCashMovement {
+  accountingOnly?: boolean
+  relatedMovementId?: string | null
+  repairFinanceKind?: string | null
   id: string
   type: 'INCOME' | 'EXPENSE'
   description: string
@@ -79,6 +88,9 @@ export interface GroupedCashMovement {
 
 /** Una reparación con todos sus movimientos de Caja, listo para mostrarse como una fila. */
 export interface RepairCashGroup {
+  status?: string | null
+  accountingAdjustment?: number
+  cashNet?: number
   repairId: string
   repairNumber: number
   clientName: string
@@ -116,6 +128,6 @@ export const getCashMovements = async (params: { page: number; pageSize: number;
 export const getRepairCashGroups = async (params: { page: number; pageSize: number; period: CashPeriod }): Promise<CashMovementsPage> =>
   (await api.get<CashMovementsPage>('/cash/movements', { params: { ...params, origin: 'REPAIR', groupByRepair: true } })).data
 export const createCashMovement = async (input: { origin?: CashMovement['origin']; type: 'INCOME' | 'EXPENSE'; description: string; amount: number; method?: CashMovement['method'] }) => (await api.post<CashMovement>('/cash/movements', input)).data
-export const registerPayment = async (repairId: string, input: { amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string }) => { await api.post(`/repairs/${repairId}/payments`, input) }
+export const registerPayment = async (repairId: string, input: { requestId: string; confirmed: true; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string }) => { await api.post(`/repairs/${repairId}/payments`, input) }
 
 export type { Repair }

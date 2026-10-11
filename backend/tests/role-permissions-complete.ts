@@ -23,6 +23,11 @@ async function main() {
   const failures: string[] = []
   const sign = (user: any, extra = {}) => jwt.sign({ userId: user.id, businessId: user.businessId, tokenVersion: user.tokenVersion, role: user.role, platformRole: user.platformRole, ...extra }, process.env.JWT_SECRET!, { expiresIn: '8h' })
   const call = async (token: string | undefined, method: string, path: string, body?: object) => {
+    // Authorization probes submit a valid explicit financial command under the new contract.
+    if (method === 'POST' && path.endsWith('/payments') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+    if (method === 'POST' && path.endsWith('/cancel') && body) body = { requestId: randomUUID(), expenses: [], refundConfirmed: Boolean((body as any).refundMethod), ...body }
+    if (method === 'POST' && path.endsWith('/cancellation-payment') && body) body = { requestId: randomUUID(), confirmed: true, ...body }
+
     const response = await fetch(`http://127.0.0.1:${address.port}/api${path}`, { method, redirect: 'error', headers: { ...(token ? { authorization: `Bearer ${token}` } : {}), 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
     const text = await response.text()
     checks++
@@ -113,6 +118,14 @@ async function main() {
       ['cash.create','POST',`/warranties/claims/${A.claim.id}/expenses`,{concept:'Test expense',amount:1,method:'CASH',idempotencyKey:randomUUID()}],
       ['repairs.changeStatus','POST',`/warranties/claims/${A.claim.id}/delivery`,{warrantyDurationDays:30}],
     ]
+    for (const permission of ['repairs.viewFinancials', 'cash.create'] as const) {
+      matrix.push([permission,'POST',`/repairs/${A.repair.id}/financial-operations`,{requestId:randomUUID(),kind:'PURCHASE',amount:1,method:'CASH',confirmed:true}])
+      matrix.push([permission,'POST',`/repairs/${A.repair.id}/cancellation-refund`,{requestId:randomUUID(),amount:1,method:'CASH',confirmed:true}])
+      for (const path of ['cancel-preview','cancel']) matrix.push([permission,'POST',`/repairs/${A.repair.id}/${path}`,{requestId:randomUUID(),reviewFee:1,expenses:[],refundConfirmed:false}])
+    }
+    matrix.push(['repairs.changeStatus','POST',`/repairs/${A.repair.id}/cancel-preview`,{requestId:randomUUID(),reviewFee:0,expenses:[],refundConfirmed:false}])
+    matrix.push(['cash.create','POST',`/repairs/${A.repair.id}/payments`,{amount:1,method:'CASH'}])
+    matrix.push(['cash.create','POST',`/repairs/${A.repair.id}/cancellation-payment`,{amount:1,method:'CASH'}])
     const setPermissions = async (permissions: Permission[]) => { await prisma.user.update({ where: { id:A.partial.id }, data:{ permissions } }); return sign(A.partial) }
     await probe('all endpoint gates reject empty permissions without effects', async () => {
       const before = await snapshot()
@@ -150,7 +163,7 @@ async function main() {
       for(const row of report.clients.topByRepairs) assert.deepEqual(Object.keys(row).sort(),['name','repairs'])
       for(const token of [sign(A.owner),sign(A.full),await setPermissions(['reports.view','reports.viewSensitive'])]) {
         const full=await expect(token,'GET','/reports/overview',200)
-        assert.equal(full.finance.partsCost,123); assert.equal(full.finance.laborCost,45)
+        assert.equal(full.finance.partsCost,0, 'A budget is not an actual expense'); assert.equal(full.finance.laborCost,45)
       }
       await expect(await setPermissions(['reports.viewSensitive']),'GET','/reports/overview',403)
     })
@@ -283,7 +296,8 @@ async function main() {
       await expect(token,'POST',`/repairs/${repair.id}/tracking-link`,200,{})
       await expect(token,'PATCH',`/repairs/${repair.id}/tracking-link`,200,{enabled:false})
       await expect(token,'PATCH',`/repairs/${repair.id}/advance`,200,{amount:10,method:'CASH'})
-      await expect(token,'PATCH',`/repairs/${repair.id}/initial-cost`,200,{amount:5,method:'CASH'})
+      await expect(token,'PATCH',`/repairs/${repair.id}/initial-cost`,409,{amount:5,method:'CASH'})
+      await expect(token,'POST',`/repairs/${repair.id}/financial-operations`,200,{requestId:randomUUID(),kind:'PURCHASE',amount:5,method:'CASH',confirmed:true})
       await expect(token,'POST',`/repairs/${repair.id}/payments`,201,{amount:10,method:'CASH'})
       await expect(token,'GET',`/repairs/${repair.id}/payments`,200)
       await expect(token,'POST','/cash/movements',201,{type:'EXPENSE',amount:1,method:'CASH',description:'Legitimate expense'})

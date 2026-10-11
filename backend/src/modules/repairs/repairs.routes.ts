@@ -5,8 +5,10 @@ import { registerRepairStatusRoutes } from './repair-status.routes'
 import { registerRepairFinanceRoutes } from './repair-finance.routes'
 import { registerRepairCancellationRoutes } from './repair-cancellation.routes'
 import { registerRepairLegacyRoutes } from './repair-legacy.routes'
+import { registerRepairLedgerRoutes } from './repair-ledger.routes'
 
 export function registerRepairRoutes(app: Express) {
+  registerRepairLedgerRoutes(app)
   registerRepairReadRoutes(app)
   registerRepairWriteRoutes(app)
   registerRepairStatusRoutes(app)

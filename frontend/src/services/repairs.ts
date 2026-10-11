@@ -25,6 +25,11 @@ interface ApiRepair {
   total: number
   paid: number
   partsCost?: number
+  financeVersion?: Repair['financeVersion']
+  financialSummary?: Repair['financialSummary']
+  expenseEntries?: Repair['expenseEntries']
+  financialMovements?: Repair['financialMovements']
+  cancellationRefundPaid?: number | null
   laborCost?: number
   laborCharge?: number
   cancelledAt?: string | null
@@ -60,6 +65,9 @@ export interface CreateRepairInput {
   notes?: string
   total: number
   partsCost?: number
+  initialExpenseAmount?: number
+  initialExpenseMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
+  expenseConfirmed?: boolean
   /** Obligatorio cuando partsCost > 0: es el medio de pago del egreso, no el del adelanto. */
   partsCostMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
   laborCharge?: number
@@ -117,6 +125,11 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   total: repair.total,
   paid: repair.paid,
   partsCost: repair.partsCost,
+  financeVersion: repair.financeVersion,
+  financialSummary: repair.financialSummary,
+  expenseEntries: repair.expenseEntries,
+  financialMovements: repair.financialMovements,
+  cancellationRefundPaid: repair.cancellationRefundPaid,
   laborCost: repair.laborCost,
   laborCharge: repair.laborCharge,
   cancelledAt: repair.cancelledAt ?? undefined,
@@ -199,7 +212,19 @@ export async function correctRepairDelivery(id: string, reason: string) {
   return mapRepair(response.data)
 }
 
-export type CancelRepairInput = { reviewFee: number; refundMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }
+export type FinancialMethod = 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'
+export type ExpenseDecision = { movementId: string; disposition: 'NOT_PURCHASED' | 'REFUND_FULL' | 'KEEP' | 'REFUND_PARTIAL'; amount?: number; method?: FinancialMethod; confirmed?: boolean; reason?: string; stockDisposition?: 'LOST' | 'KEPT_FOR_STOCK' }
+export type CancelRepairInput = { requestId: string; reviewFee: number; refundMethod?: FinancialMethod; refundConfirmed?: boolean; expenses: ExpenseDecision[]; expectedVersion?: string }
+export type CancellationPreview = { version: string; projectedNet: number; projectedCashNet: number; accountingAdjustment: number; income: number; expense: number; reviewBalance: number; refundBalance: number; refundNow: number }
+export async function getCancellationPreview(id: string, input: CancelRepairInput) {
+  return (await api.post<CancellationPreview>(`/repairs/${id}/cancel-preview`, input)).data
+}
+export async function registerRepairFinancialOperation(id: string, input: { requestId: string; kind: 'PURCHASE' | 'SUPPLIER_REFUND' | 'EXPENSE_CORRECTION'; amount: number; method?: FinancialMethod; movementId?: string; reason?: string; confirmed: true }) {
+  return mapRepair((await api.post<ApiRepair>(`/repairs/${id}/financial-operations`, input)).data)
+}
+export async function registerCancellationRefund(id: string, input: { requestId: string; amount: number; method: FinancialMethod; confirmed: true }) {
+  return mapRepair((await api.post<ApiRepair>(`/repairs/${id}/cancellation-refund`, input)).data)
+}
 
 export async function cancelRepair(id: string, input: CancelRepairInput) {
   const response = await api.post<ApiRepair>(`/repairs/${id}/cancel`, input)
@@ -207,7 +232,7 @@ export async function cancelRepair(id: string, input: CancelRepairInput) {
 }
 
 /** Cobra parte del saldo de revisión de una reparación ya cancelada. */
-export async function registerCancellationPayment(id: string, input: { amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }) {
+export async function registerCancellationPayment(id: string, input: { requestId: string; amount: number; method: FinancialMethod; confirmed: true }) {
   const response = await api.post<ApiRepair>(`/repairs/${id}/cancellation-payment`, input)
   return mapRepair(response.data)
 }

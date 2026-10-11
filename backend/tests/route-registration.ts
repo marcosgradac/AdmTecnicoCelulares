@@ -16,7 +16,7 @@ async function main() {
   const { app } = await import('../src/server')
   const actual = describe((app as any).router.stack)
   const fixture = resolve(__dirname, 'fixtures/route-registration.json')
-  assert.deepEqual(actual, JSON.parse(readFileSync(fixture, 'utf8')), 'Endpoint methods, registration order and middleware stack must preserve the pre-refactor contract')
+  assert.deepEqual(actual, JSON.parse(readFileSync(fixture, 'utf8')), 'Endpoint methods, registration order and middleware stack must match the reviewed registration and security middleware contract')
   console.log('Route registration contract: OK')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

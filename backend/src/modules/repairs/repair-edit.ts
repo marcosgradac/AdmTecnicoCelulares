@@ -2,7 +2,8 @@ import { PaymentMethod, type Prisma } from '@prisma/client'
 import { z } from 'zod'
 import type { AuthData } from '../../middlewares/auth'
 import { canViewRepairFinancials } from './repair-response'
-import { advanceCorrectionNote, correctInitialRepairAdvance, correctInitialRepairCost, initialCostCorrectionNote, repairMoney, RepairFinanceError, validPaymentsTotal } from './repair-finance'
+import { requireFinancialWriter } from './repair-ledger'
+import { advanceCorrectionNote, correctInitialRepairAdvance, repairMoney, RepairFinanceError, validPaymentsTotal } from './repair-finance'
 
 export const editRepairSchema = z.object({
   clientId: z.string().min(1).optional(),
@@ -62,11 +63,14 @@ export async function editRepairInTransaction(tx: Prisma.TransactionClient, auth
   if (Object.keys(data).length) await tx.repair.update({ where: { id: repairId, businessId: auth.businessId }, data })
   const note = (internalNote: string) => tx.repairStatusHistory.create({ data: { repairId, previousStatus: current.status, newStatus: current.status, changedByUserId: auth.userId, internalNote } })
   if (costChanged) {
-    const { previousAmount } = await correctInitialRepairCost(tx, current, client.name, { amount: input.partsCost ?? current.partsCost, method: input.partsCostMethod })
-    if (previousAmount !== input.partsCost) await note(initialCostCorrectionNote(previousAmount, input.partsCost!))
+    if (input.partsCostMethod !== undefined) throw new RepairFinanceError(409, 'El presupuesto no tiene medio de pago. Registrá una compra o conciliación explícita.')
+    await tx.repair.update({ where: { id: repairId, businessId: auth.businessId }, data: { partsCost: input.partsCost } })
+    await note(`Presupuesto de repuestos actualizado de ${current.partsCost} a ${input.partsCost}; no modifica Caja`)
   }
   if (advanceChanged) {
-    const { previousAmount } = await correctInitialRepairAdvance(tx, { ...current, clientId, total }, client.name, { amount: advanceAmount, method: advanceMethod })
+    requireFinancialWriter(auth)
+    if (advances.length) throw new RepairFinanceError(409, 'Un adelanto cobrado no se modifica ni elimina. Conservá el pago y registrá la liquidación real por su flujo explícito.')
+    const { previousAmount } = await correctInitialRepairAdvance(tx, { ...current, clientId, total }, client.name, { amount: advanceAmount, method: advanceMethod }, auth.userId)
     if (previousAmount !== advanceAmount) await note(advanceCorrectionNote(previousAmount, advanceAmount))
   }
 }
