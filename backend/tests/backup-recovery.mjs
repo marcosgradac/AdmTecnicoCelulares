@@ -56,7 +56,13 @@ try{
  }
  await mkdir(output,{mode:0o700})
  await pgTool('initdb',['-D',cluster,'-U','postgres','-A','trust','-E','UTF8','--no-locale'])
- started=true;await pgTool('pg_ctl',['-D',cluster,'-l',join(root,'postgres.log'),'-o',`-h 127.0.0.1 -p ${port}`,'-w','start']);console.log('RUN disposable PostgreSQL 17 migration and fixtures')
+ // PGDG Linux defaults can put the Unix socket in a system-owned directory.
+ // Keep both TCP and Unix sockets inside the owned isolated test environment.
+ const serverOptions=`-h 127.0.0.1 -p ${port}`+(process.platform==='win32'?'':` -k "${root}"`)
+ started=true
+ try{await pgTool('pg_ctl',['-D',cluster,'-l',join(root,'postgres.log'),'-o',serverOptions,'-w','start'])}
+ catch{const log=await readFile(join(root,'postgres.log'),'utf8').catch(()=>'');const reason=/Permission denied/.test(log)?'PERMISSION':/Address already in use/.test(log)?'PORT_BUSY':'STARTUP';throw Error('Owned fictitious cluster startup rejected: '+reason)}
+ console.log('RUN disposable PostgreSQL 17 migration and fixtures')
  maintenance=new pg.Client({host:'127.0.0.1',port,database:'postgres',user:'postgres'});await maintenance.connect()
  for(const db of [source.database,target.database])await maintenance.query(`CREATE DATABASE "${db}"`)
  const env={...childEnvironment(),NODE_ENV:'test',DOTENV_CONFIG_PATH:join(root,'absent.env'),DATABASE_URL:dbUrl(source)}
@@ -129,6 +135,6 @@ try{
 }finally{
  key.fill(0);await prisma?.$disconnect();await maintenance?.end()
  assert.equal(dirname(resolve(root)),resolve(tmpdir()));assert.ok(root.startsWith(join(resolve(tmpdir()),'tecnodesk-security9-')))
- if(started)await pgTool('pg_ctl',['-D',cluster,'-m','fast','-w','stop'])
+ if(started){try{await pgTool('pg_ctl',['-D',cluster,'status']);await pgTool('pg_ctl',['-D',cluster,'-m','fast','-w','stop'])}catch{const pid=await readFile(join(cluster,'postmaster.pid'),'utf8').catch(()=>'');if(pid)throw Error('Owned cluster cleanup needs attention')}}
  await rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:200})
 }

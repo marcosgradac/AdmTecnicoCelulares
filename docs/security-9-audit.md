@@ -118,7 +118,8 @@ por nombre de proceso global ni borrar carpetas ajenas.
 Linux/CI: instalar `postgresql-17` y `postgresql-client-17` mediante el
 [repositorio oficial PGDG](https://www.postgresql.org/download/linux/ubuntu/).
 `PG_BIN=/usr/lib/postgresql/17/bin npm run test:backup`. El job usa Ubuntu 24.04,
-desactiva la creación automática de clusters del paquete y ejecuta `initdb` como
+desactiva la creación automática de clusters del paquete, coloca el socket Unix
+en el directorio temporal propio (no `/var/run/postgresql`) y ejecuta `initdb` como
 usuario no root. Sólo bases propias en TEMP y claves ficticias. No usa secretos
 productivos, acceso a Supabase ni upload-artifact/cache de backups.
 
@@ -205,7 +206,7 @@ permiso PostgreSQL sí se ensaya realmente. La verificación de ACL es conservad
 un ACL complejo puede rechazarse aun si hay denegaciones efectivas adicionales.
 
 Medición Windows del ensayo completo final: backup cifrado
-99.519 bytes, generación 281 ms, restore 824 ms, 29 grupos end-to-end aprobados.
+99.496 bytes, generación 259 ms, restore 592 ms, 29 grupos end-to-end aprobados.
 Además pasan guards/crypto/retención y los rechazos previos a conexión. El tiempo
 total incluye iniciar cluster, migraciones, fixtures y ataques de interrupción;
 estas métricas de ~100 KB **no** predicen el tiempo o capacidad de una base real.
