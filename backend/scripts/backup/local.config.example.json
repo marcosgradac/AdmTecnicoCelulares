@@ -1,0 +1,8 @@
+{
+  "host": "127.0.0.1",
+  "port": 55440,
+  "database": "tecnodesk_backup_test_example123",
+  "user": "postgres",
+  "password": "fictitious-local-only",
+  "disposable": true
+}

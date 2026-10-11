@@ -12,7 +12,7 @@ permissions:
 jobs:
   backend:
     name: Backend CI
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -20,7 +20,7 @@ jobs:
     env:
       NODE_ENV: test
       JWT_SECRET: ci-only-not-a-production-secret
-      # Tests mock Prisma; port 1 deliberately has no PostgreSQL service.
+      # Mocked tests cannot reach a DB here; integration harnesses own fresh local clusters.
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:1/ci_never_connected
     steps:
       - name: Checkout
@@ -58,6 +58,19 @@ jobs:
         run: npm run test:session-security
       - name: Browser hardening and stored fields (disposable local PostgreSQL)
         run: npm run test:browser-hardening
+      - name: Install PostgreSQL 17 tools for disposable recovery test
+        run: |
+          curl --fail --silent --show-error https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /tmp/pgdg.asc
+          sudo install -m 644 /tmp/pgdg.asc /usr/share/keyrings/pgdg.asc
+          echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo mkdir -p /etc/postgresql-common
+          echo "create_main_cluster = false" | sudo tee /etc/postgresql-common/createcluster.conf >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-17 postgresql-client-17
+      - name: Encrypted backup and restore (owned disposable PostgreSQL 17 only)
+        env:
+          PG_BIN: /usr/lib/postgresql/17/bin
+        run: npm run test:backup
 
   frontend:
     name: Frontend CI
