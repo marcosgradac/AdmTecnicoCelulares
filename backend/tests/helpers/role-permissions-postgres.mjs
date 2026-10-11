@@ -38,7 +38,7 @@ try {
   finally { await client.end() }
   // Temp cwd prevents Prisma CLI from loading the developer's backend/.env.
   await run([join(backend, 'node_modules/prisma/build/index.js'), 'migrate', 'deploy', '--schema', join(backend, 'prisma/schema.prisma')], directory)
-  const suites = accountDeletion ? ['account-deletion.ts'] : process.argv.includes('--extended') ? [
+  const suites = process.argv.includes('--browser') ? ['browser-hardening-postgres.ts'] : accountDeletion ? ['account-deletion.ts'] : process.argv.includes('--extended') ? [
     'rate-limit-multiuser.ts', 'cash-pagination.ts', 'commerce-stock-race.ts', 'dashboard-overview-contract.ts', 'dashboard.ts',
     'money-concurrency.ts', 'performance-access.ts', 'repair-advance-status.ts', 'repair-creation-finance.ts',
     'repair-edit.ts', 'repair-initial-cost.ts', 'repair-legacy-status-endpoints.ts', 'timezone-cleanup.ts',

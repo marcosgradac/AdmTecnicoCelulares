@@ -1,19 +1,28 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import axios from 'axios'
 import { Alert, Box, Button, IconButton, InputAdornment, Link as MuiLink, TextField } from '@mui/material'
 import { EastRounded, LockRounded, VisibilityOffRounded, VisibilityRounded } from '@mui/icons-material'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { resetPassword } from '../services/auth'
+import { useRecoveryToken } from '../auth/useRecoveryToken'
 
 export function ResetPasswordPage() {
-  const [params] = useSearchParams()
-  const token = params.get('token') ?? ''
+  const { token, clearToken } = useRecoveryToken()
   const [form, setForm] = useState({ password: '', confirmation: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
+  const previousToken = useRef(token)
+  useEffect(() => {
+    if (token && token !== previousToken.current) {
+      setSuccess('')
+      setError('')
+      setForm({ password: '', confirmation: '' })
+    }
+    previousToken.current = token
+  }, [token])
   const passwordValid = /[a-z]/.test(form.password) && /[A-Z]/.test(form.password) && /\d/.test(form.password) && form.password.length >= 8
 
   const submit = async (event: FormEvent) => {
@@ -27,6 +36,7 @@ export function ResetPasswordPage() {
     try {
       const result = await resetPassword(token, form.password)
       setSuccess(result.message)
+      clearToken()
       setForm({ password: '', confirmation: '' })
     } catch (requestError) {
       setError(axios.isAxiosError<{ message?: string }>(requestError)
@@ -36,7 +46,7 @@ export function ResetPasswordPage() {
   }
 
   return <AuthLayout variant="reset-password" title="Creá una nueva contraseña" description="La nueva contraseña cerrará las sesiones anteriores de tu cuenta.">
-    {!token && <Alert severity="error">El enlace es inválido o está incompleto.</Alert>}
+    {!token && !success && <Alert severity="error">El enlace es inválido o está incompleto.</Alert>}
     {success && <Alert severity="success">{success}</Alert>}
     {error && <Alert severity="error">{error}</Alert>}
     {!success && <Box component="form" className="auth-password-form" onSubmit={submit}>
