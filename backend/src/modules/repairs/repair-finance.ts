@@ -126,14 +126,9 @@ export async function correctInitialRepairCost(
   return { previousAmount }
 }
 
-/**
- * Suma real de todos los pagos válidos de la reparación.
- *
- * `cancellationReview` queda fuera a propósito: esos cobros pertenecen a una reparación
- * cancelada y se contabilizan en su propia liquidación, nunca en el saldo de la orden.
- */
-export const validPaymentsTotal = (payments: Array<{ amount: number; cancellationReview: boolean }>) =>
-  payments.filter(payment => !payment.cancellationReview).reduce((sum, payment) => sum + payment.amount, 0)
+/** Suma real de los pagos de la reparación. */
+export const validPaymentsTotal = (payments: Array<{ amount: number }>) =>
+  payments.reduce((sum, payment) => sum + payment.amount, 0)
 
 /**
  * Localiza el CashMovement INCOME que corresponde al adelanto.

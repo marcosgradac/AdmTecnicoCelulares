@@ -15,10 +15,9 @@ export function registerRepairActivityRoutes(app: Express) {
     const businessId = authOf(req).businessId
     const repair = await prisma.repair.findFirst({ where: { id: String(req.params.id), businessId }, include: { client: true } })
     if (!repair) return res.status(404).json({ success: false, message: 'Reparación no encontrada' })
-    if (repair.status === RepairStatus.CANCELLED) return res.status(409).json({ success: false, message: 'La reparación está cancelada y no admite nuevos pagos' })
     const payment = await prisma.$transaction(async tx => {
       const changed = await tx.repair.updateMany({
-        where: { id: repair.id, businessId, total: repair.total, status: { not: RepairStatus.CANCELLED }, paid: { lte: repair.total - parsed.data.amount } },
+        where: { id: repair.id, businessId, total: repair.total, paid: { lte: repair.total - parsed.data.amount } },
         data: { paid: { increment: parsed.data.amount } },
       })
       if (changed.count !== 1) return null

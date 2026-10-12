@@ -14,7 +14,7 @@ import { formatDate, formatMoney } from '../utils/format'
 import type { RepairStatus } from '../types'
 import { GRADIENT_TEXT_SX } from '../theme/tokens'
 
-const apiStatus:Record<string,RepairStatus>={RECEIVED:'received',REVIEW:'review',BUDGET:'budget',APPROVED:'approved',WAITING_PART:'waiting_part',REPAIRING:'repairing',TESTING:'testing',READY:'ready',DELIVERED:'delivered',CANCELLED:'cancelled',WARRANTY:'warranty'}
+const apiStatus:Record<string,RepairStatus>={RECEIVED:'received',REVIEW:'review',BUDGET:'budget',APPROVED:'approved',WAITING_PART:'waiting_part',REPAIRING:'repairing',TESTING:'testing',READY:'ready',DELIVERED:'delivered',WARRANTY:'warranty'}
 export function ClientDetailPage(){
  const {user}=useAuth();const[deleting,setDeleting]=useState(false)
  const{id}=useParams(),navigate=useNavigate();const[client,setClient]=useState<ClientRecord|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(false)

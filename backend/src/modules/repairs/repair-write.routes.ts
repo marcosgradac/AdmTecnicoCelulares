@@ -20,12 +20,10 @@ export function registerRepairWriteRoutes(app: Express) {
     notes: z.string().optional(), estimatedDeliveryDate: z.coerce.date().optional(), status: z.nativeEnum(RepairStatus).default(RepairStatus.RECEIVED)
     , warrantyEnabled: z.boolean().default(false), warrantyDurationDays: z.number().int().min(1).max(365).optional()
   }).superRefine((data, context) => {
-    if (data.status === RepairStatus.CANCELLED) context.addIssue({ code: 'custom', path: ['status'], message: 'No se pueden crear reparaciones canceladas. Usá Eliminar reparación.' })
     if (data.advanceAmount > data.total) context.addIssue({ code: 'custom', path: ['advanceAmount'], message: 'El adelanto no puede superar el total al cliente' })
     if (data.advanceAmount > 0 && !data.advanceMethod) context.addIssue({ code: 'custom', path: ['advanceMethod'], message: 'Seleccioná el medio de pago del adelanto' })
     // El gasto inicial es un egreso propio: con costo cargando necesita su medio de pago.
     if (data.partsCost > 0 && !data.partsCostMethod) context.addIssue({ code: 'custom', path: ['partsCostMethod'], message: 'Seleccioná el medio de pago del gasto' })
-    if (data.advanceAmount > 0 && data.status === RepairStatus.CANCELLED) context.addIssue({ code: 'custom', path: ['status'], message: 'Una reparación cancelada no admite adelantos' })
   })
   app.post('/api/repairs', requirePermission('repairs.create'), async (req, res) => {
     const parsed = createRepairSchema.safeParse(req.body)

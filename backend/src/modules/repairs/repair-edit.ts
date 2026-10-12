@@ -30,16 +30,13 @@ export async function editRepairInTransaction(tx: Prisma.TransactionClient, auth
   const client = clientId === current.clientId ? current.client : await tx.client.findFirst({ where: { id: clientId, businessId: auth.businessId, deletedAt: null } })
   if (!client) throw new RepairFinanceError(400, 'El cliente seleccionado fue eliminado o no está disponible.')
   const total = input.total ?? current.total
-  const advances = current.payments.filter(payment => payment.isAdvance && !payment.cancellationReview)
+  const advances = current.payments.filter(payment => payment.isAdvance)
   if (input.advanceAmount !== undefined && advances.length > 1) throw new RepairFinanceError(409, 'Esta reparación tiene más de un adelanto registrado. Revisá los pagos antes de corregirlo.')
   const advance = advances[0]
   const advanceAmount = input.advanceAmount ?? advance?.amount ?? 0
   const advanceChanged = input.advanceAmount !== undefined && advanceAmount !== (advance?.amount ?? 0)
     || input.advanceMethod !== undefined && advanceAmount > 0 && input.advanceMethod !== advance?.method
   const costChanged = input.partsCost !== undefined && input.partsCost !== current.partsCost || input.partsCostMethod !== undefined
-  if (current.status === 'CANCELLED' && (costChanged || advanceChanged || total !== current.total || input.laborCharge !== undefined && input.laborCharge !== current.laborCharge)) {
-    throw new RepairFinanceError(409, 'Una reparación cancelada no admite cambios financieros: su liquidación tiene su propio flujo.')
-  }
   const resultingPaid = advanceChanged
     ? validPaymentsTotal(current.payments.filter(payment => !payment.isAdvance)) + advanceAmount
     : Math.max(current.paid, validPaymentsTotal(current.payments))

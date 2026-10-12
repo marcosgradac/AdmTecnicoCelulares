@@ -109,12 +109,12 @@ async function main() {
   const repairs = await prisma.repair.findMany({ where: { businessId }, include: { payments: true, parts: true, statusHistory: { orderBy: { createdAt: 'asc' } } } })
   const cash = await prisma.cashMovement.findMany({ where: { businessId } })
   const users = await prisma.user.findMany({ where: { businessId } })
-  assert.deepEqual([clients.length, devices.length, repairs.length, users.filter(u => u.role === 'TECHNICIAN').length], [32, 40, 50, 3])
+  assert.deepEqual([clients.length, devices.length, repairs.length, users.filter(u => u.role === 'TECHNICIAN').length], [32, 40, 46, 3])
   assert.ok(clients.every(c => c.name.endsWith('(DEMO)') && (!c.email || c.email.endsWith('@example.invalid')) && (!c.phone || c.phone.startsWith('000-000-')) && !c.whatsapp))
   assert.ok(devices.every(d => !d.imei && clients.some(c => c.id === d.clientId && +c.createdAt <= +d.createdAt)))
-  assert.equal(new Set(repairs.map(r => r.status)).size, 11)
+  assert.equal(new Set(repairs.map(r => r.status)).size, 10)
   assert.ok(clients.some(c => repairs.filter(r => r.clientId === c.id).length > 1))
-  assert.equal(new Set(repairs.map(r => r.number)).size, 50)
+  assert.equal(new Set(repairs.map(r => r.number)).size, 46)
   assert.equal(owner.business.lastRepairNumber, Math.max(...repairs.map(r => r.number)))
   assert.equal(repairs.filter(r => r.warrantyEnabled).length, 10)
   assert.ok(repairs.some(r => r.warrantyEnabled && !r.warrantyStartedAt))
@@ -125,7 +125,7 @@ async function main() {
     if (r.estimatedDeliveryDate) assert.ok(+r.estimatedDeliveryDate >= +r.createdAt, 'Estimated delivery cannot precede intake')
     assert.equal(devices.find(d => d.id === r.deviceId)!.clientId, r.clientId)
     assert.ok(+devices.find(d => d.id === r.deviceId)!.createdAt <= +r.createdAt)
-    assert.equal(r.paid, r.payments.filter(p => !p.cancellationReview).reduce((n, p) => n + p.amount, 0))
+    assert.equal(r.paid, r.payments.reduce((n, p) => n + p.amount, 0))
     const income = cash.filter(c => c.repairId === r.id && c.type === 'INCOME')
     assert.equal(income.length, r.payments.length, 'One cash income per payment')
     assert.equal(income.reduce((n, c) => n + c.amount, 0), r.payments.reduce((n, p) => n + p.amount, 0))
@@ -142,11 +142,6 @@ async function main() {
       assert.ok(+r.statusHistory[i].createdAt >= +r.createdAt && +r.statusHistory[i].createdAt <= Date.now())
     }
     if (r.status === 'DELIVERED' || r.status === 'WARRANTY') assert.equal(r.paid, r.total)
-    if (r.status === 'CANCELLED') {
-      assert.equal(r.cancellationPaidAmount, r.paid); assert.equal(r.cancellationRefundAmount, Math.max(0, r.paid - r.cancellationReviewFee!))
-      assert.equal(r.trackingEnabled, false)
-      if (r.cancellationRefundAmount) assert.equal(cash.find(c => c.id === r.cancellationRefundMovementId)?.amount, r.cancellationRefundAmount)
-    }
   }
   assert.ok(repairs.some(r => r.payments.length > 1) && repairs.some(r => r.paid === 0) && repairs.some(r => r.paid > 0 && r.paid < r.total))
   assert.deepEqual([...new Set(repairs.flatMap(r => r.payments.map(p => p.method)))].sort(), ['CARD', 'CASH', 'OTHER', 'TRANSFER'])

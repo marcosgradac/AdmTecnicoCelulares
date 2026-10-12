@@ -67,9 +67,9 @@ async function main() {
   assert.equal(editForm(view).props.submitDisabled, true)
   assert.equal(money(view, 'Total al cliente').props.helperText, 'El total al cliente no puede ser menor que el importe ya pagado.')
   for (const financial of [false, true]) {
-    const restricted = harness('src/components/repairs/EditRepairDrawer.tsx', 'EditRepairDrawer', { open: true, repair, onClose() {}, onUpdated() {} }, { getRepair: async () => ({ ...repair, status: financial ? 'cancelled' : 'received' }) }, financial)
+    const restricted = harness('src/components/repairs/EditRepairDrawer.tsx', 'EditRepairDrawer', { open: true, repair, onClose() {}, onUpdated() {} }, { getRepair: async () => ({ ...repair, status: 'received' }) }, financial)
     await restricted.settle()
-    if (financial) assert.equal(money(restricted, 'Costo / gasto de la reparación').props.disabled, true)
+    if (financial) assert.equal(money(restricted, 'Costo / gasto de la reparación').props.disabled, false)
     else {
       assert.ok(!money(restricted, 'Costo / gasto de la reparación')); assert.ok(!money(restricted, 'Mano de obra cobrada')); assert.ok(!money(restricted, 'Adelanto recibido (opcional)'))
       assert.ok(find(restricted, 'TextField', 'Modelo')); assert.ok(money(restricted, 'Total al cliente'))

@@ -19,7 +19,6 @@ export function registerRepairFinanceRoutes(app: Express) {
         await tx.$queryRaw`SELECT "id" FROM "Repair" WHERE "id" = ${repairId} AND "businessId" = ${auth.businessId} FOR UPDATE`
         const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
         if (!current) throw statusError(404, 'Reparación no encontrada')
-        if (current.status === RepairStatus.CANCELLED) throw statusError(409, 'Una reparación cancelada no se edita: su liquidación tiene su propio flujo.')
         const { previousAmount } = await correctInitialRepairAdvance(tx, current, current.client.name, parsed.data)
         // El historial interno deja el rastro exacto de la corrección del importe.
         if (previousAmount !== parsed.data.amount) {
@@ -51,7 +50,6 @@ export function registerRepairFinanceRoutes(app: Express) {
         await tx.$queryRaw`SELECT "id" FROM "Repair" WHERE "id" = ${repairId} AND "businessId" = ${auth.businessId} FOR UPDATE`
         const current = await tx.repair.findFirst({ where: { id: repairId, businessId: auth.businessId }, include: { client: true } })
         if (!current) throw new RepairFinanceError(404, 'Reparación no encontrada')
-        if (current.status === RepairStatus.CANCELLED) throw new RepairFinanceError(409, 'Una reparación cancelada no admite correcciones del costo inicial: su liquidación tiene su propio flujo.')
         const { previousAmount } = await correctInitialRepairCost(tx, current, current.client.name, parsed.data)
         if (previousAmount !== parsed.data.amount) {
           await tx.repairStatusHistory.create({

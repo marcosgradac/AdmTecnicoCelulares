@@ -2,7 +2,8 @@ const assert = require('node:assert/strict')
 const { harness, collect } = require('./repair-flow.cjs')
 const find = (view, type, label) => collect(view.root(), node => node.type === type && node.props.children === label)[0]
 async function main() {
-  const states = ['received', 'review', 'budget', 'approved', 'waiting_part', 'repairing', 'testing', 'ready', 'delivered', 'cancelled', 'warranty']
+  const states = ['received', 'review', 'budget', 'approved', 'waiting_part', 'repairing', 'testing', 'ready', 'delivered', 'warranty']
+  assert.equal(states.length, 10)
   const repairs = states.map((status, i) => ({ id: 'menu-' + i, number: i + 1, status, paid: 50000, total: 50000, clientName: 'Synthetic', phone: '', history: [] }))
   for (const allowed of [true, false]) {
     const list = harness('src/pages/RepairsPage.tsx', 'RepairsPage', {}, {
@@ -12,7 +13,9 @@ async function main() {
     const menus = collect(list.root(), node => node.type === 'RowActionsMenu')
     assert.equal(menus.length, states.length)
     for (const menu of menus) {
-      assert.ok(!menu.props.actions.some(action => action.label === 'Cancelar reparación'))
+      assert.ok(!menu.props.actions.some(action => /Cancelar reparación|Cobrar revisión/.test(action.label)))
+      const pay = menu.props.actions.find(action => action.label === 'Registrar pago')
+      assert.ok(pay && pay.disabled, 'Fully paid repairs cannot collect twice')
       const action = menu.props.actions.find(action => action.label === 'Eliminar reparación')
       assert.ok(action && !action.disabled)
       assert.equal(action.hidden, !allowed)
@@ -63,6 +66,23 @@ async function main() {
     await detail.settle()
     assert.ok(find(detail, 'Button', 'Eliminar reparación'), `Paid ${status} repair offers deletion`)
   }
+  let receivedPayment
+  const payable = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
+    getRepair: async () => ({ id: 'payable', number: 1, status: 'received', paid: 10000, total: 50000, phone: '', history: [] }),
+    registerPayment: async (id, input) => { receivedPayment = { id, ...input } },
+  })
+  await payable.settle()
+  assert.equal(find(payable, 'Button', 'Registrar pago').props.disabled, false)
+  find(payable, 'Button', 'Registrar pago').props.onClick(); await payable.settle()
+  collect(payable.root(), node => node.type === 'CurrencyField' && node.props.label === 'Importe')[0].props.onValueChange(5000)
+  await payable.settle()
+  find(payable, 'Button', 'Guardar pago').props.onClick(); await payable.settle()
+  assert.deepEqual(receivedPayment, { id: 'payable', amount: 5000, method: 'TRANSFER' })
+  assert.ok(find(payable, 'Alert', 'Pago registrado correctamente.'))
+  const fs = require('node:fs')
+  const source = fs.readFileSync('src/services/repairs.ts', 'utf8') + fs.readFileSync('src/types/index.ts', 'utf8')
+  assert.ok(!/CANCELLED|cancelled|cancellation|registerCancellationPayment/.test(source), 'Repair contract and service expose no cancellation')
+  assert.ok(!fs.existsSync('src/components/repairs/RepairReviewPaymentDialog.tsx'))
   console.log('HARD DELETE UI PASS: all states and paid repairs, confirmation, immediate double click, busy dismissal blocked, errors and retry, cancellation absent from status options')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

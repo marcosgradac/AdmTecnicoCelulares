@@ -39,7 +39,6 @@ export function registerRepairStatusRoutes(app: Express) {
   app.patch('/api/repairs/:id/status', requirePermission('repairs.changeStatus'), async (req, res) => {
     const parsed = z.object({ status: z.nativeEnum(RepairStatus), ...statusMessagesSchema.shape }).safeParse(req.body)
     if (!parsed.success) return res.status(400).json({ success: false, message: 'Estado inválido' })
-    if (parsed.data.status === RepairStatus.CANCELLED) return res.status(409).json({ success: false, message: 'Cancelar reparación ya no está disponible. Usá Eliminar reparación.' })
     const auth = authOf(req)
     const repairId = String(req.params.id)
     try {

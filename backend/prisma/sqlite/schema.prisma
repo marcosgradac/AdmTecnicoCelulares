@@ -122,13 +122,6 @@ model Repair {
   initialCostMovementId String? @unique
   initialCostMovement CashMovement? @relation("RepairInitialCost", fields: [initialCostMovementId], references: [id], onDelete: Restrict)
   paid          Int          @default(0)
-  cancelledAt          DateTime?
-  cancellationPaidAmount Int?
-  cancellationReviewFee  Int?
-  cancellationReviewPaid Int          @default(0)
-  cancellationRefundAmount Int?
-  cancellationRefundMethod PaymentMethod?
-  cancellationRefundMovementId String?
   trackingToken String       @unique @default(cuid())
   /**
    * Vencimiento del enlace público de seguimiento: 3 días sin garantía, 7 con
@@ -156,7 +149,6 @@ model Payment {
   amount     Int
   method     PaymentMethod
   note       String?
-  cancellationReview Boolean  @default(false)
   isAdvance Boolean @default(false)
   cashMovementId String?      @unique
   createdAt  DateTime      @default(now())

@@ -9,12 +9,12 @@ export const repairHistoryResponse = <T extends { internalNote?: string | null }
     !item.internalNote?.startsWith('Adelanto corregido de $') && !item.internalNote?.startsWith('Costo/gasto corregido de $'))
 
 /** HTTP boundary only: never mutate the model used by transactions/calculations.
- * Total, paid and cancellation summary amounts are operational in the existing UI.
+ * Total and paid amounts are operational in the existing UI.
  */
 export function repairResponse<T extends object>(auth: AuthData, repair: T | null) {
   if (!repair || canViewRepairFinancials(auth)) return repair
   const result = { ...repair } as Record<string, unknown>
-  for (const field of ['partsCost', 'laborCost', 'laborCharge', 'initialCostMovementId', 'payments', 'cancellationRefundMethod', 'cancellationRefundMovementId']) delete result[field]
+  for (const field of ['partsCost', 'laborCost', 'laborCharge', 'initialCostMovementId', 'payments']) delete result[field]
   if (Array.isArray(result.statusHistory)) result.statusHistory = repairHistoryResponse(auth, result.statusHistory)
   return result
 }

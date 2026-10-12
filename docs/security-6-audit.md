@@ -23,7 +23,7 @@ Todos los permisos privados provienen del usuario en DB, no de los claims `role`
 | PATCH repairs/:id/status, status/advance, status/rewind, approve, start | repairs.changeStatus; transiciones válidas y conflicto concurrente; approve histórico puede devolver LEGACY_STATUS |
 | POST repairs/:id/cancel | repairs.changeStatus; dinero pagado o reviewFee positivo requieren repairs.viewFinancials; operación atómica |
 | POST repairs/:id/delivery/correction | OWNER; no se delega mediante permisos |
-| GET/POST repairs/:id/payments; PATCH advance, initial-cost; POST cancellation-payment | repairs.viewFinancials, sin requerir repairs.view adicional: permiso financiero explícito |
+| GET/POST repairs/:id/payments; PATCH advance, initial-cost | repairs.viewFinancials, sin requerir repairs.view adicional: permiso financiero explícito |
 | POST/PATCH repairs/:id/tracking-link | repairs.shareTracking; plan/cuota y pertenencia |
 | GET warranties | repairs.view; costos de reclamos visibles con viewFinancials, cash.view o cash.create |
 | PATCH/DELETE warranties/:repairId; POST claims; PATCH claims/:id | repairs.view + repairs.update; gasto inicial adicional exige cash.create |

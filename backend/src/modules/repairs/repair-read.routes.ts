@@ -9,8 +9,6 @@ import { includeRepair } from './repair-query'
 const repairListSelect = {
   id: true, number: true, clientId: true, deviceBrand: true, deviceModel: true, imei: true, color: true, issue: true,
   diagnosis: true, notes: true, status: true, total: true, paid: true, trackingToken: true, trackingEnabled: true, trackingExpiresAt: true,
-  cancelledAt: true, cancellationPaidAmount: true, cancellationReviewFee: true, cancellationReviewPaid: true, cancellationRefundAmount: true,
-  cancellationRefundMethod: true, cancellationRefundMovementId: true,
   estimatedDeliveryDate: true, warrantyEnabled: true, warrantyDurationDays: true, warrantyStartedAt: true,
   warrantyExpiresAt: true, createdAt: true, updatedAt: true,
   client: { select: { id: true, name: true, phone: true, createdAt: true } },

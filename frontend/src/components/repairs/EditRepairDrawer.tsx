@@ -22,7 +22,7 @@ type Form = {
   partsCost: number; partsCostMethod: Method | ''; laborCharge: number; total: number | null;
   advanceAmount: number; advanceMethod: Method | '';
 }
-const initialAdvance = (repair: Repair) => (repair.payments ?? []).filter(payment => payment.isAdvance && !payment.cancellationReview).reduce((sum, payment) => sum + payment.amount, 0)
+const initialAdvance = (repair: Repair) => (repair.payments ?? []).filter(payment => payment.isAdvance).reduce((sum, payment) => sum + payment.amount, 0)
 const methods = [['CASH', 'Efectivo'], ['TRANSFER', 'Transferencia'], ['CARD', 'Tarjeta'], ['OTHER', 'Otro']]
 
 export function EditRepairDrawer({ open, repair, onClose, onUpdated, onDeliveryCorrected }: { open: boolean; repair?: Repair; onClose: () => void; onUpdated: (repair: Repair) => void; onDeliveryCorrected?: (repair: Repair) => void }) {
@@ -46,7 +46,7 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated, onDeliveryC
         imei: current.imei ?? '', color: current.color ?? '', issue: current.issue, diagnosis: current.diagnosis ?? '', notes: current.notes ?? '',
         estimatedDeliveryDate: current.estimatedDeliveryDate?.slice(0, 10) ?? '',
         partsCost: current.partsCost ?? 0, partsCostMethod: '', laborCharge: current.laborCharge ?? 0, total: current.total,
-        advanceAmount: initialAdvance(current), advanceMethod: current.payments?.find(payment => payment.isAdvance && !payment.cancellationReview)?.method ?? '',
+        advanceAmount: initialAdvance(current), advanceMethod: current.payments?.find(payment => payment.isAdvance)?.method ?? '',
       })
       setCustomMode(!findKnownDeviceBrand(current.deviceBrand) && Boolean(current.deviceBrand.trim()))
     }).catch(() => { if (active) setError('No pudimos cargar la reparación. Cerrá el formulario e intentá nuevamente.') })
@@ -58,7 +58,6 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated, onDeliveryC
     ? { id: loaded.clientId, name: loaded.clientName, phone: loaded.phone || null } : undefined
   const clientOptions = historicalClient ? [historicalClient, ...clients] : clients
   const selectedClient = clientOptions.find(client => client.id === form?.clientId) ?? null
-  const cancelled = loaded?.status === 'cancelled'
   const originalAdvance = loaded ? initialAdvance(loaded) : 0
   const otherPaid = loaded ? loaded.paid - originalAdvance : 0
   const resultingPaid = otherPaid + (form?.advanceAmount ?? 0)
@@ -83,13 +82,13 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated, onDeliveryC
     if (form.deviceBrand !== loaded.deviceBrand && brand !== loaded.deviceBrand) input.deviceBrand = brand
     if (form.total !== loaded.total) input.total = form.total
     if (form.estimatedDeliveryDate !== (loaded.estimatedDeliveryDate?.slice(0, 10) ?? '')) input.estimatedDeliveryDate = form.estimatedDeliveryDate || null
-    if (financial && !cancelled) {
+    if (financial) {
       if (form.partsCost !== (loaded.partsCost ?? 0) || form.partsCostMethod) {
         input.partsCost = form.partsCost
         if (form.partsCost > 0 && form.partsCostMethod) input.partsCostMethod = form.partsCostMethod
       }
       if (form.laborCharge !== (loaded.laborCharge ?? 0)) input.laborCharge = form.laborCharge
-      const originalMethod = loaded.payments?.find(payment => payment.isAdvance && !payment.cancellationReview)?.method ?? ''
+      const originalMethod = loaded.payments?.find(payment => payment.isAdvance)?.method ?? ''
       if (form.advanceAmount !== originalAdvance || form.advanceAmount > 0 && form.advanceMethod !== originalMethod) {
         input.advanceAmount = form.advanceAmount
         if (form.advanceAmount > 0 && form.advanceMethod) input.advanceMethod = form.advanceMethod
@@ -120,17 +119,16 @@ export function EditRepairDrawer({ open, repair, onClose, onUpdated, onDeliveryC
         <TextField fullWidth type="date" label="Fecha estimada de entrega" value={form.estimatedDeliveryDate} onChange={event => field('estimatedDeliveryDate', event.target.value)} InputLabelProps={{ shrink: true }} disabled={saving} />
       </FormSection>
       <FormSection legacyHeading legacyDivider title="Costos y cobro">
-        {cancelled && <Alert severity="info">La liquidación de una reparación cancelada se administra desde su propio flujo.</Alert>}
         {financial && <>
-          <CurrencyField fullWidth label="Costo / gasto de la reparación" value={form.partsCost} onValueChange={value => field('partsCost', value)} onEmpty={() => field('partsCost', 0)} disabled={saving || cancelled} helperText="Es el egreso del taller. Se corrige el movimiento inicial de Caja." />
-          {form.partsCost > 0 && <TextField fullWidth select required={loaded?.partsCost === 0} label="Medio de pago del gasto" value={form.partsCostMethod} disabled={saving || cancelled} onChange={event => field('partsCostMethod', event.target.value as Method | '')} helperText="Sin un medio nuevo, se conserva el del egreso existente."><MenuItem value="">{loaded?.partsCost ? 'Conservar medio actual' : 'Seleccionar medio'}</MenuItem>{methods.map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>}
-          <CurrencyField fullWidth label="Mano de obra cobrada" value={form.laborCharge} onValueChange={value => field('laborCharge', value)} onEmpty={() => field('laborCharge', 0)} disabled={saving || cancelled} helperText="Forma parte del total al cliente; no es un costo." />
+          <CurrencyField fullWidth label="Costo / gasto de la reparación" value={form.partsCost} onValueChange={value => field('partsCost', value)} onEmpty={() => field('partsCost', 0)} disabled={saving} helperText="Es el egreso del taller. Se corrige el movimiento inicial de Caja." />
+          {form.partsCost > 0 && <TextField fullWidth select required={loaded?.partsCost === 0} label="Medio de pago del gasto" value={form.partsCostMethod} disabled={saving} onChange={event => field('partsCostMethod', event.target.value as Method | '')} helperText="Sin un medio nuevo, se conserva el del egreso existente."><MenuItem value="">{loaded?.partsCost ? 'Conservar medio actual' : 'Seleccionar medio'}</MenuItem>{methods.map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>}
+          <CurrencyField fullWidth label="Mano de obra cobrada" value={form.laborCharge} onValueChange={value => field('laborCharge', value)} onEmpty={() => field('laborCharge', 0)} disabled={saving} helperText="Forma parte del total al cliente; no es un costo." />
         </>}
-        <CurrencyField fullWidth required label="Total al cliente" value={form.total} onValueChange={value => field('total', value)} onEmpty={() => field('total', null)} disabled={saving || cancelled} error={invalidTotal} helperText={invalidTotal ? 'El total al cliente no puede ser menor que el importe ya pagado.' : financial ? `Sugerido: ${formatMoney(suggestedTotal)}. Podés conservar el precio acordado con el cliente.` : undefined} />
+        <CurrencyField fullWidth required label="Total al cliente" value={form.total} onValueChange={value => field('total', value)} onEmpty={() => field('total', null)} disabled={saving} error={invalidTotal} helperText={invalidTotal ? 'El total al cliente no puede ser menor que el importe ya pagado.' : financial ? `Sugerido: ${formatMoney(suggestedTotal)}. Podés conservar el precio acordado con el cliente.` : undefined} />
         {financial && <>
-          <Button size="small" sx={{ alignSelf: 'flex-start' }} disabled={saving || cancelled} onClick={() => field('total', suggestedTotal)}>Usar total sugerido</Button>
-          <CurrencyField fullWidth label="Adelanto recibido (opcional)" value={form.advanceAmount} onValueChange={value => field('advanceAmount', value)} onEmpty={() => field('advanceAmount', 0)} disabled={saving || cancelled} helperText="Se corrige el adelanto inicial y su ingreso en Caja. Los otros pagos se conservan." />
-          {form.advanceAmount > 0 && <TextField fullWidth required select label="Medio de pago del adelanto" value={form.advanceMethod} onChange={event => field('advanceMethod', event.target.value as Method | '')} disabled={saving || cancelled}><MenuItem value="">Seleccionar medio</MenuItem>{methods.map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>}
+          <Button size="small" sx={{ alignSelf: 'flex-start' }} disabled={saving} onClick={() => field('total', suggestedTotal)}>Usar total sugerido</Button>
+          <CurrencyField fullWidth label="Adelanto recibido (opcional)" value={form.advanceAmount} onValueChange={value => field('advanceAmount', value)} onEmpty={() => field('advanceAmount', 0)} disabled={saving} helperText="Se corrige el adelanto inicial y su ingreso en Caja. Los otros pagos se conservan." />
+          {form.advanceAmount > 0 && <TextField fullWidth required select label="Medio de pago del adelanto" value={form.advanceMethod} onChange={event => field('advanceMethod', event.target.value as Method | '')} disabled={saving}><MenuItem value="">Seleccionar medio</MenuItem>{methods.map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>}
           <Box role="status" aria-label="Resumen de la reparación" sx={{ p: 2, borderRadius: 2, bgcolor: 'action.hover' }}><Stack spacing={1}>
             <Summary label="Ganancia estimada" value={(form.total ?? 0) - form.partsCost - (loaded?.laborCost ?? 0)} color={(form.total ?? 0) - form.partsCost - (loaded?.laborCost ?? 0) < 0 ? 'error.main' : 'success.main'} />
             <Summary label="Pagado resultante" value={resultingPaid} color="success.main" />

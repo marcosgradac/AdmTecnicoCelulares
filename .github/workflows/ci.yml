@@ -54,6 +54,10 @@ jobs:
         run: npm run test:tenant-isolation-complete
       - name: Repair hard deletion on main (disposable local PostgreSQL)
         run: npm run test:repair-hard-delete
+      - name: Removed cancellation endpoints (disposable local PostgreSQL)
+        run: npm run test:repair-cancellation-removal
+      - name: Guarded cancellation migration (disposable local PostgreSQL)
+        run: npm run test:repair-cancellation-migration
       - name: Role and permission authorization (disposable local PostgreSQL)
         run: npm run test:role-permissions-complete
       - name: Sessions and JWT security (disposable local PostgreSQL)

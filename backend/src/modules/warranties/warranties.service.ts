@@ -94,7 +94,7 @@ export function addClaimExpense(businessId: string, id: string, input: ClaimExpe
       }
       return previous
     }
-    if (claim.status === 'REJECTED' || claim.deliveredAt || repair.cancelledAt) throw new WarrantyError(409, 'No se pueden agregar gastos a este reclamo.')
+    if (claim.status === 'REJECTED' || claim.deliveredAt) throw new WarrantyError(409, 'No se pueden agregar gastos a este reclamo.')
     return recordClaimExpense(tx, businessId, claim, repair, input).then(expense => tx.warrantyClaimExpense.findFirstOrThrow({ where: { id: expense.id }, include: { cashMovement: true } }))
   })
 }
@@ -105,7 +105,7 @@ export function deliverClaim(businessId: string, id: string, durationDays: numbe
       if (claim.newWarrantyDurationDays !== durationDays) throw new WarrantyError(409, 'La entrega ya se registró con otra duración.')
       return claim
     }
-    if (claim.status !== 'RESOLVED' || repair.cancelledAt || repair.warrantyDeletedAt) throw new WarrantyError(409, 'Resolvé el reclamo antes de registrar una nueva entrega.')
+    if (claim.status !== 'RESOLVED' || repair.warrantyDeletedAt) throw new WarrantyError(409, 'Resolvé el reclamo antes de registrar una nueva entrega.')
     if (claim.coveredWarrantyStartedAt?.getTime() !== repair.warrantyStartedAt?.getTime()) throw new WarrantyError(409, 'Este reclamo pertenece a una garantía anterior. Ya existe una nueva entrega.')
     const deliveredAt = new Date()
     const startedAt = durationDays > 0 ? deliveredAt : null

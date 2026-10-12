@@ -1,5 +1,5 @@
 import type { SvgIconComponent } from '@mui/icons-material'
-import { AssignmentTurnedInRounded, BiotechRounded, CancelRounded, CheckCircleRounded, FactCheckRounded, HandymanRounded, LocalOfferRounded, PendingActionsRounded, ReplayRounded, TaskAltRounded } from '@mui/icons-material'
+import { AssignmentTurnedInRounded, BiotechRounded, CheckCircleRounded, FactCheckRounded, HandymanRounded, LocalOfferRounded, PendingActionsRounded, ReplayRounded, TaskAltRounded } from '@mui/icons-material'
 import type { RepairStatus } from '../types'
 
 export interface RepairStatusConfig {
@@ -16,7 +16,7 @@ export interface RepairStatusConfig {
 export const repairFlow: RepairStatus[] = ['received', 'review', 'waiting_part', 'repairing', 'ready', 'delivered']
 
 /** Estados especiales: quedan fuera del flujo y no admiten avance ni retroceso normal. */
-export const specialRepairStatuses: RepairStatus[] = ['cancelled', 'warranty']
+export const specialRepairStatuses: RepairStatus[] = ['warranty']
 
 /** Estados históricos: se leen, se muestran y avanzan como su equivalente del flujo actual. */
 export const legacyStatusMap: Partial<Record<RepairStatus, RepairStatus>> = {
@@ -61,7 +61,6 @@ export const repairStatusConfig: Record<RepairStatus, RepairStatusConfig> = {
   testing: step('Control de calidad', '#1686B7', '#E5F7FF', 6, 78, FactCheckRounded),
   ready: step('Listo para retirar', '#1F9254', '#E9F8F0', 7, 90, TaskAltRounded),
   delivered: step('Entregado', '#687083', '#F0F2F5', 8, 100, CheckCircleRounded),
-  cancelled: step('Cancelado', '#C83E3E', '#FFF0F0', 9, 0, CancelRounded),
   warranty: step('Garantía', '#7650C7', '#F2EEFF', 10, 20, ReplayRounded),
 }
 
@@ -72,7 +71,7 @@ export const canonicalStatusConfig = (status: RepairStatus) => repairStatusConfi
 export const repairStatusLabel = (status: RepairStatus) => canonicalStatusConfig(status).label
 
 /** Los estados que el usuario puede elegir: el flujo más los especiales, nunca los históricos. */
-export const repairStatuses: RepairStatus[] = [...repairFlow, ...specialRepairStatuses.filter(status => status !== 'cancelled')]
+export const repairStatuses: RepairStatus[] = [...repairFlow, ...specialRepairStatuses]
 
 /** Todos los estados, incluidos los históricos: sólo para filtrar y mostrar datos existentes. */
 export const allRepairStatuses: RepairStatus[] = (Object.keys(repairStatusConfig) as RepairStatus[])
