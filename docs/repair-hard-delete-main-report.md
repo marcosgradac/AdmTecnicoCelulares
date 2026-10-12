@@ -27,9 +27,9 @@ La interfaz permite Eliminar reparación con permiso repairs.delete en todos los
 
 ## Publicación y límites
 
-Solo commit/push de esta rama y PR draft hacia main para revisión. Sin merge, despliegues o migraciones productivas. Vercel deploymentEnabled=false solo para esta rama; título del PR [skip preview] omite previews Render. Fuentes: https://vercel.com/docs/project-configuration/git-configuration y https://render.com/docs/service-previews.
+Solo commit/push de esta rama y PR draft hacia main para revisión. Sin merge, despliegues o migraciones productivas. La configuración temporal deploymentEnabled=false fue retirada de frontend/vercel.json para que no se incorpore a main. El título del PR [skip preview] omite previews Render.
 
-PR independiente #18 abierto como draft: https://github.com/marcosgradac/AdmTecnicoCelulares/pull/18. Frontend CI inicial aprobado. Backend CI inicial detectó un conteo fijo de 26 modelos en backup-stream-recovery; corregido a 25 por el retiro de RepairPhoto y reejecutado completo localmente: 27 controles aprobados, TLS, archivo real de 172289284 bytes (>128 MiB), restauración exacta y memoria acotada. Pendiente: CI del commit final y revisión del PR. Antes de cualquier despliegue futuro debe revisarse nuevamente el estado de RepairPhoto; si contiene filas, la migración se detendrá. Si datos antiguos carecen de repairId y de cualquier enlace explícito, no existe asociación verificable para atribuirlos: no se borran por coincidencia de descripción. Datos corruptos/compartidos requieren revisión en lugar de eliminación parcial. Frontend build advierte chunks grandes (sin error).
+PR independiente #18 abierto como draft: https://github.com/marcosgradac/AdmTecnicoCelulares/pull/18. Frontend CI inicial aprobado. Backend CI inicial detectó un conteo fijo de 26 modelos en backup-stream-recovery; corregido a 25 por el retiro de RepairPhoto y reejecutado completo localmente: 27 controles aprobados, TLS, archivo real de 172289284 bytes (>128 MiB), restauración exacta y memoria acotada. Backend CI y Frontend CI del commit 0d70efab3612d2854a1d6c4a8c9e197bc282ad13 aprobaron en push y pull_request. Pendiente: revisión del PR y CI de los ajustes posteriores. Antes de cualquier despliegue futuro debe revisarse nuevamente el estado de RepairPhoto; si contiene filas, la migración se detendrá. Si datos antiguos carecen de repairId y de cualquier enlace explícito, no existe asociación verificable para atribuirlos: no se borran por coincidencia de descripción. Datos corruptos/compartidos requieren revisión en lugar de eliminación parcial. Frontend build advierte chunks grandes (sin error).
 
 ## Archivos modificados
 
@@ -41,6 +41,7 @@ PR independiente #18 abierto como draft: https://github.com/marcosgradac/AdmTecn
 - backend/src/modules/repairs/repair-cancellation.routes.ts
 - backend/src/modules/repairs/repair-delete.ts
 - backend/src/modules/repairs/repair-query.ts
+- backend/src/modules/repairs/repair-status.routes.ts
 - backend/src/modules/repairs/repair-status.ts
 - backend/src/modules/repairs/repair-write.routes.ts
 - backend/tests/backup-stream-recovery.mjs
