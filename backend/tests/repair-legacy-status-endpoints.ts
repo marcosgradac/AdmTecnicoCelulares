@@ -84,7 +84,6 @@ async function main() {
     })
     for (const [label, from, code] of [
       ['D DELIVERED start preserves all dates', 'DELIVERED', 'DELIVERED_LOCKED'],
-      ['E CANCELLED start locked', 'CANCELLED', 'STATUS_LOCKED'],
       ['F WARRANTY start locked', 'WARRANTY', 'STATUS_LOCKED'],
     ] as const) await check(label, async () => { const repair = await fixture(from); await unchanged(repair.id, a.token, 'start', 409, code) })
     for (const from of ['REVIEW', 'APPROVED'] as const) await check(`/approve rejects ${from} with LEGACY_STATUS`, async () => {

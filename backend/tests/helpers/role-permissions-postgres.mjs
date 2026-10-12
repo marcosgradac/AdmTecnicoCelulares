@@ -47,7 +47,7 @@ try {
     'team-password-reset.ts', 'expired-owner-renewal.ts', 'billing.ts', 'subscription-fallback.ts',
     'billing-quota-concurrency.ts', 'pending-payment-concurrency.ts', 'platform-admin-user-redaction.ts',
     'platform-admin-customer-metrics.ts', 'platform-admin-subscription-actions.ts', 'manual-payment-review.ts',
-    'password-change.ts', 'password-reset.ts', 'repair-cancellation.ts', 'repair-status-concurrency.ts',
+    'password-change.ts', 'password-reset.ts', 'repair-cancellation-removal.ts', 'repair-status-concurrency.ts',
     'warranties.ts', 'commerce.ts', 'equipment-sales.ts', 'tenant-isolation-complete.ts',
   ] : process.argv.includes('--sessions') ? ['session-security-complete.ts'] : ['role-permissions-complete.ts']
   for (const suite of suites) {

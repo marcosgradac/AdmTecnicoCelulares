@@ -67,7 +67,7 @@ export function RepairAdvanceDialog({ repair, onClose, onUpdated }: { repair?: R
 
 /** El adelanto es el único pago marcado como inicial; los cobros de revisión no cuentan. */
 const currentAdvance = (repair: Repair) =>
-  (repair.payments ?? []).filter(payment => payment.isAdvance && !payment.cancellationReview).reduce((sum, payment) => sum + payment.amount, 0)
+  (repair.payments ?? []).filter(payment => payment.isAdvance).reduce((sum, payment) => sum + payment.amount, 0)
 
 const SummaryRow = ({ label, value, color }: { label: string; value: string; color?: string }) =>
   <Stack direction="row" justifyContent="space-between" gap={2}><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="body2" fontWeight={750} color={color}>{value}</Typography></Stack>

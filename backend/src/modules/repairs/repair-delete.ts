@@ -13,7 +13,7 @@ export async function deleteRepairInTransaction(tx: Prisma.TransactionClient, bu
     || repair.warrantyClaims.some(row => row.businessId !== businessId || row.expenses.some(expense => expense.businessId !== businessId))) throw conflict()
 
   // Older receipts and warranty expenses may link a cash row without repairId.
-  const explicitIds = [repair.initialCostMovementId, repair.cancellationRefundMovementId,
+  const explicitIds = [repair.initialCostMovementId,
     ...repair.payments.map(row => row.cashMovementId), ...repair.warrantyClaims.flatMap(row => row.expenses.map(expense => expense.cashMovementId))].filter((id): id is string => Boolean(id))
   const rows = await tx.cashMovement.findMany({ where: { OR: [{ repairId }, { id: { in: explicitIds } }] } })
   const ids = new Set(rows.map(row => row.id))
@@ -23,7 +23,6 @@ export async function deleteRepairInTransaction(tx: Prisma.TransactionClient, bu
   const shared = await Promise.all([
     tx.payment.count({ where: { cashMovementId: { in: cashIds }, repairId: { not: repairId } } }),
     tx.repair.count({ where: { initialCostMovementId: { in: cashIds }, id: { not: repairId } } }),
-    tx.repair.count({ where: { cancellationRefundMovementId: { in: cashIds }, id: { not: repairId } } }),
     tx.warrantyClaimExpense.count({ where: { cashMovementId: { in: cashIds }, claim: { repairId: { not: repairId } } } }),
   ])
   if (shared.some(Boolean)) throw conflict()

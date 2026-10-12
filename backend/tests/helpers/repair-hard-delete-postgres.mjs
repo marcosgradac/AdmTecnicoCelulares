@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -35,6 +35,15 @@ try {
   await client.connect()
   try { await client.query(`CREATE DATABASE ${databaseName}`) } finally { await client.end() }
   await run([join(backend, 'node_modules/prisma/build/index.js'), 'migrate', 'deploy', '--schema', join(backend, 'prisma/schema.prisma')], directory)
+  // Existing main migration 20260729120000 gives Client.updatedAt a SQL default.
+  // Account for that known baseline drift only in the temporary comparison schema.
+  const schema = await readFile(join(backend, 'prisma/schema.prisma'), 'utf8')
+  const comparisonSchema = join(directory, 'comparison.prisma')
+  const clientBlock = schema.match(/model Client \{[\s\S]*?\n\}/)[0]
+  assert.match(clientBlock, /updatedAt\s+DateTime\s+@updatedAt/)
+  await writeFile(comparisonSchema, schema.replace(clientBlock, clientBlock.replace(/(updatedAt\s+DateTime\s+)@updatedAt/, '$1@default(now()) @updatedAt')))
+  console.log((await run([join(backend, 'node_modules/prisma/build/index.js'), 'migrate', 'diff', '--from-url', database, '--to-schema-datamodel', comparisonSchema, '--exit-code'], directory)).trim())
+  console.log('PASS full migration chain matches schema, excluding documented preexisting Client.updatedAt default')
   const suites = process.argv.slice(2).filter(name => name !== '--red')
   const failures = []
   for (const suite of suites.length ? suites : ['repair-hard-delete.ts']) {

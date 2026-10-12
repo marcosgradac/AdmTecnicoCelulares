@@ -18,7 +18,7 @@ export const repairFlow: RepairStatus[] = [
 ]
 
 /** Estados especiales: quedan fuera del flujo y no admiten avance ni retroceso normal. */
-export const specialRepairStatuses: RepairStatus[] = [RepairStatus.CANCELLED, RepairStatus.WARRANTY]
+export const specialRepairStatuses: RepairStatus[] = [RepairStatus.WARRANTY]
 
 /** Estados históricos que se muestran y avanzan como su equivalente del flujo actual. */
 export const legacyRepairStatus: Partial<Record<RepairStatus, RepairStatus>> = {
@@ -60,14 +60,10 @@ export const deliveredLockedMessage =
  * Entregado es el estado final: sólo sale de ahí con la corrección administrativa de entrega.
  */
 export const assertStatusChange = (current: RepairStatus, target: RepairStatus) => {
-  if (target === RepairStatus.CANCELLED) throw statusError(409, 'Cancelar reparación ya no está disponible. Usá Eliminar reparación.', 'REPAIR_CANCELLATION_REMOVED')
   if (isLegacyRepairStatus(target)) {
     throw statusError(409, 'Ese estado ya no se usa. Elegí Recibido, En revisión, Esperando repuesto, En reparación, Listo o Entregado.', 'LEGACY_STATUS')
   }
   if (current === target) return
-  if (current === RepairStatus.CANCELLED) {
-    throw statusError(409, 'Una reparación cancelada no cambia de estado.', 'STATUS_LOCKED')
-  }
   if (isSpecialRepairStatus(current)) {
     throw statusError(409, 'Esta reparación está en un estado especial y se administra desde su propio módulo.', 'STATUS_LOCKED')
   }

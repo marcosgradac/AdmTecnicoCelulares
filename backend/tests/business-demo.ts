@@ -48,8 +48,7 @@ async function verifyDataset(businessId: string, counts: [number, number, number
     assert.ok(repair.notes?.includes('demo-cellufix-v2'))
     const payments = data.payments.filter(row => row.repairId === repair.id)
     const cash = data.cash.filter(row => row.repairId === repair.id)
-    assert.equal(payments.filter(row => !row.cancellationReview).reduce((sum, row) => sum + row.amount, 0), repair.paid)
-    assert.equal(payments.filter(row => row.cancellationReview).reduce((sum, row) => sum + row.amount, 0), repair.cancellationReviewPaid)
+    assert.equal(payments.reduce((sum, row) => sum + row.amount, 0), repair.paid)
     assert.equal(cash.filter(row => row.type === 'INCOME').reduce((sum, row) => sum + row.amount, 0), payments.reduce((sum, row) => sum + row.amount, 0))
     assert.ok(cash.every(row => row.origin === 'REPAIR' && row.description.includes('demo-cellufix-v2')))
     assert.ok(payments.every(row => row.clientId === repair.clientId && row.note?.includes('demo-cellufix-v2')))
@@ -61,24 +60,8 @@ async function verifyDataset(businessId: string, counts: [number, number, number
       assert.ok(+history[i].createdAt <= Date.now())
     }
     if (repair.status === 'DELIVERED' || repair.status === 'WARRANTY') assert.equal(repair.paid, repair.total)
-    if (repair.status === 'CANCELLED') {
-      assert.equal(repair.cancellationPaidAmount, repair.paid)
-      assert.ok(repair.cancelledAt)
-      assert.equal(repair.trackingEnabled, false)
-      const refunds = cash.filter(row => row.type === 'EXPENSE')
-      assert.equal(refunds.reduce((sum, row) => sum + row.amount, 0), repair.cancellationRefundAmount)
-      if (repair.cancellationRefundAmount) assert.equal(refunds[0].id, repair.cancellationRefundMovementId)
-    }
     if (repair.trackingEnabled) assert.ok(repair.trackingToken && repair.trackingCreatedAt)
   }
-  const settlement = data.repairs.filter(row => row.status === 'CANCELLED').map(row => [
-    row.paid, row.cancellationReviewFee, row.cancellationRefundAmount, row.cancellationReviewPaid,
-    data.cash.filter(cash => cash.repairId === row.id).reduce((sum, cash) => sum + (cash.type === 'INCOME' ? cash.amount : -cash.amount), 0),
-  ]).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
-  assert.deepEqual(settlement, [
-    [40000, 15000, 25000, 0, 15000], [20000, 20000, 0, 0, 20000], [10000, 20000, 0, 0, 10000],
-    [40000, 0, 40000, 0, 0], [10000, 20000, 0, 10000, 20000], [0, 0, 0, 0, 0],
-  ].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))))
   assert.deepEqual([...new Set(data.payments.map(row => row.method))].sort(), ['CARD', 'CASH', 'OTHER', 'TRANSFER'])
   const numbers = data.repairs.map(row => row.number).sort((a, b) => a - b)
   assert.equal(new Set(numbers).size, counts[2])
@@ -91,13 +74,10 @@ async function main() {
   try {
     const a = await owner(), b = await owner()
     const isolatedBefore = await snapshot(b.businessId)
-    // Fails against the old loader: CANCELLED lacks settlement and delivered repairs are unpaid.
     const loaded = await run(a.email)
     assert.equal(loaded.code, 0, loaded.output)
     console.log('Full profile:', loaded.output.trim())
-    const cancelled = await prisma.repair.findFirstOrThrow({ where: { businessId: a.businessId, status: 'CANCELLED' } })
-    assert.notEqual(cancelled.cancellationPaidAmount, null, 'Cancelled demo repairs must have financial settlement')
-    const data = await verifyDataset(a.businessId, [18, 25, 31])
+    const data = await verifyDataset(a.businessId, [18, 25, 25])
     assert.deepEqual(await snapshot(b.businessId), isolatedBefore, 'Other businesses are unchanged')
     assert.equal((await run(a.email)).code, 0)
     assert.deepEqual(await snapshot(a.businessId), data, 'Repeating the loader must not modify data or consume numbers')
@@ -107,7 +87,7 @@ async function main() {
     const concurrent = await Promise.all([run(b.email, { DEMO_PROFILE: 'small' }), run(b.email, { DEMO_PROFILE: 'small' })])
     for (const result of concurrent) assert.equal(result.code, 0, result.output)
     console.log('Small profile:', concurrent.find(result => result.output.includes('"mode": "created"'))!.output.trim())
-    await verifyDataset(b.businessId, [6, 8, 12])
+    await verifyDataset(b.businessId, [6, 8, 6])
     assert.equal(concurrent.filter(result => result.output.includes('"mode": "created"')).length, 1)
     const legacy = await owner()
     await prisma.client.create({ data: { businessId: legacy.businessId, name: 'Existing legacy demo', notes: 'demo-cellufix-v1' } })
@@ -127,7 +107,7 @@ async function main() {
     const beforeFailure = await snapshot(rollback.businessId)
     assert.notEqual((await run(rollback.email)).code, 0)
     assert.deepEqual(await snapshot(rollback.businessId), beforeFailure, 'A failed load rolls back the entire dataset and counter')
-    console.log('BUSINESS DEMO PASSED: settlement, cash, relations, histories, full/small profiles, idempotence, concurrency, tenant isolation, guards and legacy protection')
+    console.log('BUSINESS DEMO PASSED: payments, cash, relations, histories, full/small profiles, idempotence, concurrency, tenant isolation, guards and legacy protection')
   } finally {
     for (const businessId of businesses) await prisma.$transaction([
       // Pagos antes que caja: Payment.cashMovementId usa ON DELETE RESTRICT sobre CashMovement.

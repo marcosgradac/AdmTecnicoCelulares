@@ -146,7 +146,6 @@ async function main() {
       ['PATCH', `/repairs/${f.repair.id}/status`, { status: 'BUDGET' }], ['PATCH', `/repairs/${f.repair.id}/status/advance`, {}], ['PATCH', `/repairs/${f.repair.id}/status/rewind`, {}],
       ['PATCH', `/repairs/${f.repair.id}/approve`, {}], ['PATCH', `/repairs/${f.repair.id}/start`, {}],
       ['POST', `/repairs/${f.repair.id}/payments`, { amount: 10, method: 'CASH' }], ['PATCH', `/repairs/${f.repair.id}/advance`, { amount: 10, method: 'CASH' }], ['PATCH', `/repairs/${f.repair.id}/initial-cost`, { amount: 10, method: 'CASH' }],
-      ['POST', `/repairs/${f.repair.id}/cancel`, { reviewFee: 0, refundMethod: 'CASH' }], ['POST', `/repairs/${f.repair.id}/cancellation-payment`, { amount: 10, method: 'CASH' }],
       ['POST', `/repairs/${f.delivery.id}/delivery/correction`, { reason: 'Synthetic correction' }],
       ['POST', `/repairs/${f.repair.id}/tracking-link`, {}], ['PATCH', `/repairs/${f.repair.id}/tracking-link`, { enabled: false }],
       ['PATCH', `/commerce/products/${f.product.id}`, { ...productInput, expectedStock: 9 }], ['DELETE', `/commerce/products/${f.product.id}`],

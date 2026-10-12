@@ -1,5 +1,7 @@
 # TecnoDesk: eliminación definitiva independiente de PR #17
 
+Informe histórico del PR #18. La retirada completa posterior de cancelaciones se documenta en [remove-repair-cancellation-report.md](remove-repair-cancellation-report.md).
+
 Fecha: 2026-10-12. Rama: codex/repair-hard-delete-main. Base: origin/main 10bc148f5992c22b313388183bfe23ffc3f67296.
 
 ## Alcance y separación

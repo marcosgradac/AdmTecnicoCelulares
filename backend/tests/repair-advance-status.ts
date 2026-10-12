@@ -15,7 +15,7 @@ globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) =>
 
 const DAY = 86_400_000
 const days = (from: string, to: string) => Math.round((new Date(to).getTime() - new Date(from).getTime()) / DAY)
-const paymentsOf = (repair: any) => (repair.payments ?? []) as Array<{ id: string; amount: number; method: string; isAdvance?: boolean; cancellationReview?: boolean }>
+const paymentsOf = (repair: any) => (repair.payments ?? []) as Array<{ id: string; amount: number; method: string; isAdvance?: boolean }>
 const advancesOf = (repair: any) => paymentsOf(repair).filter(payment => payment.isAdvance)
 const incomeOf = async (prisma: any, repairId: string) =>
   (await prisma.cashMovement.findMany({ where: { repairId, type: 'INCOME', origin: 'REPAIR' }, orderBy: { createdAt: 'asc' } })) as Array<{ id: string; amount: number; description: string }>
@@ -164,7 +164,7 @@ async function main() {
     assert.equal(exact.body.paid, 60000)
     assert.equal(exact.body.total - exact.body.paid, 0)
     const settled = await reload(guard.id)
-    assert.equal(settled.paid, paymentsOf(settled).filter(p => !p.cancellationReview).reduce((sum, p) => sum + p.amount, 0), 'Repair.paid coincide con la suma real')
+    assert.equal(settled.paid, paymentsOf(settled).reduce((sum, p) => sum + p.amount, 0), 'Repair.paid coincide con la suma real')
     assert.equal((await correct(guard.id, { amount: 35001, method: 'CASH' })).status, 400, 'exceder el total por un peso también se rechaza')
 
     // 5b. El adelanto queda vinculado a su ingreso de Caja por ID, no por descripción.
@@ -268,12 +268,6 @@ async function main() {
       { d: delivered.body.deliveredAt, s: delivered.body.warrantyStartedAt, e: delivered.body.warrantyExpiresAt },
       'un rechazo no altera las fechas',
     )
-    // Estados especiales: no se mueven con el flujo normal.
-    const cancelled = await createRepair({ total: 50000 })
-    await prisma.repair.update({ where: { id: cancelled.id }, data: { status: 'CANCELLED' } })
-    assert.equal((await step('rewind', ownerA.token, cancelled.id)).status, 409, 'Cancelado no retrocede')
-    assert.equal((await step('advance', ownerA.token, cancelled.id)).status, 409, 'Cancelado no avanza')
-    assert.equal((await request('PATCH', `/repairs/${cancelled.id}/status`, { status: 'REVIEW' }, ownerA.token)).status, 409, 'Cancelado no cambia de estado')
     // 13/15. «Corregir entrega»: sólo OWNER, atómica y bloqueada si hay reclamos de garantía.
     const technician = await prisma.user.create({ data: { businessId: ownerA.businessId, name: 'Técnico QA', email: `advance-tech-${suffix}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.view', 'repairs.changeStatus'] } })
     const technicianToken = jwt.sign({ userId: technician.id, businessId: technician.businessId, role: technician.role, platformRole: technician.platformRole, tokenVersion: technician.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
@@ -347,7 +341,7 @@ async function main() {
     assert.equal(publicA.body.paid, 30000, 'el tracking expone lo que el cliente necesita ver')
     // La respuesta pública incluye algunas claves vacías a propósito: lo que no debe viajar
     // es el dato, así que se comprueba el valor y no la mera presencia de la clave.
-    for (const secret of ['partsCost', 'laborCost', 'laborCharge', 'diagnosis', 'notes', 'clientId', 'imei', 'color', 'payments', 'costs', 'profit', 'cancelledAt', 'warrantyExpiresAt', 'cancelled', 'cancellationPaidAmount']) {
+    for (const secret of ['partsCost', 'laborCost', 'laborCharge', 'diagnosis', 'notes', 'clientId', 'imei', 'color', 'payments', 'costs', 'profit', 'warrantyExpiresAt']) {
       assert.ok(publicA.body[secret] == null || publicA.body[secret] === '', `el tracking no expone ${secret}`)
     }
     assert.ok(!JSON.stringify(publicA.body).includes('Cliente A'), 'el tracking no expone datos del cliente')

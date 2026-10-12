@@ -16,9 +16,7 @@ async function dashboardPending(tx: Prisma.TransactionClient, businessId: string
   // One tenant-scoped formula feeds both totals and the globally ordered shortlist.
   // Filtering positive balances in SQL clamps each debt at zero before summing.
   const balances = Prisma.sql`
-    SELECT "id", "createdAt", CASE WHEN "status" = 'CANCELLED'
-      THEN COALESCE("cancellationReviewFee", 0) - COALESCE("cancellationPaidAmount", 0) - COALESCE("cancellationReviewPaid", 0)
-      ELSE "total" - "paid" END AS "balance"
+    SELECT "id", "createdAt", "total" - "paid" AS "balance"
     FROM "Repair" WHERE "businessId" = ${businessId}`
   const [totals, ids] = await Promise.all([
     tx.$queryRaw<Array<{ pending: bigint | number; count: bigint | number }>>(Prisma.sql`
@@ -46,7 +44,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
   const deliveryCutoff = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
   // A single read snapshot keeps KPI totals and chart buckets consistent on both engines.
   return prisma.$transaction(async tx => {
-    const delayed = { businessId, status: { notIn: ['DELIVERED', 'CANCELLED', 'READY'] as RepairStatus[] }, estimatedDeliveryDate: { lt: deliveryCutoff } }
+    const delayed = { businessId, status: { notIn: ['DELIVERED', 'READY'] as RepairStatus[] }, estimatedDeliveryDate: { lt: deliveryCutoff } }
     const warranty = { businessId, warrantyEnabled: true, warrantyDeletedAt: null, warrantyExpiresAt: { gte: now, lt: new Date(now.getTime() + 7 * 86400000) } }
     const [cash, status, pending, received, readyItems, delayedCount, delayedItems, warrantyCount, warrantyItems, deviceStatus, deviceSales, commerce, activity, equipmentItems] = await Promise.all([
       tx.cashMovement.groupBy({ by: ['type', 'origin'], where: { businessId, createdAt }, _sum: { amount: true }, _count: true }),
@@ -69,7 +67,7 @@ export async function dashboardOverview(businessId: string, period: DashboardPer
     const expense = cash.filter(row => row.type === 'EXPENSE').reduce((sum, row) => sum + (row._sum.amount ?? 0), 0)
     const countStatus = (value: RepairStatus) => status.find(row => row.status === value)?._count ?? 0
     const equipmentReady = deviceStatus.find(row => row.status === 'READY_FOR_SALE')?._count ?? 0
-    const activeRepairs = status.filter(row => row.status !== 'DELIVERED' && row.status !== 'CANCELLED').reduce((sum, row) => sum + row._count, 0)
+    const activeRepairs = status.filter(row => row.status !== 'DELIVERED').reduce((sum, row) => sum + row._count, 0)
     let charts = null
     if (features.dashboardComplete) {
       charts = {

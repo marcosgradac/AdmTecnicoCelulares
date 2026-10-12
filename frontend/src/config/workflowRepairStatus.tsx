@@ -1,6 +1,6 @@
 import type { SvgIconComponent } from '@mui/icons-material'
 import {
-  AssignmentTurnedInRounded, BiotechRounded, CancelRounded, CheckCircleRounded,
+  AssignmentTurnedInRounded, BiotechRounded, CheckCircleRounded,
   FactCheckRounded, HandymanRounded, LocalOfferRounded,
   PendingActionsRounded, ReplayRounded, TaskAltRounded,
 } from '@mui/icons-material'
@@ -23,6 +23,5 @@ export const workflowRepairStatus: Record<WorkflowRepairStatus, WorkflowStatusCo
   control_calidad: { label: 'Control de calidad', color: '#1686b7', background: '#e5f7ff', icon: FactCheckRounded },
   listo_retirar: { label: 'Listo para retirar', color: '#1f9254', background: '#e9f8f0', icon: TaskAltRounded },
   entregado: { label: 'Entregado', color: '#687083', background: '#f0f2f5', icon: CheckCircleRounded },
-  cancelado: { label: 'Cancelado', color: '#c83e3e', background: '#fff0f0', icon: CancelRounded },
   garantia: { label: 'Garantía', color: '#7650c7', background: '#f2eeff', icon: ReplayRounded },
 }

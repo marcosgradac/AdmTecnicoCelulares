@@ -118,12 +118,11 @@ export async function loadLandingDemo(prisma: PrismaClient) {
     const partUsages: Array<{ repairId: string; stockIndex: number; createdAt: Date }> = []
     const today = getArgentinaDayBounds(now).start
     let recommendedTrackingPath = ''
-    for (let i = 0; i < 50; i++) {
-      const status: RepairStatus = i < 32 ? flow[Math.floor(i / 4)] : i < 42 ? 'DELIVERED' : i < 46 ? 'WARRANTY' : 'CANCELLED'
+    for (let i = 0; i < 46; i++) {
+      const status: RepairStatus = i < 32 ? flow[Math.floor(i / 4)] : i < 42 ? 'DELIVERED' : 'WARRANTY'
       const device = devices[i % devices.length]
       const client = clients.find(row => row.id === device.clientId)!
       const finished = status === 'DELIVERED' || status === 'WARRANTY'
-      const cancelled = status === 'CANCELLED'
       const warrantyEnabled = (i >= 32 && i <= 36) || i === 31 || status === 'WARRANTY'
       const age = i < 4 ? 0 : i < 12 ? 1 + i % 6 : i < 24 ? 8 + i % 15 : i < 32 ? 18 + i % 24 : 20 + i % 8
       let createdAt = i < 4 ? new Date(+today + (+now - +today) * (0.1 + i * 0.12)) : ago(age)
@@ -136,20 +135,19 @@ export async function loadLandingDemo(prisma: PrismaClient) {
       const duration = i === 33 ? 30 : 90
       const at = (fraction: number) => new Date(+createdAt + (+lastEvent - +createdAt) * fraction)
       const originalWorkAt = (fraction: number) => new Date(+createdAt + (+(deliveredAt ?? lastEvent) - +createdAt) * fraction)
-      const states: RepairStatus[] = cancelled ? ['RECEIVED', 'REVIEW', 'CANCELLED']
-        : status === 'WARRANTY' ? [...flow, 'WARRANTY'] : flow.slice(0, flow.indexOf(status) + 1)
+      const states: RepairStatus[] = status === 'WARRANTY' ? [...flow, 'WARRANTY'] : flow.slice(0, flow.indexOf(status) + 1)
       const part = stock[(i % devices.length) % models.length + (i % 2 ? 9 : 0)]
-      const usesPart = !cancelled && !['RECEIVED', 'REVIEW', 'BUDGET', 'WAITING_PART'].includes(status)
-      const total = cancelled ? 60000 : 60000 + (i % 7) * 18000
-      const paid = cancelled ? [40000, 15000, 20000, 0][i - 46] : finished ? total : i % 4 === 0 ? 0 : i % 4 === 1 ? Math.floor(total * 0.3) : i % 4 === 2 ? Math.floor(total * 0.6) : total
-      const trackingEnabled = !finished && !cancelled
+      const usesPart = !['RECEIVED', 'REVIEW', 'BUDGET', 'WAITING_PART'].includes(status)
+      const total = 60000 + (i % 7) * 18000
+      const paid = finished ? total : i % 4 === 0 ? 0 : i % 4 === 1 ? Math.floor(total * 0.3) : i % 4 === 2 ? Math.floor(total * 0.6) : total
+      const trackingEnabled = !finished
       const repair = await tx.repair.create({ data: {
         businessId, number: await allocateRepairNumber(tx, businessId), clientId: client.id, deviceId: device.id,
         deviceBrand: device.brand, deviceModel: device.model, color: device.color, issue: issues[i % issues.length],
         diagnosis: status === 'RECEIVED' ? null : `Revisión de ${device.brand} ${device.model}: ${issues[i % issues.length].toLowerCase()}. Se verificaron conexiones y alimentación.`,
         notes: marker, physicalCondition: i % 3 ? 'Buen estado general' : 'Marcas leves en el marco', accessories: 'Sin accesorios',
-        status, total, paid, partsCost: usesPart ? part.cost : 0, laborCost: cancelled ? 0 : 18000 + i % 5 * 4000,
-        createdAt, updatedAt: lastEvent, estimatedDeliveryDate: finished || cancelled ? null : new Date(Math.max(+createdAt, +ago(i % 3 === 0 ? 2 : -2 - i % 5))),
+        status, total, paid, partsCost: usesPart ? part.cost : 0, laborCost: 18000 + i % 5 * 4000,
+        createdAt, updatedAt: lastEvent, estimatedDeliveryDate: finished ? null : new Date(Math.max(+createdAt, +ago(i % 3 === 0 ? 2 : -2 - i % 5))),
         trackingEnabled, trackingToken: trackingEnabled ? randomBytes(32).toString('hex') : null, trackingCreatedAt: trackingEnabled ? createdAt : null,
         deliveredAt, warrantyEnabled, warrantyDurationDays: warrantyEnabled ? duration : null,
         warrantyStartedAt: warrantyEnabled ? deliveredAt : null, warrantyExpiresAt: warrantyEnabled && deliveredAt ? new Date(+deliveredAt + duration * day) : null,
@@ -160,7 +158,7 @@ export async function loadLandingDemo(prisma: PrismaClient) {
         const historyAt = status === 'WARRANTY' && s <= 8 ? new Date(+createdAt + (+deliveredAt! - +createdAt) * s / 8) : at(states.length === 1 ? 0 : s / (states.length - 1))
         await tx.repairStatusHistory.create({ data: { repairId: repair.id, previousStatus: s ? states[s - 1] : null,
           newStatus: states[s], changedByUserId: owner.id, createdAt: historyAt, internalNote: marker,
-          publicMessage: states[s] === 'WARRANTY' ? 'Recibimos el equipo para revisar la garantía.' : states[s] === 'CANCELLED' ? null : publicMessages[s],
+          publicMessage: states[s] === 'WARRANTY' ? 'Recibimos el equipo para revisar la garantía.' : publicMessages[s],
         } })
       }
       if (usesPart) {
@@ -168,20 +166,11 @@ export async function loadLandingDemo(prisma: PrismaClient) {
         partUsages.push({ repairId: repair.id, stockIndex: stock.indexOf(part), createdAt: originalWorkAt(0.7) })
       }
       // See server.ts payment endpoint: the payment and matching cash entry are one event.
-      const installments = paid === 0 ? [] : !cancelled && i % 3 === 0 ? [Math.floor(paid * 0.4), paid - Math.floor(paid * 0.4)] : [paid]
+      const installments = paid === 0 ? [] : i % 3 === 0 ? [Math.floor(paid * 0.4), paid - Math.floor(paid * 0.4)] : [paid]
       for (let p = 0; p < installments.length; p++) {
         const method = methods[(i + p) % methods.length], createdAt = originalWorkAt(p ? 0.95 : 0.45)
         await tx.payment.create({ data: { businessId, repairId: repair.id, clientId: client.id, amount: installments[p], method, note: marker, createdAt } })
         await tx.cashMovement.create({ data: { businessId, repairId: repair.id, clientName: client.name, amount: installments[p], method, type: 'INCOME', origin: 'REPAIR', description: `${marker} · Pago reparación #${repair.number}`, createdAt } })
-      }
-      if (cancelled) {
-        const fee = [15000, 15000, 30000, 0][i - 46]
-        const refund = Math.max(0, paid - fee)
-        const cash = refund ? await tx.cashMovement.create({ data: { businessId, repairId: repair.id, clientName: client.name, type: 'EXPENSE', origin: 'REPAIR', amount: refund, method: 'TRANSFER', description: `${marker} · Devolución reparación #${repair.number}`, createdAt: lastEvent } }) : null
-        await tx.repair.update({ where: { id: repair.id }, data: { cancelledAt: lastEvent, cancellationPaidAmount: paid,
-          cancellationReviewFee: fee, cancellationRefundAmount: refund, cancellationRefundMethod: refund ? 'TRANSFER' : null,
-          cancellationRefundMovementId: cash?.id ?? null, updatedAt: lastEvent,
-        } })
       }
       if (status === 'WARRANTY') {
         const claimStatus = (['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'] as const)[i - 42]

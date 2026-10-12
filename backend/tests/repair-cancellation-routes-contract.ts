@@ -1,0 +1,4 @@
+import assert from 'node:assert/strict'
+process.env.NODE_ENV='test';process.env.DOTENV_CONFIG_PATH='no-dotenv';process.env.JWT_SECRET='synthetic';process.env.DATABASE_URL='postgresql://test:test@127.0.0.1:1/never_connected';process.env.ORIGIN_AUTH_ENABLED='false';
+async function main(){const {app}=await import('../src/app');const routes=(app as any).router.stack.filter((x:any)=>x.route).map((x:any)=>x.route);for(const suffix of ['cancel','cancel-preview','cancellation-payment'])assert.ok(!routes.some((r:any)=>r.path==='/api/repairs/:id/'+suffix),'Retired endpoint remains registered: '+suffix);assert.ok(routes.some((r:any)=>r.path==='/api/repairs/:id'&&r.methods.delete),'Permanent DELETE must stay registered');console.log('PASS cancellation endpoints absent, permanent DELETE registered')}
+main().catch(e=>{console.error(e);process.exitCode=1})

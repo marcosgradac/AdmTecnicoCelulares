@@ -8,7 +8,6 @@ export type WorkflowRepairStatus =
   | 'control_calidad'
   | 'listo_retirar'
   | 'entregado'
-  | 'cancelado'
   | 'garantia'
 
 export interface NewRepairDraft {

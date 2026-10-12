@@ -27,7 +27,13 @@ Se cargó el perfil full en el negocio de la cuenta solicitada: 18 clientes,
 25 equipos y 31 reparaciones, números 1001–1031. La segunda ejecución devolvió
 `existing`, sin cambios en registros ni contador. Producción sigue pendiente.
 
-## Qué corrige el loader
+## Loader vigente sin cancelaciones
+
+Desde la retirada de cancelaciones de reparaciones, el loader solo genera estados normales, pagos e ingresos. Perfil full: 18 clientes, 25 equipos, 25 reparaciones, 22 pagos/ingresos, 138 historiales y 21 links. Perfil small: 6 clientes, 8 equipos, 6 reparaciones, 6 pagos/ingresos, 36 historiales y 4 links. Cada perfil conserva un reclamo de garantía. No genera revisiones de cancelación ni devoluciones.
+
+La sección siguiente documenta la preparación histórica anterior y sus cantidades; sus escenarios de cancelación ya no forman parte del loader vigente.
+
+## Preparación histórica del loader
 
 Se reutiliza `backend/src/scripts/load-business-demo.ts` y `npm run demo:load`.
 El loader anterior generaba una CANCELLED sin settlement, entregadas sin pagos

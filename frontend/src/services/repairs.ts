@@ -1,7 +1,7 @@
 import { api, apiAssetUrl } from './api'
 import type { Repair, RepairStatus } from '../types'
 
-export type ApiRepairStatus = 'RECEIVED' | 'REVIEW' | 'BUDGET' | 'APPROVED' | 'WAITING_PART' | 'REPAIRING' | 'TESTING' | 'READY' | 'DELIVERED' | 'CANCELLED' | 'WARRANTY'
+export type ApiRepairStatus = 'RECEIVED' | 'REVIEW' | 'BUDGET' | 'APPROVED' | 'WAITING_PART' | 'REPAIRING' | 'TESTING' | 'READY' | 'DELIVERED' | 'WARRANTY'
 
 interface ApiClient {
   id: string
@@ -27,13 +27,6 @@ interface ApiRepair {
   partsCost?: number
   laborCost?: number
   laborCharge?: number
-  cancelledAt?: string | null
-  cancellationPaidAmount?: number | null
-  cancellationReviewFee?: number | null
-  cancellationReviewPaid?: number | null
-  cancellationRefundAmount?: number | null
-  cancellationRefundMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' | null
-  cancellationRefundMovementId?: string | null
   trackingToken: string | null
   trackingEnabled: boolean
   estimatedDeliveryDate: string | null
@@ -42,7 +35,7 @@ interface ApiRepair {
   warrantyStartedAt: string | null
   warrantyExpiresAt: string | null
   statusHistory?: Array<{ id?: string; previousStatus?: ApiRepairStatus | null; newStatus: ApiRepairStatus; publicMessage?: string | null; internalNote?: string | null; createdAt: string }>
-  payments?: Array<{ id: string; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string | null; cancellationReview?: boolean; isAdvance?: boolean; createdAt: string }>
+  payments?: Array<{ id: string; amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER'; note?: string | null; isAdvance?: boolean; createdAt: string }>
   createdAt: string
   updatedAt: string
   client: ApiClient
@@ -81,7 +74,6 @@ const statusFromApi: Record<ApiRepairStatus, RepairStatus> = {
   TESTING: 'testing',
   READY: 'ready',
   DELIVERED: 'delivered',
-  CANCELLED: 'cancelled',
   WARRANTY: 'warranty',
 }
 
@@ -95,7 +87,6 @@ const statusToApi: Record<RepairStatus, ApiRepairStatus> = {
   testing: 'TESTING',
   ready: 'READY',
   delivered: 'DELIVERED',
-  cancelled: 'CANCELLED',
   warranty: 'WARRANTY',
 }
 
@@ -119,13 +110,6 @@ const mapRepair = (repair: ApiRepair): Repair => ({
   partsCost: repair.partsCost,
   laborCost: repair.laborCost,
   laborCharge: repair.laborCharge,
-  cancelledAt: repair.cancelledAt ?? undefined,
-  cancellationPaidAmount: repair.cancellationPaidAmount ?? undefined,
-  cancellationReviewFee: repair.cancellationReviewFee ?? undefined,
-  cancellationReviewPaid: repair.cancellationReviewPaid ?? undefined,
-  cancellationRefundAmount: repair.cancellationRefundAmount ?? undefined,
-  cancellationRefundMethod: repair.cancellationRefundMethod ?? undefined,
-  cancellationRefundMovementId: repair.cancellationRefundMovementId ?? undefined,
   createdAt: repair.createdAt,
   updatedAt: repair.updatedAt,
   trackingToken: repair.trackingToken ?? undefined,
@@ -172,7 +156,7 @@ export async function advanceRepairStatus(id: string, messages?: { publicMessage
   return mapRepair(response.data)
 }
 
-/** Retrocede un solo paso del flujo. No existe para Entregado, Cancelado ni Garantía. */
+/** Retrocede un solo paso del flujo. No existe para Entregado ni Garantía. */
 export async function rewindRepairStatus(id: string, messages?: { publicMessage?: string; internalNote?: string }) {
   const response = await api.patch<ApiRepair>(`/repairs/${id}/status/rewind`, { ...messages })
   return mapRepair(response.data)
@@ -196,12 +180,6 @@ export async function updateRepairInitialCost(id: string, input: { amount: numbe
 /** Acción administrativa para una entrega cargada por error. Sólo OWNER; nunca es navegación. */
 export async function correctRepairDelivery(id: string, reason: string) {
   const response = await api.post<ApiRepair>(`/repairs/${id}/delivery/correction`, { reason })
-  return mapRepair(response.data)
-}
-
-/** Cobra parte del saldo de revisión de una reparación ya cancelada. */
-export async function registerCancellationPayment(id: string, input: { amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }) {
-  const response = await api.post<ApiRepair>(`/repairs/${id}/cancellation-payment`, input)
   return mapRepair(response.data)
 }
 

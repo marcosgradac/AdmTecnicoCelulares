@@ -162,7 +162,7 @@ assert.equal(config.nextStatus('budget'), 'waiting_part', 'BUDGET avanza como En
 assert.equal(config.nextStatus('testing'), 'ready', 'TESTING avanza como En reparación')
 assert.equal(config.nextStatus('delivered'), null, 'desde Entregado no hay paso siguiente')
 assert.equal(config.previousStatus('delivered'), null, 'desde Entregado no hay paso anterior')
-assert.equal(config.nextStatus('cancelled'), null, 'un estado especial no avanza')
+assert.equal(config.nextStatus('warranty'), null, 'un estado especial no avanza')
 assert.equal(config.previousStatus('warranty'), null, 'un estado especial no retrocede')
 assert.equal(config.nextStatus('received'), 'review')
 assert.equal(config.previousStatus('received'), null, 'desde Recibido no se retrocede')

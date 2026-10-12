@@ -20,7 +20,7 @@ async function main() {
   assert.equal(collect(page.root(), n => n.type === 'EditRepairDrawer')[0].props.open, false)
   for (const financial of [false, true]) {
     const hidden = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, {
-      getRepair: async () => ({ ...repair, status: financial ? 'cancelled' : 'received', history: [{ previousStatus: 'received', newStatus: 'received', internalNote: 'Costo/gasto corregido de $30.000 a $20.000', createdAt: '2026-10-06' }] }),
+      getRepair: async () => ({ ...repair, status: 'received', history: [{ previousStatus: 'received', newStatus: 'received', internalNote: 'Costo/gasto corregido de $30.000 a $20.000', createdAt: '2026-10-06' }] }),
     }, financial)
     await hidden.settle()
     assert.ok(!button(hidden.root(), 'Corregir costo/gasto'))
@@ -46,6 +46,6 @@ async function main() {
     await view.settle()
     assert.equal(JSON.stringify(calls), JSON.stringify([['r1', amount, method], ['updated', amount]]))
   }
-  console.log('INITIAL COST FRONTEND PASSED: financial permission, cancellation, current amount, 30000→20000/0 and 0→20000, explicit payment method, warning, updated cost/profit and success/close.')
+  console.log('INITIAL COST FRONTEND PASSED: financial permission, current amount, 30000→20000/0 and 0→20000, explicit payment method, warning, updated cost/profit and success/close.')
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

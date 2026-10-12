@@ -16,7 +16,7 @@ export const reportPeriodSchema = z.object({
 export type ReportPeriodInput = z.infer<typeof reportPeriodSchema>
 
 const DAY_MS = 86_400_000
-const activeStatuses: RepairStatus[] = Object.values(RepairStatus).filter(status => !['DELIVERED', 'CANCELLED'].includes(status))
+const activeStatuses: RepairStatus[] = Object.values(RepairStatus).filter(status => !['DELIVERED'].includes(status))
 
 const parseCalendarDate = (value: string) => {
   // Esta fecha UTC representa sólo la fecha civil para validación, no un límite de query.
@@ -104,7 +104,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     prisma.client.count({ where: { businessId, createdAt: range } }),
   ])
 
-  const validRepairs = repairs.filter(repair => repair.status !== 'CANCELLED')
+  const validRepairs = repairs
   const billed = validRepairs.reduce((sum, repair) => sum + repair.total, 0)
   const collected = payments.reduce((sum, payment) => sum + payment.amount, 0)
   const outstanding = validRepairs.reduce((sum, repair) => sum + Math.max(0, repair.total - repair.paid), 0)
@@ -113,10 +113,9 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
   const expensesTotal = expenses.reduce((sum, expense) => sum + expense.amount, 0)
   // partsCost is recognized with the repair, even when its cash entry falls in another
   // period. Only the explicitly linked mirror is excluded; unrelated repair/warranty
-  // expenses remain deductible. Cancelled repairs are absent from billed/cost totals,
-  // so their cash expenses must still count here.
+  // expenses remain deductible..
   const expensesAlreadyInRepairCosts = expenses.reduce((sum, expense) => sum + (
-    expense.initialCostRepair?.businessId === businessId && expense.initialCostRepair.status !== RepairStatus.CANCELLED
+    expense.initialCostRepair?.businessId === businessId
       ? expense.amount : 0
   ), 0)
   const additionalExpenses = expensesTotal - expensesAlreadyInRepairCosts
@@ -157,7 +156,7 @@ export async function getReportsOverview(businessId: string, input: ReportPeriod
     repairs: {
       byStatus: Object.values(RepairStatus).map(status => ({ label: status, value: repairs.filter(repair => repair.status === status).length })),
       timeline: [...timelineMap.values()].sort((a, b) => a.label.localeCompare(b.label)).map(row => ({ label: row.label, value: row.repairs })),
-      completed: deliveredRepairs.length, cancelled: repairs.filter(repair => repair.status === 'CANCELLED').length,
+      completed: deliveredRepairs.length,
       averageDeliveryHours, overdue, topIssues: topCounts(repairs.map(repair => repair.issue)),
       topBrands: topCounts(repairs.map(repair => repair.deviceBrand)), topModels: topCounts(repairs.map(repair => repair.deviceModel)),
       topServices: topCounts(repairs.map(repair => repair.issue)),

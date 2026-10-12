@@ -69,12 +69,12 @@ async function main() {
       console.log(`PASS cash ${100000 + income - expense} -> 100000 (income ${income}, expense ${expense})`)
     }
     const disabled = await create()
-    for (const endpoint of ['cancel', 'cancel-preview']) assert.equal((await request(`/repairs/${disabled.id}/${endpoint}`, { requestId: randomUUID(), reviewFee: 0, expenses: [] })).status, 410)
-    assert.equal((await request(`/repairs/${disabled.id}/status`, { status: 'CANCELLED' }, 'PATCH')).status, 409)
+    for (const endpoint of ['cancel', 'cancel-preview', 'cancellation-payment']) assert.equal((await request(`/repairs/${disabled.id}/${endpoint}`, { requestId: randomUUID(), reviewFee: 0, expenses: [] })).status, 404)
+    assert.equal((await request(`/repairs/${disabled.id}/status`, { status: 'CANCELLED' }, 'PATCH')).status, 400)
     assert.equal((await request('/repairs', { clientId: client.body.id, deviceBrand: 'Samsung', deviceModel: 'Synthetic', issue: 'Synthetic issue', status: 'CANCELLED' })).status, 400)
     await request(`/repairs/${disabled.id}`, undefined, 'DELETE')
 
-    for (const status of ['CANCELLED', 'DELIVERED'] as const) {
+    for (const status of ['RECEIVED', 'REVIEW', 'BUDGET', 'APPROVED', 'WAITING_PART', 'REPAIRING', 'TESTING', 'READY', 'DELIVERED', 'WARRANTY'] as const) {
       const repair = await create(10000, 20000)
       await prisma.repair.update({ where: { id: repair.id }, data: { status } })
       await prisma.repairStatusHistory.create({ data: { repairId: repair.id, newStatus: status, changedByUserId: userId, internalNote: 'Synthetic exclusive note' } })
@@ -102,10 +102,10 @@ async function main() {
     const legacyExpense = await prisma.cashMovement.create({ data: { businessId, type: 'EXPENSE', amount: 2500, method: 'CASH', description: 'Synthetic old unclassified cost' } })
     await prisma.repair.update({ where: { id: legacy.id }, data: { paid: 4000, initialCostMovementId: legacyExpense.id } })
     const sharing = await create()
-    await prisma.repair.update({ where: { id: sharing.id }, data: { cancellationRefundMovementId: historicCash.id } })
+    await prisma.repair.update({ where: { id: sharing.id }, data: { initialCostMovementId: historicCash.id } })
     assert.equal((await request(`/repairs/${legacy.id}`, undefined, 'DELETE')).status, 409, 'Shared receipt prevents any deletion')
     assert.ok(await prisma.cashMovement.findUnique({ where: { id: historicCash.id } }))
-    await prisma.repair.update({ where: { id: sharing.id }, data: { cancellationRefundMovementId: null } })
+    await prisma.repair.update({ where: { id: sharing.id }, data: { initialCostMovementId: null } })
     assert.equal((await request(`/repairs/${legacy.id}`, undefined, 'DELETE')).status, 200)
     assert.equal(await prisma.cashMovement.count({ where: { id: { in: [historicCash.id, legacyExpense.id] } } }), 0, 'Exclusive linked cash is deleted even without repairId')
     const historicalReport = await request('/reports/overview?period=custom&from=2025-01-01&to=2025-01-31')
