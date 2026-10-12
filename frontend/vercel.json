@@ -1,4 +1,5 @@
 {
+  "git": { "deploymentEnabled": { "codex/repair-hard-delete-main": false } },
   "rewrites": [
     {
       "source": "/s/:clientSlug/:token",
