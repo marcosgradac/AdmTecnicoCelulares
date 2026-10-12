@@ -12,10 +12,10 @@ process.env.NODE_ENV = 'test'
 process.env.TURNSTILE_SECRET_KEY = 'test-only-secret'
 process.env.RATE_LIMIT_SIGNUP_MAX = '20'
 const database = new URL(process.env.DATABASE_URL ?? '')
-assert.ok(['localhost', '127.0.0.1'].includes(database.hostname) && database.port === '55439' && database.pathname === '/account_deletion_test', 'Only isolated account_deletion_test PostgreSQL')
+assert.ok(['localhost', '127.0.0.1'].includes(database.hostname) && process.env.NODE_ENV === 'test' && Number(database.port) >= 1024 && Number(database.port) <= 65535 && database.pathname === '/account_deletion_test', 'Only isolated account_deletion_test PostgreSQL')
 const password = 'CuentaSegura123!'
 const body = { password, confirmation: 'ELIMINAR MI CUENTA' }
-const tenantModels = ['Business', 'User', 'PasswordResetToken', 'Client', 'Device', 'Repair', 'RepairStatusHistory', 'RepairPhoto', 'RepairPart', 'Payment', 'StockItem', 'InventoryMovement', 'CashMovement', 'WarrantyClaim', 'WarrantyClaimExpense', 'CommerceProduct', 'CommerceCategory', 'CommerceSale', 'CommerceSaleLine', 'ResaleDevice', 'Subscription', 'PaymentSubmission', 'SubscriptionAuditLog', 'PlatformInternalNote']
+const tenantModels = ['Business', 'User', 'PasswordResetToken', 'Client', 'Device', 'Repair', 'RepairStatusHistory', 'RepairPart', 'Payment', 'StockItem', 'InventoryMovement', 'CashMovement', 'WarrantyClaim', 'WarrantyClaimExpense', 'CommerceProduct', 'CommerceCategory', 'CommerceSale', 'CommerceSaleLine', 'ResaleDevice', 'Subscription', 'PaymentSubmission', 'SubscriptionAuditLog', 'PlatformInternalNote']
 assert.deepEqual(Prisma.dmmf.datamodel.models.map(m => m.name).sort(), [...tenantModels, 'Plan', 'BillingSettings'].sort(), 'Every schema model is covered; new models require reviewing purge')
 
 async function main() {
@@ -42,7 +42,7 @@ async function main() {
     const rows = data[model] as any[]
     if (model === 'Business') return rows.filter(row => row.id === businessId)
     if (model === 'PasswordResetToken') return rows.filter(row => (data.User as any[]).some(u => u.businessId === businessId && u.id === row.userId))
-    if (['RepairStatusHistory', 'RepairPhoto', 'RepairPart'].includes(model)) return rows.filter(row => (data.Repair as any[]).some(r => r.businessId === businessId && r.id === row.repairId))
+    if (['RepairStatusHistory', 'RepairPart'].includes(model)) return rows.filter(row => (data.Repair as any[]).some(r => r.businessId === businessId && r.id === row.repairId))
     if (model === 'CommerceSaleLine') return rows.filter(row => (data.CommerceSale as any[]).some(s => s.businessId === businessId && s.id === row.saleId))
     return rows.filter(row => row.businessId === businessId)
   }
@@ -67,7 +67,6 @@ async function main() {
     const cash = await prisma.cashMovement.create({ data: { businessId, type: 'EXPENSE', description: 'Initial cost', amount: 10 } })
     const repair = await prisma.repair.create({ data: { businessId, clientId: client.id, deviceId: device.id, number: 1001, deviceBrand: 'Samsung', deviceModel: 'A14', issue: 'Display', initialCostMovementId: cash.id, trackingToken: randomUUID(), trackingEnabled: true } })
     await prisma.repairStatusHistory.create({ data: { repairId: repair.id, newStatus: 'RECEIVED', changedByUserId: tech.id } })
-    await prisma.repairPhoto.create({ data: { repairId: repair.id, url: '/test-photo', type: 'BEFORE' } })
     const stock = await prisma.stockItem.create({ data: { businessId, name: 'Display', category: 'Parts' } })
     await prisma.repairPart.create({ data: { repairId: repair.id, stockItemId: stock.id, quantity: 1, unitCost: 10, unitPrice: 20, itemNameSnapshot: 'Display' } })
     await prisma.inventoryMovement.create({ data: { businessId, stockItemId: stock.id, repairId: repair.id, createdByUserId: tech.id, type: 'REPAIR_USAGE', quantity: 1, unitCost: 10, totalCost: 10, previousStock: 2, newStock: 1 } })
@@ -280,7 +279,7 @@ async function main() {
     assert.equal((await request('GET', '/api/auth/me', activeLogin.data.token)).status, 200); check('active OWNER login still creates ordinary working session')
     const evidenceDirectory = resolve(__dirname, '../../artifacts/account-deletion')
     mkdirSync(evidenceDirectory, { recursive: true })
-    writeFileSync(resolve(evidenceDirectory, 'db-evidence.json'), JSON.stringify({ database: '127.0.0.1:55439/account_deletion_test', deletedBusinessId: c.business.id, preservedBusinessId: b.business.id, remainingRowsForDeletedIds: removedCounts, preservedSnapshotsIdentical: true, globalsIdentical: true, totalRollbackVerified: true, concurrentStatuses: results.map(r => r.status), reusedEmailRegistrationStatus: registered.status, checksPassed: passed }, null, 2) + '\n')
+    writeFileSync(resolve(evidenceDirectory, 'db-evidence.json'), JSON.stringify({ database: `127.0.0.1:${database.port}/account_deletion_test`, deletedBusinessId: c.business.id, preservedBusinessId: b.business.id, remainingRowsForDeletedIds: removedCounts, preservedSnapshotsIdentical: true, globalsIdentical: true, totalRollbackVerified: true, concurrentStatuses: results.map(r => r.status), reusedEmailRegistrationStatus: registered.status, checksPassed: passed }, null, 2) + '\n')
     console.log(`ACCOUNT DELETION TESTS PASSED: ${passed}`)
   } finally {
     // Deliberately retain fixtures in this dedicated local DB for inspection; no global deletes.

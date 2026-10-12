@@ -134,16 +134,12 @@ async function main() {
   assert.equal(enlacePendiente.data.trackingExpiresAt, null, 'sin entregar, el vencimiento sigue en null')
   ok('regenerar antes de entregar genera token corto y deja el vencimiento en null')
 
-  // --- cancelar deshabilita el enlace -----------------------------------
+  // Deletion retires the public tracking link physically.
   await prisma.repair.update({ where: { id: pendienteId }, data: { trackingToken: enlacePendiente.data.trackingToken as string, trackingEnabled: true } })
-  assert.equal((await request('GET', `/api/tracking/${enlacePendiente.data.trackingToken}`)).status, 200)
-  const cancelacion = await request('POST', `/api/repairs/${pendienteId}/cancel`, { reviewFee: 0 }, authToken)
-  assert.equal(cancelacion.status, 200, `cancelar: ${JSON.stringify(cancelacion.data)}`)
-  const cancelada = await prisma.repair.findUnique({ where: { id: pendienteId }, select: { trackingEnabled: true, status: true } })
-  assert.equal(cancelada!.trackingEnabled, false, 'cancelar deja el enlace deshabilitado')
-  assert.equal((await request('GET', `/api/tracking/${enlacePendiente.data.trackingToken}`)).status, 404,
-    'el enlace de una reparación cancelada responde 404')
-  ok('cancelar deja trackingEnabled=false y el enlace responde 404')
+  assert.equal((await request('DELETE', `/api/repairs/${pendienteId}`, undefined, authToken)).status, 200)
+  assert.equal(await prisma.repair.count({ where: { id: pendienteId } }), 0)
+  assert.equal((await request('GET', `/api/tracking/${enlacePendiente.data.trackingToken}`)).status, 404)
+  ok('eliminar borra la reparación y el enlace responde 404')
 
   // --- entregar sella el vencimiento: 7 dias con garantia de 90 ---------
   const conGarantia = await crear({ warrantyEnabled: true, warrantyDurationDays: 90 })

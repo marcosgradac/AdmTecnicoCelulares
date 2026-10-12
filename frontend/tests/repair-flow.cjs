@@ -18,6 +18,7 @@ const react = {
       if (!reactCallbacks.has(key)) reactCallbacks.set(key, fn)
       return reactCallbacks.get(key)
     },
+    useRef(initial) { const i = cursor++; if (!(i in slots)) slots[i] = { current: initial }; return slots[i] },
     useState(initial) {
       const i = cursor++
       if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial
@@ -39,13 +40,14 @@ const react = {
       require(name) {
         if (name === 'react') return react
         if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
-        if (name === 'axios') return { isAxiosError: e => !!e.isAxiosError }
+        if (name === '@mui/material') return new Proxy({}, { get: (_, key) => key === 'useTheme' ? () => ({ breakpoints: { down: () => '' } }) : key === 'useMediaQuery' ? () => false : key })
+        if (name === 'axios') { const axios = { isAxiosError: e => !!e.isAxiosError }; return { ...axios, default: axios } }
         if (name.endsWith('/services/repairs')) return services
         if (name.endsWith('/utils/format')) return { formatMoney: value => `$${value}`, formatDate: value => value }
         // La página de detalle pide sesión, navegación y permisos: se simulan en la frontera.
         if (name.endsWith('/auth/AuthContext')) return { useAuth: () => ({ user: { role: services.userRole ?? 'OWNER', permissions: [] } }) }
-        if (name === 'react-router-dom') return { useNavigate: () => () => {}, useParams: () => ({ id: 'r1' }) }
-        if (name.endsWith('/auth/permissions')) return { canAccess: (_, permission) => !['repairs.viewFinancials', 'payments:create'].includes(permission) || financial }
+        if (name === 'react-router-dom') return { useNavigate: () => () => {}, useParams: () => ({ id: 'r1' }), useLocation: () => ({ state: null }), useSearchParams: () => [new URLSearchParams(), () => {}] }
+        if (name.endsWith('/auth/permissions')) return { canAccess: (_, permission) => !(services.deniedPermissions ?? []).includes(permission) && (!['repairs.viewFinancials', 'payments:create'].includes(permission) || financial) }
         if (name.endsWith('/services/operations')) return { getClientOptions: async () => [], registerPayment: async () => {}, ...services }
         // La página usa la configuración real de estados: se carga en el mismo sandbox sin React.
         if (name.endsWith('/config/repairStatus')) return loadConfig()
@@ -150,7 +152,7 @@ for (const legacy of ['budget', 'approved', 'testing']) {
   assert.ok(!config.repairStatuses.includes(legacy), `${legacy} no se puede seleccionar`)
   assert.ok(!config.repairFlow.includes(legacy), `${legacy} no es un paso del flujo`)
 }
-assert.ok(config.repairStatuses.includes('cancelled') && config.repairStatuses.includes('warranty'), 'los estados especiales se conservan')
+assert.ok(!config.repairStatuses.includes('cancelled') && config.repairStatuses.includes('warranty'), 'nuevas cancelaciones retiradas, garantía conservada')
 assert.equal(config.canonicalStatus('budget'), 'review', 'BUDGET se lee como En revisión')
 assert.equal(config.canonicalStatus('approved'), 'review', 'APPROVED se lee como En revisión')
 assert.equal(config.canonicalStatus('testing'), 'repairing', 'TESTING se lee como En reparación')
@@ -304,12 +306,11 @@ const stale = harness('src/pages/RepairDetailPage.tsx', 'RepairDetailPage', {}, 
 await stale.settle()
 assert.ok(!JSON.stringify(stale.root()).includes('Adelanto recibido'))
 assert.ok(!JSON.stringify(stale.root()).includes('Adelanto corregido de'))
-const noFinanceCancel = harness('src/components/repairs/RepairCancellationDialog.tsx', 'RepairCancellationDialog', { repair: repair('received'), onClose() {}, onCancelled() {} }, {}, false)
-await noFinanceCancel.settle()
-assert.ok(buttonsOf(noFinanceCancel.root()).find(node => node.props.children === 'Confirmar cancelación').props.disabled)
-assert.ok(!JSON.stringify(noFinanceCancel.root()).includes('Medio de devolución'))
+const statusOptions = harness('src/components/repairs/RepairStatusDialog.tsx', 'RepairStatusDialog', { repair: repair('received'), onClose() {}, onUpdated() {} })
+await statusOptions.settle()
+assert.ok(!collect(statusOptions.root(), node => node.type === 'MenuItem').some(node => node.props.value === 'cancelled'))
 
-console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación sin efectos, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y edición unificada sin botones duplicados')
+console.log('REPAIR FLOW FRONTEND PASSED: flujo de seis pasos sin estados históricos, equivalencia visual de BUDGET/APPROVED/TESTING, confirmación obligatoria de Entregado, cancelación retirada, corrección de entrega con motivo, límites del adelanto, historial sin pagos duplicados y edición unificada sin botones duplicados')
 }
 module.exports = { harness, collect }
 if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1 })

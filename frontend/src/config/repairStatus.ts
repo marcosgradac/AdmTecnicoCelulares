@@ -72,7 +72,7 @@ export const canonicalStatusConfig = (status: RepairStatus) => repairStatusConfi
 export const repairStatusLabel = (status: RepairStatus) => canonicalStatusConfig(status).label
 
 /** Los estados que el usuario puede elegir: el flujo más los especiales, nunca los históricos. */
-export const repairStatuses: RepairStatus[] = [...repairFlow, ...specialRepairStatuses]
+export const repairStatuses: RepairStatus[] = [...repairFlow, ...specialRepairStatuses.filter(status => status !== 'cancelled')]
 
 /** Todos los estados, incluidos los históricos: sólo para filtrar y mostrar datos existentes. */
 export const allRepairStatuses: RepairStatus[] = (Object.keys(repairStatusConfig) as RepairStatus[])

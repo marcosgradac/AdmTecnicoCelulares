@@ -32,8 +32,7 @@ async function main() {
   const clean = async () => {
     for (const businessId of businesses) await prisma.$transaction([
       prisma.inventoryMovement.deleteMany({ where: { businessId } }), prisma.repairPart.deleteMany({ where: { repair: { businessId } } }),
-      prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } }), prisma.repairPhoto.deleteMany({ where: { repair: { businessId } } }),
-      prisma.payment.deleteMany({ where: { businessId } }), prisma.cashMovement.deleteMany({ where: { businessId } }), prisma.repair.deleteMany({ where: { businessId } }),
+      prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId } } }), prisma.payment.deleteMany({ where: { businessId } }), prisma.cashMovement.deleteMany({ where: { businessId } }), prisma.repair.deleteMany({ where: { businessId } }),
       prisma.device.deleteMany({ where: { businessId } }), prisma.client.deleteMany({ where: { businessId } }), prisma.stockItem.deleteMany({ where: { businessId } }),
       prisma.passwordResetToken.deleteMany({ where: { user: { businessId } } }), prisma.subscription.deleteMany({ where: { businessId } }), prisma.user.deleteMany({ where: { businessId } }), prisma.business.deleteMany({ where: { id: businessId } }),
     ])

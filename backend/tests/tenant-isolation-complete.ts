@@ -57,7 +57,7 @@ async function main() {
     const [businesses, users, clients, repairs, payments, cash, claims, claimExpenses, products, categories, sales, equipment, subscriptions, submissions, audits, notes, resetTokens] = await Promise.all([
       prisma.business.findMany({ where: { id: { in: businessIds } }, orderBy }),
       prisma.user.findMany({ where, orderBy }), prisma.client.findMany({ where, orderBy }),
-      prisma.repair.findMany({ where, orderBy, include: { statusHistory: { orderBy }, photos: { orderBy } } }),
+      prisma.repair.findMany({ where, orderBy, include: { statusHistory: { orderBy } } }),
       prisma.payment.findMany({ where, orderBy }), prisma.cashMovement.findMany({ where, orderBy }),
       prisma.warrantyClaim.findMany({ where, orderBy }), prisma.warrantyClaimExpense.findMany({ where, orderBy }),
       prisma.commerceProduct.findMany({ where, orderBy }), prisma.commerceCategory.findMany({ where, orderBy }),
@@ -98,7 +98,6 @@ async function main() {
       const submission = await expect(tenant.token, 'POST', '/billing/payments', 201, { planCode: 'COMPLETE', reportedAmount: 10000, payerName: `Private-payer-${tenant.business.id}`, transferDate: new Date().toISOString(), businessId: admin.business.id, subscriptionId: admin.subscription.id })
       assert.equal(submission.businessId, tenant.business.id)
       assert.equal(submission.subscriptionId, tenant.subscription.id)
-      await prisma.repairPhoto.create({ data: { repairId: repair.id, url: `https://example.test/private-photo-${tenant.business.id}`, type: 'BEFORE' } })
       await prisma.passwordResetToken.create({ data: { userId: tenant.staff.id, tokenHash: randomBytes(32).toString('hex'), expiresAt: new Date(Date.now() + 3600000) } })
       fixtures.push({ ...tenant, client, repair, delivery, claim, category, product, sale, saleBody, device, submission })
     }
@@ -281,7 +280,7 @@ async function main() {
     await prisma.$transaction(async tx => {
       await tx.warrantyClaimExpense.deleteMany({ where }); await tx.warrantyClaim.deleteMany({ where })
       await tx.payment.deleteMany({ where }); await tx.inventoryMovement.deleteMany({ where })
-      await tx.repairPart.deleteMany({ where: { repair: where } }); await tx.repairPhoto.deleteMany({ where: { repair: where } }); await tx.repairStatusHistory.deleteMany({ where: { repair: where } })
+      await tx.repairPart.deleteMany({ where: { repair: where } }); await tx.repairStatusHistory.deleteMany({ where: { repair: where } })
       await tx.repair.deleteMany({ where }); await tx.stockItem.deleteMany({ where }); await tx.cashMovement.deleteMany({ where })
       await tx.commerceSaleLine.deleteMany({ where: { sale: where } }); await tx.commerceSale.deleteMany({ where }); await tx.commerceProduct.deleteMany({ where }); await tx.commerceCategory.deleteMany({ where }); await tx.resaleDevice.deleteMany({ where })
       await tx.device.deleteMany({ where }); await tx.client.deleteMany({ where }); await tx.paymentSubmission.deleteMany({ where }); await tx.subscriptionAuditLog.deleteMany({ where }); await tx.platformInternalNote.deleteMany({ where }); await tx.subscription.deleteMany({ where })

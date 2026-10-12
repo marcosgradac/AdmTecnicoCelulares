@@ -67,7 +67,7 @@ async function main() {
       const where = { businessId: { in: ids } }, orderBy = { id: 'asc' as const }
       return await Promise.all([
         prisma.business.findMany({ where: { id: { in: ids } }, orderBy }), prisma.user.findMany({ where, orderBy }),
-        prisma.client.findMany({ where, orderBy }), prisma.repair.findMany({ where, orderBy, include: { statusHistory: { orderBy }, photos: { orderBy } } }),
+        prisma.client.findMany({ where, orderBy }), prisma.repair.findMany({ where, orderBy, include: { statusHistory: { orderBy } } }),
         prisma.payment.findMany({ where, orderBy }), prisma.cashMovement.findMany({ where, orderBy }),
         prisma.warrantyClaim.findMany({ where, orderBy }), prisma.warrantyClaimExpense.findMany({ where, orderBy }),
         prisma.commerceProduct.findMany({ where, orderBy }), prisma.commerceCategory.findMany({ where, orderBy }),

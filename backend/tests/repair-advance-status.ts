@@ -32,7 +32,6 @@ async function main() {
         prisma.warrantyClaimExpense.deleteMany({ where: { businessId: business.id } }),
         prisma.warrantyClaim.deleteMany({ where: { businessId: business.id } }),
         prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: business.id } } }),
-        prisma.repairPhoto.deleteMany({ where: { repair: { businessId: business.id } } }),
         prisma.payment.deleteMany({ where: { businessId: business.id } }),
         // El costo inicial se referencia con RESTRICT: se suelta antes de borrar los movimientos.
         prisma.repair.updateMany({ where: { businessId: business.id }, data: { initialCostMovementId: null } }),
@@ -271,7 +270,7 @@ async function main() {
     )
     // Estados especiales: no se mueven con el flujo normal.
     const cancelled = await createRepair({ total: 50000 })
-    await request('POST', `/repairs/${cancelled.id}/cancel`, { reviewFee: 0 }, ownerA.token)
+    await prisma.repair.update({ where: { id: cancelled.id }, data: { status: 'CANCELLED' } })
     assert.equal((await step('rewind', ownerA.token, cancelled.id)).status, 409, 'Cancelado no retrocede')
     assert.equal((await step('advance', ownerA.token, cancelled.id)).status, 409, 'Cancelado no avanza')
     assert.equal((await request('PATCH', `/repairs/${cancelled.id}/status`, { status: 'REVIEW' }, ownerA.token)).status, 409, 'Cancelado no cambia de estado')

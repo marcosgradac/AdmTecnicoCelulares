@@ -67,7 +67,6 @@ async function main() {
         prisma.warrantyClaimExpense.deleteMany({ where: { businessId: business.id } }),
         prisma.warrantyClaim.deleteMany({ where: { businessId: business.id } }),
         prisma.repairStatusHistory.deleteMany({ where: { repair: { businessId: business.id } } }),
-        prisma.repairPhoto.deleteMany({ where: { repair: { businessId: business.id } } }),
         prisma.payment.deleteMany({ where: { businessId: business.id } }),
         prisma.repair.updateMany({ where: { businessId: business.id }, data: { initialCostMovementId: null } }),
         prisma.cashMovement.deleteMany({ where: { businessId: business.id } }),
