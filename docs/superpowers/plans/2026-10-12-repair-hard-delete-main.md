@@ -8,4 +8,4 @@ Constraints: preserve original worktree; synthetic local databases only; no prod
 - [x] Implement atomic hard deletion; remove new cancellation routes/UI and photo model/API references.
 - [x] Verify balances, report history, commerce/stock snapshots, permissions, tenants, rollback and concurrent writes.
 - [x] Run frontend/backend builds and focused regressions; review diff against main and independently review code.
-- [ ] Commit only this worktree, push new branch, open independent PR toward main and attach it.
+- [x] Commit only this worktree, push new branch, open independent PR toward main and attach it.

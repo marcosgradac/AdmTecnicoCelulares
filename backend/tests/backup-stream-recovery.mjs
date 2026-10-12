@@ -177,9 +177,9 @@ try {
   const before = await snapshot(cluster.maintenance);
   for (const model of Prisma.dmmf.datamodel.models)
     assert.ok(before.rows[model.dbName || model.name]?.length > 0);
-  assert.equal(Prisma.dmmf.datamodel.models.length, 26);
+  assert.equal(Prisma.dmmf.datamodel.models.length, 25);
   pass(
-    "owned TLS PostgreSQL 17 and all 26 real models, two workshops, complete migrations",
+    "owned TLS PostgreSQL 17 and all 25 real models, two workshops, complete migrations",
   );
   await simulatedSource(cluster);
   await simulatedSource(cluster, { mode: "session" });
@@ -712,7 +712,7 @@ try {
   console.log(
     JSON.stringify({
       checks,
-      models: 26,
+      models: 25,
       smallBackupBytes: saved.manifest.encryptedSize,
       smallRestoreMs: restored.restoreMs,
       bigPlainBytes: big.result.manifest.plainSize,
