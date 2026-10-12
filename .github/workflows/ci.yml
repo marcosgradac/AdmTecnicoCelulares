@@ -52,6 +52,8 @@ jobs:
         run: npm run test:public-api-origin
       - name: Tenant isolation (disposable local PostgreSQL)
         run: npm run test:tenant-isolation-complete
+      - name: Repair hard deletion on main (disposable local PostgreSQL)
+        run: npm run test:repair-hard-delete
       - name: Role and permission authorization (disposable local PostgreSQL)
         run: npm run test:role-permissions-complete
       - name: Sessions and JWT security (disposable local PostgreSQL)
@@ -103,6 +105,8 @@ jobs:
         run: npm run build
       - name: Repair flow (mocked services)
         run: npm run test:repair-flow
+      - name: Repair hard deletion (mocked services)
+        run: npm run test:repair-hard-delete
       - name: Repair editing (mocked services)
         run: npm run test:repair-edit
       - name: Cash groups (local component harness)

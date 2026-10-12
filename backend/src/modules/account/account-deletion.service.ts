@@ -40,7 +40,6 @@ async function purgeBusiness(tx: Prisma.TransactionClient, businessId: string) {
   await tx.inventoryMovement.deleteMany({ where })
   await tx.repairPart.deleteMany({ where: repairChildren })
   await tx.repairStatusHistory.deleteMany({ where: repairChildren })
-  await tx.repairPhoto.deleteMany({ where: repairChildren })
   await tx.repair.deleteMany({ where })
   await tx.stockItem.deleteMany({ where })
   await tx.cashMovement.deleteMany({ where })

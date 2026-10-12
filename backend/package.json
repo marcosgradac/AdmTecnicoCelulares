@@ -38,7 +38,7 @@
     "test:cash-period": "tsx tests/cash-period.ts",
     "test:cash-period-30d": "tsx tests/cash-period-30d.ts",
     "test:repair-numbering": "tsx tests/repair-number-migration.ts && tsx tests/repair-numbering.ts",
-    "test:repair-cancellation": "tsx tests/repair-cancellation.ts",
+    "test:repair-cancellation": "node tests/helpers/repair-hard-delete-postgres.mjs repair-hard-delete.ts",
     "test:warranties": "tsx tests/warranties.ts && tsx tests/warranties-sqlite.ts",
     "test:tracking-preview": "tsx tests/tracking-preview.ts",
     "test:tracking-preview-rate-limit": "tsx tests/tracking-preview-rate-limit.ts",
@@ -91,7 +91,8 @@
     "test:dashboard": "tsx tests/dashboard.ts && tsx tests/dashboard-sqlite.ts",
     "test:equipment-sales-timestamps": "tsx tests/equipment-sales-timestamps.ts",
     "test:manual-payment-review": "tsx tests/manual-payment-review.ts",
-    "test:payments-flow": "tsx tests/payments_flow.ts"
+    "test:payments-flow": "tsx tests/payments_flow.ts",
+    "test:repair-hard-delete": "node tests/helpers/repair-hard-delete-postgres.mjs repair-hard-delete.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.12.0",

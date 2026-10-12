@@ -60,6 +60,7 @@ export const deliveredLockedMessage =
  * Entregado es el estado final: sólo sale de ahí con la corrección administrativa de entrega.
  */
 export const assertStatusChange = (current: RepairStatus, target: RepairStatus) => {
+  if (target === RepairStatus.CANCELLED) throw statusError(409, 'Cancelar reparación ya no está disponible. Usá Eliminar reparación.', 'REPAIR_CANCELLATION_REMOVED')
   if (isLegacyRepairStatus(target)) {
     throw statusError(409, 'Ese estado ya no se usa. Elegí Recibido, En revisión, Esperando repuesto, En reparación, Listo o Entregado.', 'LEGACY_STATUS')
   }

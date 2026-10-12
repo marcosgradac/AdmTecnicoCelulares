@@ -245,7 +245,6 @@ model Repair {
   parts                 RepairPart[]
   business              Business              @relation(fields: [businessId], references: [id])
   statusHistory         RepairStatusHistory[]
-  photos                RepairPhoto[]
   inventoryMovements    InventoryMovement[]
   warrantyClaims        WarrantyClaim[]
 
@@ -319,17 +318,6 @@ model RepairStatusHistory {
   @@index([repairId, createdAt])
 }
 
-model RepairPhoto {
-  id        String   @id @default(cuid())
-  repairId  String
-  url       String
-  type      String
-  isPublic  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  repair    Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
-
-  @@index([repairId])
-}
 
 enum PaymentMethod {
   CASH

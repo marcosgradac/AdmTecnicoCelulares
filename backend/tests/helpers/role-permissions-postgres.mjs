@@ -13,7 +13,7 @@ const temporaryRoot = resolve(tmpdir())
 const directory = await mkdtemp(join(temporaryRoot, 'tecnodesk-role-permissions-'))
 const reservation = createServer()
 const accountDeletion = process.argv.includes('--account-deletion')
-await new Promise((resolve, reject) => { reservation.once('error', reject); reservation.listen(accountDeletion ? 55439 : 0, '127.0.0.1', resolve) })
+await new Promise((resolve, reject) => { reservation.once('error', reject); reservation.listen(0, '127.0.0.1', resolve) })
 const port = reservation.address().port
 await new Promise(resolve => reservation.close(resolve))
 const postgres = new EmbeddedPostgres({ databaseDir: directory, port, user: 'postgres', password: 'local-tenant-test-only', persistent: true, authMethod: 'scram-sha-256', postgresFlags: ['-h', '127.0.0.1'], onLog: () => {}, onError: () => {} })

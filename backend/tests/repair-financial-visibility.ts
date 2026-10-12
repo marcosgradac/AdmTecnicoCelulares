@@ -83,7 +83,6 @@ async function main() {
       ['POST', `/repairs/${id}/payments`, { amount: 1, method: 'CASH' }],
       ['PATCH', `/repairs/${id}/advance`, { amount: 1 }],
       ['POST', `/repairs/${id}/cancellation-payment`, { amount: 1, method: 'CASH' }],
-      ['POST', `/repairs/${id}/cancel`, { reviewFee: 0, refundMethod: 'CASH' }],
     ] as const) assert.equal((await call(technician, method, path, body)).status, 403)
     console.log('D PASS: financial reads and writes denied')
     for (const token of [technician, owner, authorized]) {
@@ -111,17 +110,18 @@ async function main() {
       const result = await call(technician, 'PATCH', `/repairs/${id}/${path}`, body)
       assert.equal(result.status, 200, path); safe(result.body)
     }
-    assert.equal((await call(technician, 'POST', `/repairs/${own.body.id}/cancel`, { reviewFee: 100 })).status, 403)
+    assert.equal((await call(technician, 'POST', `/repairs/${own.body.id}/cancel`, { reviewFee: 100 })).status, 410)
     const cancelled = await call(technician, 'POST', `/repairs/${own.body.id}/cancel`, { reviewFee: 0 })
-    assert.equal(cancelled.status, 200); safe(cancelled.body); assert.equal(cancelled.body.cancellationReviewFee, 0)
+    assert.equal(cancelled.status, 410); assert.equal(cancelled.body.code, 'REPAIR_CANCELLATION_REMOVED')
     const warranties = await call(technician, 'GET', '/warranties'); assert.equal(warranties.status, 200); warranties.body.forEach(safe)
     const warrantyEdit = await call(technician, 'PATCH', `/warranties/${id}`, { durationDays: 45 })
     assert.equal(warrantyEdit.status, 200); safe(warrantyEdit.body)
     const ownerCancel = await call(owner, 'POST', `/repairs/${id}/cancel`, { reviewFee: 500, refundMethod: 'CASH' })
-    assert.equal(ownerCancel.status, 200); assert.ok(ownerCancel.body.cancellationRefundMovementId)
+    assert.equal(ownerCancel.status, 410)
+    await prisma.repair.update({ where: { id }, data: { status: 'CANCELLED', cancellationReviewFee: 500, cancellationRefundAmount: 1000 } })
     const cancelledView = await call(technician, 'GET', `/repairs/${id}`); safe(cancelledView.body)
     assert.equal(cancelledView.body.cancellationReviewFee, 500); assert.equal(cancelledView.body.cancellationRefundAmount, 1000)
-    console.log('F PASS: create/update/status/cancel/warranties protected; total editable, costs immutable')
+    console.log('F PASS: create/update/status/warranties protected; new cancellation disabled; total editable, costs immutable')
     for (const path of [`/repairs/${id}`, `/repairs/${id}/payments`, `/repairs/${id}/history`, `/clients/${client.id}`]) {
       assert.equal((await call(outsider, 'GET', path)).status, 404, path)
     }

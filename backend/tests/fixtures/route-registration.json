@@ -1020,6 +1020,16 @@
     ]
   },
   {
+    "path": "/api/repairs/:id/cancel-preview",
+    "methods": [
+      "post"
+    ],
+    "handlers": [
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
     "path": "/api/repairs/:id/cancellation-payment",
     "methods": [
       "post"

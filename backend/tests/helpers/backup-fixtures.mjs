@@ -13,7 +13,6 @@ export async function seedBackupFixtures(prisma){
   const device=await prisma.device.create({data:{businessId:business.id,clientId:client.id,brand:'Test',model:'Synthetic',unlockCodeEncrypted:'fictitious-encrypted-value'}})
   const repair=await prisma.repair.create({data:{businessId:business.id,clientId:client.id,deviceId:device.id,number:1001,deviceBrand:'Test',deviceModel:'Synthetic',issue:'Fictitious issue',diagnosis:'Fictitious diagnosis',total:98765,paid:12345,status:'REPAIRING',warrantyEnabled:true,warrantyDurationDays:90,warrantyStartedAt:date,warrantyExpiresAt:end,trackingEnabled:true,trackingToken:`synthetic-backup-${i}`}})
   await prisma.repairStatusHistory.create({data:{repairId:repair.id,changedByUserId:owner.id,previousStatus:'RECEIVED',newStatus:'REPAIRING',publicMessage:'Synthetic progress',internalNote:'Fictitious internal',createdAt:date}})
-  await prisma.repairPhoto.create({data:{repairId:repair.id,url:'https://example.invalid/synthetic.png',type:'diagnostic',isPublic:false}})
   const paymentCash=await prisma.cashMovement.create({data:{businessId:business.id,type:'INCOME',origin:'REPAIR',description:'Synthetic payment',amount:12345,method:'CASH',repairId:repair.id}})
   await prisma.payment.create({data:{businessId:business.id,clientId:client.id,repairId:repair.id,amount:12345,method:'CASH',cashMovementId:paymentCash.id,createdAt:date}})
   const stock=await prisma.stockItem.create({data:{businessId:business.id,name:'Synthetic part',category:'parts',quantity:7,cost:1234,salePrice:2468,compatibleModels:['Synthetic']}})

@@ -199,13 +199,6 @@ export async function correctRepairDelivery(id: string, reason: string) {
   return mapRepair(response.data)
 }
 
-export type CancelRepairInput = { reviewFee: number; refundMethod?: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }
-
-export async function cancelRepair(id: string, input: CancelRepairInput) {
-  const response = await api.post<ApiRepair>(`/repairs/${id}/cancel`, input)
-  return mapRepair(response.data)
-}
-
 /** Cobra parte del saldo de revisión de una reparación ya cancelada. */
 export async function registerCancellationPayment(id: string, input: { amount: number; method: 'CASH' | 'TRANSFER' | 'CARD' | 'OTHER' }) {
   const response = await api.post<ApiRepair>(`/repairs/${id}/cancellation-payment`, input)

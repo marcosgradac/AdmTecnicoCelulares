@@ -106,7 +106,9 @@ async function main() {
     assert.equal(noAdvance.body.total - noAdvance.body.paid, 60000)
     assert.equal(await prisma.cashMovement.count({ where: { repairId: noAdvance.body.id, type: 'EXPENSE' } }), 1)
     assert.equal(await prisma.cashMovement.count({ where: { repairId: noAdvance.body.id, type: 'INCOME' } }), 0)
-    assert.equal((await request('DELETE', `/repairs/${noAdvance.body.id}`, undefined, token)).status, 409, 'A cost is real financial activity')
+    assert.equal((await request('DELETE', `/repairs/${noAdvance.body.id}`, undefined, token)).status, 200, 'Hard deletion removes repairs with real financial activity')
+
+    assert.equal(await prisma.cashMovement.count({ where: { repairId: noAdvance.body.id } }), 0)
 
     const full = await request('POST', '/repairs', { ...baseInput, advanceAmount: 60000, advanceMethod: 'CARD' }, token)
     assert.equal(full.status, 201)
@@ -170,10 +172,10 @@ async function main() {
       } finally { await prisma.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${triggerName} ON "CashMovement"`) }
     }
     const finalReport = await request('GET', '/reports/overview?period=this_month', undefined, token)
-    assert.equal(finalReport.body.finance.estimatedProfit, 140000)
+    assert.equal(finalReport.body.finance.estimatedProfit, 110000)
     assert.equal(finalReport.body.finance.collected, 140000)
-    assert.equal(finalReport.body.finance.outstanding, 120000)
-    assert.equal(finalReport.body.finance.expenses, 120000)
+    assert.equal(finalReport.body.finance.outstanding, 60000)
+    assert.equal(finalReport.body.finance.expenses, 90000)
     const technician = await prisma.user.create({ data: { businessId: businesses[0], name: 'Técnico sin cobros', email: `tech-${randomUUID()}@example.com`, passwordHash: 'unused', role: 'TECHNICIAN', permissions: ['repairs.create', 'repairs.view'] } })
     const jwt = (await import('jsonwebtoken')).default
     const technicianToken = jwt.sign({ userId: technician.id, businessId: businesses[0], tokenVersion: technician.tokenVersion }, process.env.JWT_SECRET!, { expiresIn: '8h' })
