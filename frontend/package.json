@@ -8,6 +8,8 @@
     "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
     "verify:brands": "node scripts/verify-device-brands.mjs",
+    "test:equipment-browser": "node tests/equipment-browser.cjs",
+    "test:equipment-sales": "node tests/equipment-sales.cjs && node tests/equipment-details-delete.cjs",
     "test:repair-flow": "node tests/repair-flow.cjs",
     "test:repair-edit": "node tests/repair-edit.cjs",
     "test:platform-admin-metrics": "node tests/platform-admin-metrics.cjs",

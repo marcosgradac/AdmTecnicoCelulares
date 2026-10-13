@@ -52,6 +52,8 @@ jobs:
         run: npm run test:public-api-origin
       - name: Tenant isolation (disposable local PostgreSQL)
         run: npm run test:tenant-isolation-complete
+      - name: Equipment deletion and accounting (disposable local PostgreSQL)
+        run: npm run test:equipment-delete
       - name: Repair hard deletion on main (disposable local PostgreSQL)
         run: npm run test:repair-hard-delete
       - name: Removed cancellation endpoints (disposable local PostgreSQL)
@@ -107,6 +109,8 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
+      - name: Equipment list, details and deletion (mocked services)
+        run: npm run test:equipment-sales
       - name: Repair flow (mocked services)
         run: npm run test:repair-flow
       - name: Repair hard deletion (mocked services)
@@ -127,6 +131,8 @@ jobs:
         run: npm run test:api-domain-prep
       - name: Install Chromium for isolated browser tests
         run: npx playwright install --with-deps chromium
+      - name: Equipment responsive UI and deletion (real React, mocked API)
+        run: npm run test:equipment-browser
       - name: Session restoration and cross-tab revocation (real React, mocked API)
         run: npm run test:session-security
       - name: Account deletion UI (real React, mocked API)

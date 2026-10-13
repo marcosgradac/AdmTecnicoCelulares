@@ -1,4 +1,4 @@
-import { Prisma, type EquipmentCashKind, type PaymentMethod, type ResaleDevice, type ResaleDeviceStatus } from '@prisma/client'
+import { Prisma, type CashMovement, type EquipmentCashKind, type PaymentMethod, type ResaleDevice, type ResaleDeviceStatus } from '@prisma/client'
 import { prisma } from '../../lib/prisma'
 
 export class EquipmentSalesError extends Error {
@@ -55,6 +55,65 @@ async function transaction<T>(action: (tx: Prisma.TransactionClient) => Promise<
       throw new EquipmentSalesError(409, 'El equipo cambió mientras guardabas. Actualizá el listado antes de continuar.')
     }
     throw error
+  }
+}
+
+// Removal holds the same row lock that edit/sale compare-and-swap updates acquire.
+// This also blocks new cash foreign keys while permanent removal is in progress.
+async function lockDevice(tx: Prisma.TransactionClient, businessId: string, id: string) {
+  await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "ResaleDevice" WHERE "id" = ${id} AND "businessId" = ${businessId} FOR UPDATE`)
+  const device = await tx.resaleDevice.findFirst({ where: { id, businessId } })
+  if (!device) throw new EquipmentSalesError(404, 'Equipo no encontrado.')
+  return device
+}
+
+const unsafeHistory = () => new EquipmentSalesError(409, 'El historial de caja del equipo es inconsistente. No se puede completar la operación.')
+
+async function validateEquipmentMovements(tx: Prisma.TransactionClient, device: ResaleDevice, movements: CashMovement[]) {
+  if (movements.some(row => row.businessId !== device.businessId || row.origin !== 'EQUIPMENT' || row.repairId !== null || row.commerceSaleId !== null || row.relatedCommerceSaleId !== null)) throw unsafeHistory()
+  const ids = movements.map(row => row.id)
+  if (!ids.length) return
+  const [payments, repairs, warrantyExpenses] = await Promise.all([
+    tx.payment.count({ where: { cashMovementId: { in: ids } } }),
+    tx.repair.count({ where: { initialCostMovementId: { in: ids } } }),
+    tx.warrantyClaimExpense.count({ where: { cashMovementId: { in: ids } } }),
+  ])
+  if (payments || repairs || warrantyExpenses) throw unsafeHistory()
+}
+
+export async function getDeviceDetails(businessId: string, id: string) {
+  return prisma.$transaction(async tx => {
+    const device = await tx.resaleDevice.findFirst({ where: { id, businessId } })
+    if (!device) throw new EquipmentSalesError(404, 'Equipo no encontrado.')
+    // Deliberately inspect every linked row: filtering by tenant would hide corrupt links.
+    const movements = await tx.cashMovement.findMany({ where: { resaleDeviceId: id }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }] })
+    await validateEquipmentMovements(tx, device, movements)
+    return { device: serializeDevice(device), movements: movements.map(row => ({
+      id: row.id, type: row.type, amount: row.amount, method: row.method,
+      description: row.description, createdAt: row.createdAt, resaleKind: row.resaleKind, resaleVersion: row.resaleVersion,
+    })) }
+  }, { timeout: 15000, isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead })
+}
+
+/** Kept transaction-scoped so callers can verify full rollback without production hooks. */
+export async function deleteEquipmentInTransaction(tx: Prisma.TransactionClient, businessId: string, id: string, expectedVersion: number) {
+  const device = await lockDevice(tx, businessId, id)
+  if (device.version !== expectedVersion) throw new EquipmentSalesError(409, 'El equipo cambió. Actualizá el listado antes de eliminarlo.')
+  await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "CashMovement" WHERE "resaleDeviceId" = ${id} ORDER BY "id" FOR UPDATE`)
+  const movements = await tx.cashMovement.findMany({ where: { resaleDeviceId: id } })
+  await validateEquipmentMovements(tx, device, movements)
+  const deletedCash = await tx.cashMovement.deleteMany({ where: { id: { in: movements.map(row => row.id) }, resaleDeviceId: id, businessId } })
+  if (deletedCash.count !== movements.length) throw unsafeHistory()
+  const deletedDevice = await tx.resaleDevice.deleteMany({ where: { id, businessId, version: expectedVersion } })
+  if (deletedDevice.count !== 1) throw new EquipmentSalesError(409, 'El equipo cambió. Actualizá el listado antes de eliminarlo.')
+}
+
+export async function deleteEquipment(businessId: string, id: string, expectedVersion: number) {
+  try { await prisma.$transaction(tx => deleteEquipmentInTransaction(tx, businessId, id, expectedVersion), { timeout: 15000, isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted }) }
+  catch (error) {
+    if (error instanceof EquipmentSalesError) throw error
+    if (error instanceof Prisma.PrismaClientKnownRequestError && ['P2003', 'P2025', 'P2034'].includes(error.code)) throw unsafeHistory()
+    throw new EquipmentSalesError(500, 'No se pudo eliminar el equipo. Intentá nuevamente.')
   }
 }
 

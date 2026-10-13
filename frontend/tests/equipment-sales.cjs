@@ -16,6 +16,7 @@ function harness(file, exportName, props = {}) {
       if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial
       return [slots[i], value => { const next = typeof value === 'function' ? value(slots[i]) : value; if (!Object.is(next, slots[i])) { slots[i] = next; dirty = true } }]
     },
+    useCallback(fn) { cursor++; return fn },
     useRef(initial) { const i = cursor++; return slots[i] ??= { current: initial } },
     useEffect(fn, deps) {
       const i = cursor++, previous = slots[i]
@@ -30,13 +31,15 @@ function harness(file, exportName, props = {}) {
     vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
       exports,
       require(name) {
+        if (name === '@mui/material') return new Proxy({ useTheme: () => ({ breakpoints: { down: () => '' } }), useMediaQuery: () => !!props.mobile }, { get: (obj, key) => obj[key] ?? key })
         if (name === 'react') return react
         if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx }
+        if (name.endsWith('/config/deviceBrands')) return { deviceBrandOptions: ['Samsung'], findKnownDeviceBrand: value => value === 'Samsung' ? value : null, normalizeDeviceBrand: value => value.trim(), OTHER_DEVICE_BRAND: 'Otra' }
         if (name === 'axios') return { isAxiosError: e => !!e.isAxiosError }
         if (name.endsWith('/services/equipmentSales')) return services
         if (name.endsWith('/AuthContext')) return { useAuth: () => ({ user: { role: 'OWNER' } }) }
         if (name.endsWith('/permissions')) return { canAccess: () => true }
-        if (name.endsWith('/utils/format')) return { formatMoney: String }
+        if (name.endsWith('/utils/format')) return { formatMoney: String, formatShortDate: String, formatShortTime: String }
         if (name === './equipmentPresentation') return load(path.join(path.dirname(file), 'equipmentPresentation.ts'))
         return new Proxy({}, { get: (_, key) => key })
       },
@@ -55,10 +58,10 @@ function harness(file, exportName, props = {}) {
     }
     throw new Error('Repeated effect/render loop')
   }
-  function find(predicate, node = tree) {
-    if (!node || typeof node !== 'object') return
+  function find(predicate, node = tree, seen = new Set()) {
+    if (!node || typeof node !== 'object' || seen.has(node)) return; seen.add(node)
     if (predicate(node)) return node
-    for (const value of Object.values(node)) { const result = find(predicate, value); if (result) return result }
+    for (const value of Object.values(node)) { const result = find(predicate, value, seen); if (result) return result }
   }
   return { services, settle, find, root: () => tree }
 }
@@ -72,7 +75,7 @@ async function main() {
   assert.equal(createField('Gastos de reparación').value, '', 'new devices start with optional empty repair expenses')
   assert.ok(!createField('Gastos de reparación').required)
   for (const [label, value] of [['Marca', 'Samsung'], ['Modelo', 'A54'], ['Precio de compra', '100'], ['Precio estimado de venta', '180']]) {
-    createField(label).onChange({ target: { value } }); await create.settle()
+    if (label === 'Marca') create.find(n => n.type === 'Autocomplete').props.onChange(null, value); else createField(label).onChange({ target: { value } }); await create.settle()
   }
   assert.equal(create.root().props.submitDisabled, false, 'empty repair expenses must not prevent creation')
   create.root().props.onSubmit(); await create.settle()
@@ -133,6 +136,17 @@ async function main() {
   page.find(n => n.type === 'EquipmentSaleDrawer').props.onSaved()
   await page.settle()
   assert.equal(summaries, 2, 'successful write refreshes module summary')
+  page.find(n => n.type === 'EquipmentDeviceList').props.onDelete(device)
+  await page.settle()
+  assert.equal(page.find(n => n.type === 'EquipmentDeleteDialog').props.device.id, 'd')
+  const beforeDelete = calls.length
+  page.find(n => n.type === 'EquipmentDeleteDialog').props.onDeleted()
+  await page.settle()
+  assert.equal(calls.length, beforeDelete + 1, 'deletion refreshes list')
+  assert.equal(summaries, 3, 'deletion refreshes financial summary')
+  assert.equal(calls.at(-1).search, 'newer', 'deletion preserves search')
+  assert.equal(calls.at(-1).status, 'READY_FOR_SALE', 'deletion preserves status filter')
+  assert.equal(page.find(n => n.type === 'EquipmentDeleteDialog'), undefined, 'deleted selection is cleared')
 
   let sales = 0, finishSale, saved = 0
   const sale = harness('EquipmentDrawers.tsx', 'EquipmentSaleDrawer', { device, onClose() {}, onSaved() { saved++ }, onRefresh() {} })
@@ -160,4 +174,4 @@ async function main() {
   assert.equal(editor.find(n => n.type === 'Alert').props.children, 'Equipo vendido')
   console.log('EQUIPMENT FRONTEND PASSED: debounce, pagination/filter requests, stale responses, explicit retry/no loops, module-only refresh, duplicate submit guard and 409 recovery')
 }
-main().catch(error => { console.error(error); process.exitCode = 1 })
+module.exports = { harness }; if (require.main === module) main().catch(error => { console.error(error); process.exitCode = 1 })

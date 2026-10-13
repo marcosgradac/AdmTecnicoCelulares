@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { z } from 'zod'
 import { getArgentinaCalendarDate } from '../../lib/argentina-day'
 import { authOf, requirePermission } from '../../middlewares/auth'
-import { createDevice, deviceSummary, editDevice, EquipmentSalesError, listDevices, sellDevice } from './equipment-sales.service'
+import { createDevice, deleteEquipment, deviceSummary, editDevice, EquipmentSalesError, getDeviceDetails, listDevices, sellDevice } from './equipment-sales.service'
 
 const amount = z.number().int().min(0).max(2147483647)
 const fields = {
@@ -21,6 +21,16 @@ equipmentSalesRouter.get('/', requirePermission('equipmentSales.view'), async (r
 })
 
 equipmentSalesRouter.get('/summary', requirePermission('equipmentSales.view'), async (req, res) => res.json(await deviceSummary(authOf(req).businessId)))
+
+equipmentSalesRouter.get('/:id', requirePermission('equipmentSales.view'), async (req, res) =>
+  res.json(await getDeviceDetails(authOf(req).businessId, String(req.params.id))))
+
+equipmentSalesRouter.delete('/:id', requirePermission('equipmentSales.delete'), async (req, res) => {
+  const parsed = z.object({ expectedVersion: z.number().int().min(0).max(2147483647), confirmed: z.literal(true) }).strict().safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ message: 'Confirmá la eliminación con una versión válida del equipo.' })
+  await deleteEquipment(authOf(req).businessId, String(req.params.id), parsed.data.expectedVersion)
+  return res.json({ success: true })
+})
 
 equipmentSalesRouter.post('/', requirePermission('equipmentSales.manage'), async (req, res) => {
   const parsed = z.object({ ...fields, repairExpenses: amount.default(0), status: editableStatus.default('PURCHASED') }).strict().safeParse(req.body)

@@ -150,6 +150,7 @@ async function main() {
       ['POST', `/repairs/${f.repair.id}/tracking-link`, {}], ['PATCH', `/repairs/${f.repair.id}/tracking-link`, { enabled: false }],
       ['PATCH', `/commerce/products/${f.product.id}`, { ...productInput, expectedStock: 9 }], ['DELETE', `/commerce/products/${f.product.id}`],
       ['PATCH', `/commerce/categories/${f.category.id}`, { name: 'Intruder' }], ['DELETE', `/commerce/categories/${f.category.id}`], ['POST', `/commerce/sales/${f.sale.id}/cancel`, {}],
+      ['GET', `/equipment-sales/${f.device.id}`], ['DELETE', `/equipment-sales/${f.device.id}`, {expectedVersion:0,confirmed:true}],
       ['PATCH', `/equipment-sales/${f.device.id}`, { ...deviceInput, expectedVersion: 1 }], ['POST', `/equipment-sales/${f.device.id}/sell`, { expectedVersion: 1, actualSalePrice: 200, salePaymentMethod: 'CASH' }],
       ['PATCH', `/warranties/${f.delivery.id}`, { durationDays: 5 }], ['DELETE', `/warranties/${f.delivery.id}`],
       ['POST', `/warranties/${f.delivery.id}/claims`, { description: 'Intruder warranty', initialExpense: { concept: 'Intruder cost', amount: 5, method: 'CASH', idempotencyKey: randomUUID() } }],

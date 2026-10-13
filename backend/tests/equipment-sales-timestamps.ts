@@ -19,7 +19,7 @@ async function main() {
     db = new SQLiteClient({ datasources: { db: { url: 'file:' + file.replace(/\\/g, '/') } } })
   } else {
     const url = new URL(process.env.DATABASE_URL!)
-    assert.ok(['127.0.0.1', 'localhost'].includes(url.hostname) && url.port === '55439', 'Only isolated test PostgreSQL')
+    assert.ok(['127.0.0.1', 'localhost'].includes(url.hostname) && (url.port === '55439' || url.pathname === '/repair_finance_test'), 'Only isolated test PostgreSQL')
     db = new PrismaClient()
   }
   // Replace only the database dependency before loading the real service, in this test process.
