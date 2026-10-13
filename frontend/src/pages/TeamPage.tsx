@@ -38,7 +38,7 @@ const permissionGroups = [
   { module: 'Clientes', options: [['clients.view','Ver clientes'],['clients.create','Crear clientes'],['clients.update','Editar clientes'],['clients.delete','Eliminar clientes']] },
   { module: 'Caja', options: [['cash.view','Ver caja'],['cash.create','Registrar caja']] },
   { module: 'Comercio', options: [['commerce.view','Ver Comercio'],['commerce.sell','Vender en Comercio'],['commerce.manage','Administrar Comercio']] },
-  { module: 'Venta de equipos', options: [['equipmentSales.view','Ver Venta de equipos'],['equipmentSales.manage','Administrar equipos para reventa'],['equipmentSales.sell','Vender equipos']] },
+  { module: 'Venta de equipos', options: [['equipmentSales.view','Ver Venta de equipos'],['equipmentSales.manage','Administrar equipos para reventa'],['equipmentSales.sell','Vender equipos'],['equipmentSales.delete','Eliminar equipos definitivamente']] },
   { module: 'Configuración', options: [['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio']] },
 ] as const
 function PermissionFields({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) {

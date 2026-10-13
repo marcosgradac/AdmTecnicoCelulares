@@ -42,3 +42,8 @@ export const getEquipmentSummary = async () => (await api.get<EquipmentSummary>(
 export const createEquipment = async (input: EquipmentInput & { status?: EditableEquipmentStatus }) => (await api.post<ResaleDevice>('/equipment-sales', input)).data
 export const updateEquipment = async (id: string, input: EquipmentInput & { status: EditableEquipmentStatus; expectedVersion: number }) => (await api.patch<ResaleDevice>(`/equipment-sales/${id}`, input)).data
 export const sellEquipment = async (id: string, input: EquipmentSaleInput) => (await api.post<ResaleDevice>(`/equipment-sales/${id}/sell`, input)).data
+
+export interface EquipmentMovement { id: string; type: 'INCOME' | 'EXPENSE'; amount: number; method: EquipmentPaymentMethod | null; description: string; createdAt: string; resaleKind: string | null; resaleVersion: number | null }
+export interface EquipmentDetail { device: ResaleDevice; movements: EquipmentMovement[] }
+export const getEquipmentDetail = async (id: string) => (await api.get<EquipmentDetail>(`/equipment-sales/${id}`)).data
+export const deleteEquipment = async (id: string, expectedVersion: number) => (await api.delete<{ success: true }>(`/equipment-sales/${id}`, { data: { expectedVersion, confirmed: true } })).data

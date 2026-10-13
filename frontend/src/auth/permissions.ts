@@ -6,7 +6,7 @@ export type Permission =
   | 'reports.view' | 'reports.viewSensitive' | 'settings.access' | 'settings.business.update' | 'settings.repairs.update'
   | 'team.view' | 'team.create' | 'team.update' | 'team.permissions.update' | 'team.deactivate'
   | 'commerce.view' | 'commerce.sell' | 'commerce.manage'
-  | 'equipmentSales.view' | 'equipmentSales.manage' | 'equipmentSales.sell'
+  | 'equipmentSales.view' | 'equipmentSales.manage' | 'equipmentSales.sell' | 'equipmentSales.delete'
   | 'cash:manage' | 'payments:create'
 
 export const hasRole = (user: AuthUser | null, ...roles: AuthUser['role'][]) =>

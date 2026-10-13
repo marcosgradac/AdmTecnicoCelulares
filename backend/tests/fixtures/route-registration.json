@@ -695,6 +695,26 @@
         ]
       },
       {
+        "path": "/:id",
+        "methods": [
+          "get"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
+        "path": "/:id",
+        "methods": [
+          "delete"
+        ],
+        "handlers": [
+          "<anonymous>",
+          "<anonymous>"
+        ]
+      },
+      {
         "path": "/",
         "methods": [
           "post"
