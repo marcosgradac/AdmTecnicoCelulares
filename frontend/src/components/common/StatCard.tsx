@@ -3,7 +3,7 @@ import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
 import { useAdminVisual } from '../admin/AdminVisualScope'
 
 export function StatCard({ label, value, icon, helper, tone = 'primary' }: { label: string; value: string; icon: ReactNode; helper?: string; tone?: 'primary' | 'info' | 'success' | 'warning' }) {
-  const tones = { primary: ['#5B3FD6', '#EEE9FF'], info: ['#2F9BFF', '#EAF5FF'], success: ['#28B76B', '#E9F8F0'], warning: ['#D48700', '#FFF5DF'] }
+  const tones = { primary: ['var(--td-primary, #5B3FD6)', 'var(--td-primary-soft, #EEE9FF)'], info: ['var(--td-accent, #2F9BFF)', 'var(--td-info-soft, #EAF5FF)'], success: ['var(--td-success, #28B76B)', 'var(--td-success-soft, #E9F8F0)'], warning: ['var(--td-warning, #D48700)', 'var(--td-warning-soft, #FFF5DF)'] }
   const [color, background] = tones[tone]
   const modern = useAdminVisual()
   if (modern) return <Card sx={{ height: '100%' }}><CardContent sx={{ p: { xs: 1.75, sm: 2.25 }, '&:last-child': { pb: { xs: 1.75, sm: 2.25 } } }}>

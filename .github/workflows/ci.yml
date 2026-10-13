@@ -52,6 +52,8 @@ jobs:
         run: npm run test:public-api-origin
       - name: Tenant isolation (disposable local PostgreSQL)
         run: npm run test:tenant-isolation-complete
+      - name: Personal theme preference (disposable local PostgreSQL)
+        run: npm run test:profile-theme
       - name: Equipment deletion and accounting (disposable local PostgreSQL)
         run: npm run test:equipment-delete
       - name: Repair hard deletion on main (disposable local PostgreSQL)
@@ -131,6 +133,12 @@ jobs:
         run: npm run test:api-domain-prep
       - name: Install Chromium for isolated browser tests
         run: npx playwright install --with-deps chromium
+      - name: Personal preference, sessions and nested themes (real React, mocked API)
+        run: npm run test:theme-preference
+      - name: Full visual themes desktop and mobile (real App, mocked API)
+        env:
+          PREMIUM_THEME_VIEWPORTS: desktop,mobile
+        run: npm run test:premium-theme
       - name: Equipment responsive UI and deletion (real React, mocked API)
         run: npm run test:equipment-browser
       - name: Session restoration and cross-tab revocation (real React, mocked API)

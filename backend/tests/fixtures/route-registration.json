@@ -181,6 +181,17 @@
     ]
   },
   {
+    "path": "/api/profile/theme",
+    "methods": [
+      "patch"
+    ],
+    "handlers": [
+      "authenticate",
+      "<anonymous>",
+      "<anonymous>"
+    ]
+  },
+  {
     "path": "/api/auth/tutorial-seen",
     "methods": [
       "patch"

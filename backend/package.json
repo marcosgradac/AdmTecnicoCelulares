@@ -61,6 +61,7 @@
     "test:billing-quota-concurrency": "tsx tests/billing-quota-concurrency.ts",
     "test:billing-pending-concurrency": "tsx tests/pending-payment-concurrency.ts",
     "test:commerce": "tsx tests/commerce.ts && tsx tests/commerce-sqlite.ts",
+    "test:profile-theme": "node tests/helpers/repair-hard-delete-postgres.mjs profile-theme.ts",
     "test:equipment-delete": "node tests/helpers/repair-hard-delete-postgres.mjs equipment-sales.ts equipment-sales-timestamps.ts equipment-delete.ts",
     "test:equipment-sales": "tsx tests/equipment-sales.ts && tsx tests/equipment-sales-sqlite.ts",
     "test:performance-access": "tsx tests/performance-access.ts",

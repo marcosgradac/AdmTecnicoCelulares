@@ -42,9 +42,9 @@ const movementDate = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '
 const movementTime = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: movementTz })
 const movementDateText = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Fecha no disponible' : movementDate.format(date) }
 const movementTimeText = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? '' : movementTime.format(date) }
-const originTone: Record<DashboardOrigin, { bgcolor: string; color: string }> = { REPAIR: { bgcolor: 'rgba(91,63,214,.10)', color: '#5B3FD6' }, COMMERCE: { bgcolor: 'rgba(40,121,194,.12)', color: '#2879C2' }, EQUIPMENT: { bgcolor: 'rgba(31,146,84,.12)', color: '#1F9254' }, GENERAL: { bgcolor: 'rgba(166,107,0,.12)', color: '#A66B00' } }
+const originTone: Record<DashboardOrigin, { bgcolor: string; color: string }> = { REPAIR: { bgcolor: 'var(--td-primary-soft, rgba(91,63,214,.10))', color: 'var(--td-primary, #5B3FD6)' }, COMMERCE: { bgcolor: 'var(--td-info-soft, rgba(40,121,194,.12))', color: 'var(--td-accent, #2879C2)' }, EQUIPMENT: { bgcolor: 'var(--td-success-soft, rgba(31,146,84,.12))', color: 'var(--td-success, #1F9254)' }, GENERAL: { bgcolor: 'var(--td-warning-soft, rgba(166,107,0,.12))', color: 'var(--td-warning, #A66B00)' } }
 const activityColumns = { xs: 'auto minmax(0, 1fr) auto', md: 'minmax(0, 2.2fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .9fr) minmax(0, 1.05fr) 28px' } as const
-const activityHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: '#9AA0AE', lineHeight: 1.4 } as const
+const activityHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--td-muted, #9AA0AE)', lineHeight: 1.4 } as const
 
 export function RecentActivity({ items }: { items: DashboardOverview['activity'] }) {
   return <Card><CardContent>

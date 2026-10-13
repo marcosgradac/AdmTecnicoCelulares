@@ -8,7 +8,7 @@ import { usePlatformResource } from '../platformAdmin.hooks'
 import { AccessChip, PlatformError, PlatformLoading, RefreshingBar, remainingLabel } from '../platformAdmin.shared'
 
 const AttentionRow = ({ name, access, onOpen }: { name: string; access: AccountAccess; onOpen: () => void }) => (
-  <Box display="flex" gap={1.5} flexWrap="wrap" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: '#FBFBFE' }}>
+  <Box display="flex" gap={1.5} flexWrap="wrap" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'var(--td-elevated, #FBFBFE)' }}>
     <AccessChip access={access} />
     <Box flex={1} minWidth={140}>
       <Typography fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{name}</Typography>
@@ -63,7 +63,7 @@ export function DashboardSection({ refreshToken, onOpenBusiness }: { refreshToke
         <Typography variant="body2" color="text.secondary" mt={.5}>Últimos negocios registrados.</Typography>
         <Stack spacing={1.5} mt={2.5}>
           {data.recentBusinesses.length ? data.recentBusinesses.map(business => (
-            <Box key={business.id} display="flex" gap={1.5} flexWrap="wrap" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: '#FBFBFE' }}>
+            <Box key={business.id} display="flex" gap={1.5} flexWrap="wrap" alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'var(--td-elevated, #FBFBFE)' }}>
               <Box flex={1} minWidth={140}>
                 <Typography fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{business.name}</Typography>
                 <Typography variant="caption" color="text.secondary">Alta: {formatDate(business.createdAt)}</Typography>

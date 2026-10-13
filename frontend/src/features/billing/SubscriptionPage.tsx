@@ -27,7 +27,7 @@ function UsageMeter({ icon, title, used, limit, usedLabel, noun, unlimitedLabel 
   const reached = limited && used >= total
   const near = limited && !reached && used / total >= 0.8
   const tone = `${state}.main`
-  return <Box sx={{ p: 2, minWidth: 0, border: '1px solid #e6e3ef', borderRadius: '12px', bgcolor: '#fff' }}>
+  return <Box sx={{ p: 2, minWidth: 0, border: '1px solid var(--billing-meter-border, #e6e3ef)', borderRadius: '12px', bgcolor: 'var(--billing-meter-paper, #fff)' }}>
     <Stack direction="row" alignItems="center" spacing={1.25}>
       <Box sx={{ display: 'grid', placeItems: 'center', width: 38, height: 38, flexShrink: 0, borderRadius: '10px', bgcolor: 'rgb(91 63 214 / 8%)', color: 'primary.main' }}>{icon}</Box>
       <Typography fontWeight={800} sx={{ flex: 1, minWidth: 0 }}>{title}</Typography>

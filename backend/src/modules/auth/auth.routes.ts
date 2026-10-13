@@ -44,6 +44,7 @@ export function createAuthRoutes() {
     privacyAcceptedAt: Date | null
     permissions: unknown
     tutorialSeen: boolean
+    themePreference: string
     business: { id: string; name: string; logoUrl: string | null }
   }>(user: T) => ({
     id: user.id,
@@ -63,6 +64,7 @@ export function createAuthRoutes() {
     profileComplete: Boolean(user.firstName && user.lastName),
     permissions: permissionsFor(user.role, user.permissions),
     tutorialSeen: user.tutorialSeen,
+    themePreference: user.themePreference === 'LIGHT' || user.themePreference === 'DARK' ? user.themePreference : 'SYSTEM',
     business: { id: user.business.id, name: user.business.name, logoUrl: publicBusinessLogoUrl(user.business.id, user.business.logoUrl) },
   })
 
@@ -206,6 +208,19 @@ export function createAuthRoutes() {
         include: { business: true },
       })
       return res.json(userResponse(user))
+    })
+
+    const themeSchema = z.object({ themePreference: z.enum(['LIGHT', 'DARK', 'SYSTEM']) }).strict()
+    app.patch('/api/profile/theme', authenticate, authenticatedWriteLimiter, async (req, res) => {
+      const parsed = themeSchema.safeParse(req.body)
+      if (!parsed.success) return res.status(400).json({ success: false, message: 'Preferencia de apariencia inválida' })
+      const auth = authOf(req)
+      const updated = await prisma.user.updateMany({
+        where: { id: auth.userId, businessId: auth.businessId },
+        data: { themePreference: parsed.data.themePreference },
+      })
+      if (updated.count !== 1) return unauthorized(res)
+      return res.json({ themePreference: parsed.data.themePreference })
     })
 
     app.patch('/api/auth/tutorial-seen', authenticate, authenticatedWriteLimiter, async (req, res) => {

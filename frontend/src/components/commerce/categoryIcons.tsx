@@ -154,11 +154,11 @@ export function categoryIconLabel(iconKey: string | null | undefined): string {
 export type CategoryTone = 'violet' | 'blue' | 'green' | 'orange' | 'pink'
 
 export const CATEGORY_TONES: Record<CategoryTone, { background: string; color: string; border: string }> = {
-  violet: { background: '#F0ECFF', color: '#5B3FD6', border: '#E2DAFF' },
-  blue: { background: '#E9F2FF', color: '#1F6FEB', border: '#D6E7FF' },
-  green: { background: '#E7F7EE', color: '#1F8E55', border: '#CFEBDB' },
-  orange: { background: '#FEF1E3', color: '#C4740C', border: '#F8E1C6' },
-  pink: { background: '#FDEBF3', color: '#C6488C', border: '#F9D9E7' },
+  violet: { background: 'var(--td-primary-soft, #F0ECFF)', color: 'var(--td-primary, #5B3FD6)', border: 'var(--td-border, #E2DAFF)' },
+  blue: { background: 'var(--td-info-soft, #E9F2FF)', color: 'var(--td-accent, #1F6FEB)', border: 'var(--td-border, #D6E7FF)' },
+  green: { background: 'var(--td-success-soft, #E7F7EE)', color: 'var(--td-success, #1F8E55)', border: 'var(--td-border, #CFEBDB)' },
+  orange: { background: 'var(--td-warning-soft, #FEF1E3)', color: 'var(--td-warning, #C4740C)', border: 'var(--td-border, #F8E1C6)' },
+  pink: { background: 'var(--td-pink-soft, #FDEBF3)', color: 'var(--td-pink, #C6488C)', border: 'var(--td-border, #F9D9E7)' },
 }
 
 const TONE_BY_GROUP: Record<string, CategoryTone> = {

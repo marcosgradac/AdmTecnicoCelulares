@@ -18,7 +18,7 @@ import { formatDate } from '../utils/format'
 import { useAuth } from '../auth/AuthContext'
 import { canAccess } from '../auth/permissions'
 
-const clientsHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: '#9AA0AE', lineHeight: 1.4, py: 1, background: 'transparent' } as const
+const clientsHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--td-muted, #9AA0AE)', lineHeight: 1.4, py: 1, background: 'transparent' } as const
 
 export function ClientsPage() {
   const mobile = useMediaQuery(useTheme().breakpoints.down('md'))

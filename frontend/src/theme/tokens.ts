@@ -3,7 +3,7 @@
  * tener imports no puede entrar en un ciclo con los componentes que lo consumen,
  * que es lo que rompe los imports en runtime.
  */
-export const TABLE_BORDER = '#EEF0F5'
+export const TABLE_BORDER = 'var(--td-table-border, #EEF0F5)'
 
 /**
  * Degradé de títulos TecnoDesk: oscuro → violeta → azul.
@@ -21,10 +21,10 @@ export const TABLE_BORDER = '#EEF0F5'
  * contenido en lugar de estirar el fondo más allá de las letras.
  */
 export const GRADIENT_TEXT_SX = {
-  background: 'linear-gradient(90deg, #171A23 0%, #4327B7 38%, #5B3FD6 62%, #2F9BFF 100%)',
+  background: 'var(--td-title-gradient, linear-gradient(90deg, #171A23 0%, #4327B7 38%, #5B3FD6 62%, #2F9BFF 100%))',
   WebkitBackgroundClip: 'text',
   backgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
-  color: '#5B3FD6',
+  color: 'var(--td-primary, #5B3FD6)',
   width: 'fit-content',
 }

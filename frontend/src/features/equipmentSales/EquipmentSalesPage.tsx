@@ -55,7 +55,7 @@ export function EquipmentSalesPage() {
   const openEditor = (device: ResaleDevice | null, section?: 'status') => {
     setEditorSection(section); setEditor(device)
   }
-  return <Box sx={(theme) => ({ '& h1': { background: theme.palette.mode === 'dark' ? 'linear-gradient(90deg, #FFFFFF 0%, #C9BAFF 55%, #82CAFF 100%)' : GRADIENT_TEXT_SX.background, WebkitBackgroundClip: 'text', backgroundClip: 'text' } })}>
+  return <Box>
     <PageHeader eyebrow="COMPRA Y REVENTA" title="Compra y reventa de equipos" description="Registrá los equipos que comprás rotos, llevá la inversión de la reparación y vendelos cuando estén listos." action={canManage ? <Button variant="contained" startIcon={<AddRounded />} onClick={() => openEditor(null)}>Nuevo equipo</Button> : undefined} />
     {summaryError && <Alert severity="error" sx={{ mb: 2 }} action={<Button color="inherit" onClick={() => setSummaryRetry(value => value + 1)}>Reintentar resumen</Button>}>{summaryError}</Alert>}
     <Grid container spacing={1.5} mb={2}>
@@ -65,7 +65,7 @@ export function EquipmentSalesPage() {
       <Grid size={{ xs: 6, lg: 3 }}><Box sx={{ '& .MuiTypography-root:last-of-type': { color: summary && summary.realizedProfit < 0 ? 'error.main' : 'success.main' } }}><StatCard label="Ganancia realizada" value={summary ? formatMoney(summary.realizedProfit) : '—'} icon={<TrendingUpRounded />} tone={summary && summary.realizedProfit < 0 ? 'warning' : 'success'} /></Box></Grid>
     </Grid>
     <Card><CardContent>
-      <Stack direction="row" spacing={1} alignItems="center" mb={2}><PhoneIphoneRounded color="primary" /><Box sx={{ flex: 1 }}><Typography variant="h2" sx={(theme) => ({ ...GRADIENT_TEXT_SX, ...(theme.palette.mode === 'dark' ? { background: 'linear-gradient(90deg, #FFFFFF 0%, #C9BAFF 55%, #82CAFF 100%)', WebkitBackgroundClip: 'text', backgroundClip: 'text' } : {}) })}>Tus equipos</Typography></Box><Chip size="small" label={`${total} equipos`} /></Stack>
+      <Stack direction="row" spacing={1} alignItems="center" mb={2}><PhoneIphoneRounded color="primary" /><Box sx={{ flex: 1 }}><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Tus equipos</Typography></Box><Chip size="small" label={`${total} equipos`} /></Stack>
       <Stack direction={{ xs: 'column', md: 'row' }} flexWrap="wrap" gap={1} mb={2.5} aria-label="Flujo del equipo" sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 3 }}>{(Object.keys(statusLabels) as EquipmentStatus[]).map((status, index) => <Stack key={status} direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}><Typography variant="caption" color="text.secondary" fontWeight={700}>{index + 1}.</Typography><Chip size="small" variant="outlined" color={statusColors[status]} label={statusLabels[status]} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: statusColors[status] === 'default' ? 'text.secondary' : `${statusColors[status]}.dark` }} />{index < 3 && <ArrowForwardRounded sx={{ fontSize: 15, color: 'text.disabled' }} />}</Stack>)}</Stack>
       <FilterBar onClear={search || filters.status ? () => { setSearch(''); setFilters({ search: '', page: 0, status: '' }) } : undefined}>
         <TextField fullWidth size="small" label="Buscar por marca o modelo" value={search} onChange={event => setSearch(event.target.value)} slotProps={{ htmlInput: { maxLength: 120 }, input: { startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> } }} />

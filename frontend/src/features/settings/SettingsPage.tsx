@@ -13,6 +13,7 @@ import { SettingsSection } from './SettingsSection'
 import { PasswordChangeFlow } from './PasswordChangeFlow'
 import { AccountDeletionSection } from './AccountDeletionSection'
 import './settings.scss'
+import { AppearanceCard } from './AppearanceCard'
 import { openGuidedTutorial } from '../../components/onboarding/GuidedTutorial'
 
 const statusLabels: Record<Subscription['status'], string> = { TRIALING: 'Prueba gratis', ACTIVE: 'Activa', GRACE: 'En período de gracia', PAST_DUE: 'Pago pendiente', SUSPENDED: 'Suspendida', CANCELED: 'Cancelada' }
@@ -102,6 +103,7 @@ export function SettingsPage() {
     <Stack spacing={2} className="settings-content">
       <SettingsSection id="negocio" title="Mi negocio" description={owner ? 'Estos datos se usan en seguimientos y comprobantes.' : 'Sólo el propietario puede modificar estos datos.'}>
         <Stack spacing={3}>
+          <AppearanceCard />
           <Box className="business-logo"><Avatar variant="circular" src={business.logoUrl ?? undefined} alt={`Logo de ${business.name || 'tu negocio'}`}><ImageRounded /></Avatar><Box className="business-logo__content"><Typography variant="h6">Logo del negocio</Typography><Typography variant="body2" color="text.secondary">PNG, JPG o WEBP. Tamaño máximo: 2 MB.</Typography>{owner && <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mt={1.5}><input ref={logoInput} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={changeLogo} /><Button variant="outlined" startIcon={logoSaving ? <CircularProgress size={16} /> : <UploadRounded />} disabled={logoSaving} onClick={() => logoInput.current?.click()}>{business.logoUrl ? 'Cambiar logo' : 'Subir logo'}</Button>{business.logoUrl && <Button color="error" variant="text" startIcon={<DeleteOutlineRounded />} disabled={logoSaving} onClick={() => setConfirm('logo')}>Eliminar logo</Button>}</Stack>}</Box></Box>
           <Box component="form" onSubmit={saveBusiness}><Stack spacing={2}>
             <TextField label="Nombre comercial" value={business.name} disabled={!owner || saving} inputProps={{ maxLength: 100 }} onChange={e => setBusiness(v => ({ ...v, name: e.target.value }))} required />

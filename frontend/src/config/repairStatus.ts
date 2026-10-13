@@ -3,7 +3,7 @@ import { AssignmentTurnedInRounded, BiotechRounded, CheckCircleRounded, FactChec
 import type { RepairStatus } from '../types'
 
 export interface RepairStatusConfig {
-  label: string; color: string; background: string; order: number; progress: number; icon: SvgIconComponent
+  label: string; color: string; background: string; border: string; order: number; progress: number; icon: SvgIconComponent
 }
 
 /**
@@ -46,8 +46,20 @@ export const previousStatus = (status: RepairStatus): RepairStatus | null => {
   return index > 0 ? repairFlow[index - 1] : null
 }
 
+// Theme tokens affect presentation only; labels, transitions and progress retain their original values.
+const statusTone: Record<string, string> = {
+  '#2879c2': 'accent', '#1686b7': 'accent', '#eaf5ff': 'info-soft', '#e5f7ff': 'info-soft',
+  '#a66b00': 'warning', '#c76800': 'warning', '#fff5df': 'warning-soft', '#fff0df': 'warning-soft',
+  '#6849db': 'primary', '#5b3fd6': 'primary', '#7650c7': 'primary', '#eee9ff': 'primary-soft', '#f2eeff': 'primary-soft',
+  '#1f9254': 'success', '#e9f8f0': 'success-soft', '#687083': 'muted', '#f0f2f5': 'elevated',
+}
+
 const step = (label: string, color: string, background: string, order: number, progress: number, icon: SvgIconComponent): RepairStatusConfig =>
-  ({ label, color, background, order, progress, icon })
+  ({
+    label, color: `var(--td-${statusTone[color.toLowerCase()]}, ${color})`,
+    background: `var(--td-${statusTone[background.toLowerCase()]}, ${background})`,
+    border: `var(--td-border, ${color}22)`, order, progress, icon,
+  })
 
 export const repairStatusConfig: Record<RepairStatus, RepairStatusConfig> = {
   received: step('Recibido', '#2879C2', '#EAF5FF', 0, 10, AssignmentTurnedInRounded),

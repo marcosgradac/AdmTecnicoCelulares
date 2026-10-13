@@ -88,7 +88,7 @@ export function WarrantiesPage() {
             <TableCell><ClaimsSummary item={item} expanded={expanded === item.id} onToggle={() => toggle(item.id)} /></TableCell>
             <TableCell align="right">{actions(item)}</TableCell>
           </TableRow>
-          {item.warrantyClaims.length > 0 && <TableRow><TableCell colSpan={7} sx={{ py: 0, bgcolor: '#FAF9FF', borderBottom: expanded === item.id ? undefined : 0 }}><Collapse in={expanded === item.id} unmountOnExit><Box py={1.5}><ClaimList item={item} onSaved={() => void load()} /></Box></Collapse></TableCell></TableRow>}
+          {item.warrantyClaims.length > 0 && <TableRow><TableCell colSpan={7} sx={{ py: 0, bgcolor: 'var(--td-hover, #FAF9FF)', borderBottom: expanded === item.id ? undefined : 0 }}><Collapse in={expanded === item.id} unmountOnExit><Box py={1.5}><ClaimList item={item} onSaved={() => void load()} /></Box></Collapse></TableCell></TableRow>}
         </Fragment> })}</TableBody>
       </Table></TableContainer>}
       <ListPagination count={items.length} page={current} rowsPerPage={PER_PAGE} onPageChange={setPage} />

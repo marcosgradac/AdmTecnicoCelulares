@@ -47,7 +47,7 @@ const PAGE_SIZE = 10
 /** Por debajo de este stock el aviso pasa a tono suave: informa sin alarmar. */
 const LOW_STOCK = 3
 /** Texto solo para lectores de pantalla en columnas sin encabezado visible. */
-const SR_ONLY = { position: 'absolute', left: 0, top: 0, width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' } as const
+const SR_ONLY = { position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'hidden', clipPath: 'inset(50%)' } as const
 
 export function CommercePointOfSale({
   canSell, cart, paymentMethod, saving, error,
@@ -370,7 +370,7 @@ export function CommercePointOfSale({
 
       {/* Barra compacta de mobile: el carrito no vive abajo en la página, se abre acá. */}
       {compact && cartLines.length > 0 && (
-        <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: theme => theme.zIndex.appBar, p: 1.5, pb: 'max(12px, env(safe-area-inset-bottom))', bgcolor: 'rgba(255,255,255,.94)', backdropFilter: 'blur(8px)', borderTop: '1px solid', borderColor: TABLE_BORDER }}>
+        <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: theme => theme.zIndex.appBar, p: 1.5, pb: 'max(12px, env(safe-area-inset-bottom))', bgcolor: 'var(--td-header, rgba(255,255,255,.94))', backdropFilter: 'blur(8px)', borderTop: '1px solid', borderColor: TABLE_BORDER }}>
           <Button
             fullWidth variant="contained" size="large"
             onClick={() => setCartOpen(true)}

@@ -1,24 +1,24 @@
 // Panel de plataforma: identidad propia (blanco + violeta TecnoDesk) para diferenciarlo del admin de cada negocio.
-.platform-shell { display: grid; grid-template-columns: 268px minmax(0, 1fr); align-items: start; min-height: 100vh; background: #F8F9FC; }
+.platform-shell { display: grid; grid-template-columns: 268px minmax(0, 1fr); align-items: start; min-height: 100vh; background: var(--td-bg, #F8F9FC); }
 
-.platform-sidebar { position: sticky; top: 0; height: 100vh; border-right: 1px solid #E8EAF3; background: #fff; }
+.platform-sidebar { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--td-border, #E8EAF3); background: var(--td-sidebar, #fff); }
 
 .platform-nav { box-sizing: border-box; display: flex; flex-direction: column; height: 100%; min-width: 0; padding: 20px 16px; }
 .platform-nav__brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 18px; }
-.platform-nav__brand > svg { box-sizing: content-box; padding: 6px; border-radius: 12px; font-size: 26px; color: #5B3FD6; background: #EEE9FF; }
-.platform-nav__brand-caption { color: #7D8493; }
-.platform-nav__label { padding: 0 8px 8px; font-size: 10px !important; font-weight: 800 !important; letter-spacing: .12em !important; color: #9AA0AE; }
+.platform-nav__brand > svg { box-sizing: content-box; padding: 6px; border-radius: 12px; font-size: 26px; color: var(--td-primary, #5B3FD6); background: var(--td-primary-soft, #EEE9FF); }
+.platform-nav__brand-caption { color: var(--td-muted, #7D8493); }
+.platform-nav__label { padding: 0 8px 8px; font-size: 10px !important; font-weight: 800 !important; letter-spacing: .12em !important; color: var(--td-muted, #9AA0AE); }
 .platform-nav__list { display: grid; gap: 4px; min-height: 0; }
 .platform-nav__list .MuiListItemButton-root { min-height: 46px; border-radius: 12px; }
-.platform-nav__list .MuiListItemIcon-root { min-width: 38px; color: #687083; }
+.platform-nav__list .MuiListItemIcon-root { min-width: 38px; color: var(--td-muted, #687083); }
 .platform-nav__list .MuiListItemText-primary { font-size: 14px; font-weight: 650; }
-.platform-nav__list .Mui-selected, .platform-nav__list .Mui-selected:hover { background: #EEE9FF; color: #5B3FD6; }
-.platform-nav__list .Mui-selected .MuiListItemIcon-root { color: #5B3FD6; }
+.platform-nav__list .Mui-selected, .platform-nav__list .Mui-selected:hover { background: var(--td-primary-soft, #EEE9FF); color: var(--td-primary, #5B3FD6); }
+.platform-nav__list .Mui-selected .MuiListItemIcon-root { color: var(--td-primary, #5B3FD6); }
 .platform-nav__foot { margin-top: auto; padding: 0 8px; }
 
 .platform-main { display: flex; flex-direction: column; min-width: 0; }
 
-.platform-header { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between; padding: 20px 28px; border-bottom: 1px solid #E8EAF3; background: rgba(255, 255, 255, .93); backdrop-filter: blur(12px); }
+.platform-header { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between; padding: 20px 28px; border-bottom: 1px solid var(--td-border, #E8EAF3); background: var(--td-header, rgba(255, 255, 255, .93)); backdrop-filter: blur(12px); }
 .platform-header__heading { flex: 1 1 340px; min-width: 0; }
 .platform-header__eyebrow { font-size: 10px !important; font-weight: 800 !important; letter-spacing: .14em !important; }
 .platform-header__title { margin: 2px 0 0; font-size: clamp(1.4rem, 2.4vw, 1.9rem) !important; overflow-wrap: anywhere; }

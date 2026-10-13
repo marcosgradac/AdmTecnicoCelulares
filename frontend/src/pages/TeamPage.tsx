@@ -45,7 +45,7 @@ function PermissionFields({ value, onChange, disabled = false }: { value: string
   const toggle = (permission: string, checked: boolean) => onChange(checked ? [...value, permission] : value.filter(item => item !== permission))
   return <FormSection title="Permisos del técnico" description="Accesos asignados a esta persona.">
     <Box display="grid" gridTemplateColumns="minmax(0,1fr)" gap={1.5} alignItems="start">
-      {permissionGroups.map(group => <Box key={group.module} sx={{ p: 1.5, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: '#FAFAFE' }}>
+      {permissionGroups.map(group => <Box key={group.module} sx={{ p: 1.5, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'var(--td-elevated, #FAFAFE)' }}>
         <Typography variant="subtitle2" fontWeight={800} mb={.5}>{group.module}</Typography>
         <Stack>{group.options.map(([permission, label]) => <FormControlLabel key={permission} sx={{ m: 0, minWidth: 0, '& .MuiFormControlLabel-label': { fontSize: '.85rem', lineHeight: 1.4, overflowWrap: 'anywhere' } }} control={<Checkbox size="small" checked={value.includes(permission)} disabled={disabled} onChange={event => toggle(permission, event.target.checked)} />} label={label} />)}</Stack>
       </Box>)}
@@ -61,7 +61,7 @@ const passwordChecks = (value: string) => [
 const strongPassword = (value: string) => value.length >= 8 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value)
 /** Requisitos de la contraseña temporal en formato compacto: cada chip se pinta cuando se cumple. */
 function PasswordRules({ value }: { value: string }) {
-  return <Stack direction="row" gap={.75} flexWrap="wrap" useFlexGap>{passwordChecks(value).map(check => <Chip key={check.label} size="small" variant="outlined" label={check.label} color={check.met ? 'success' : 'default'} sx={{ fontWeight: 700, ...(check.met ? { bgcolor: 'rgba(40,183,107,.08)' } : { color: 'text.secondary', borderColor: 'divider' }) }} />)}</Stack>
+  return <Stack direction="row" gap={.75} flexWrap="wrap" useFlexGap>{passwordChecks(value).map(check => <Chip key={check.label} size="small" variant="outlined" label={check.label} color={check.met ? 'success' : 'default'} sx={{ fontWeight: 700, ...(check.met ? { bgcolor: 'var(--td-success-soft, rgba(40,183,107,.08))' } : { color: 'text.secondary', borderColor: 'divider' }) }} />)}</Stack>
 }
 
 export function TeamPage() {

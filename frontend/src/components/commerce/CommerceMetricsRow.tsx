@@ -25,11 +25,11 @@ const MIN_CARD_WIDTH = 176
 
 // Mismos tonos semánticos que StatCard (primary / success / warning), ampliados para el comercio.
 const tones = {
-  primary: { color: '#5B3FD6', background: '#EEE9FF' },
-  success: { color: '#1F8E55', background: '#E9F8F0' },
-  strongSuccess: { color: '#14713F', background: '#DCF3E6' },
-  warning: { color: '#B26A00', background: '#FFF3DC' },
-  expense: { color: '#C0463C', background: '#FDECEA' },
+  primary: { color: 'var(--td-primary, #5B3FD6)', background: 'var(--td-primary-soft, #EEE9FF)' },
+  success: { color: 'var(--td-success, #1F8E55)', background: 'var(--td-success-soft, #E9F8F0)' },
+  strongSuccess: { color: 'var(--td-success, #14713F)', background: 'var(--td-success-soft, #DCF3E6)' },
+  warning: { color: 'var(--td-warning, #B26A00)', background: 'var(--td-warning-soft, #FFF3DC)' },
+  expense: { color: 'var(--td-error, #C0463C)', background: 'var(--td-error-soft, #FDECEA)' },
 } as const
 
 function MetricCard({ metric, width }: { metric: CommerceMetric; width: number | string }) {
