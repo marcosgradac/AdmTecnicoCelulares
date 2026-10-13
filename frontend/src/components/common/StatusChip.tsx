@@ -9,6 +9,6 @@ import { canonicalStatusConfig, isLegacyStatus } from '../../config/repairStatus
 export function StatusChip({ status }: { status: RepairStatus }) {
   const config = canonicalStatusConfig(status)
   const Icon = config.icon
-  return <Chip size="small" icon={<Icon />} label={config.label} title={isLegacyStatus(status) ? `Registro histórico: ${config.label}` : undefined} sx={{ color: config.color, bgcolor: config.background, border: `1px solid ${config.color}22`, '& .MuiChip-icon': { color: config.color } }} />
+  return <Chip size="small" icon={<Icon />} label={config.label} title={isLegacyStatus(status) ? `Registro histórico: ${config.label}` : undefined} sx={{ color: config.color, bgcolor: config.background, border: `1px solid ${config.border}`, '& .MuiChip-icon': { color: config.color } }} />
 }
 

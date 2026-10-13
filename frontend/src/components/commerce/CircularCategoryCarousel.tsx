@@ -41,7 +41,7 @@ const ARROW_SX: SxProps<Theme> = {
   width: 40,
   height: 40,
   borderRadius: '50%',
-  border: '1px solid #E7E8F0',
+  border: '1px solid var(--td-border, #E7E8F0)',
   bgcolor: 'background.paper',
   color: 'primary.main',
   boxShadow: '0 1px 2px rgba(23,26,35,.04), 0 6px 16px rgba(32,25,74,.06)',

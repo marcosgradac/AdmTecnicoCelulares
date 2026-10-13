@@ -16,12 +16,12 @@ interface Props {
 }
 
 /** Borde hairline neutro: define la card sin agregar peso visual. */
-const CARD_BORDER = '#E7E8F0'
+const CARD_BORDER = 'var(--td-border, #E7E8F0)'
 
 /** El chip de productos cambia de tono según haya stock o no. */
 const COUNT_TONES = {
-  active: { background: '#E9F8F0', color: '#1F8E55', border: '#D2EFE0' },
-  empty: { background: '#F1F2F6', color: '#687083', border: '#E5E7EF' },
+  active: { background: 'var(--td-success-soft, #E9F8F0)', color: 'var(--td-success, #1F8E55)', border: 'var(--td-border, #D2EFE0)' },
+  empty: { background: 'var(--td-elevated, #F1F2F6)', color: 'var(--td-muted, #687083)', border: 'var(--td-border, #E5E7EF)' },
 } as const
 
 /**
@@ -53,7 +53,7 @@ export function CategoryCard({ category, canManage, selected = false, onSelect, 
         cursor: 'pointer',
         borderRadius: '15px',
         borderColor: selected ? 'primary.main' : CARD_BORDER,
-        backgroundColor: selected ? '#F7F5FF' : 'background.paper',
+        backgroundColor: selected ? 'var(--td-primary-soft, #F7F5FF)' : 'background.paper',
         boxShadow: selected
           ? theme => `0 2px 6px ${alpha(theme.palette.primary.main, 0.06)}, 0 10px 24px ${alpha(theme.palette.primary.main, 0.10)}`
           : '0 1px 2px rgba(23,26,35,.04), 0 6px 18px rgba(32,25,74,.045)',
@@ -61,7 +61,7 @@ export function CategoryCard({ category, canManage, selected = false, onSelect, 
         '&:hover': {
           transform: 'translateY(-2px)',
           borderColor: theme => alpha(theme.palette.primary.main, selected ? 0.9 : 0.38),
-          backgroundColor: selected ? '#F7F5FF' : 'background.paper',
+          backgroundColor: selected ? 'var(--td-primary-soft, #F7F5FF)' : 'background.paper',
           boxShadow: theme => `0 2px 6px ${alpha(theme.palette.primary.main, 0.05)}, 0 14px 30px ${alpha(theme.palette.primary.main, 0.12)}`,
         },
       }}

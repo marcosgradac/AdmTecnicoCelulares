@@ -2,8 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
-import { CssBaseline, ThemeProvider } from '@mui/material'
-import { theme } from './theme/theme'
+import { CssBaseline } from '@mui/material'
+import { AppThemeProvider } from './theme/AppThemeProvider'
 import './styles/global.scss'
 import { AppErrorBoundary } from './components/common/AppErrorBoundary'
 import { AuthProvider } from './auth/AuthContext'
@@ -21,7 +21,7 @@ setServiceWorkerUpdateController(registerServiceWorker())
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ThemeProvider theme={theme}><CssBaseline /><AppErrorBoundary><AuthProvider><App /></AuthProvider></AppErrorBoundary></ThemeProvider>
+      <AppErrorBoundary><AuthProvider><AppThemeProvider><CssBaseline /><AppErrorBoundary><App /></AppErrorBoundary></AppThemeProvider></AuthProvider></AppErrorBoundary>
     </BrowserRouter>
   </React.StrictMode>
 )

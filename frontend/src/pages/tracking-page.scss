@@ -1,0 +1,18 @@
+/* Scoped variables preserve each original light color exactly. */
+[data-theme='dark'] .tracking-page {
+  --tracking-bg: var(--td-bg);
+  --tracking-paper: var(--td-paper);
+  --tracking-elevated: var(--td-elevated);
+  --tracking-text: var(--td-text);
+  --tracking-muted: var(--td-muted);
+  --tracking-border: var(--td-border);
+  --tracking-primary-soft: var(--td-primary-soft);
+  --tracking-info-soft: var(--td-info-soft);
+  --tracking-accent: var(--td-accent);
+  --tracking-success-soft: var(--td-success-soft);
+  --tracking-success: var(--td-success);
+  --tracking-error: var(--td-error);
+  a { color: var(--td-primary); }
+  a:focus-visible { outline: 2px solid var(--td-primary); outline-offset: 3px; }
+}
+[data-theme='dark'] .tracking-page { --tracking-on-accent: var(--td-bg); }

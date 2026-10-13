@@ -1,7 +1,7 @@
 import { ArrowForwardRounded, BuildRounded, CheckCircleOutlineRounded, ChevronRightRounded, Inventory2Rounded, PhoneIphoneRounded } from '@mui/icons-material'
 import { Box, Button, Card, CardContent, Chip, List, ListItemButton, Stack, Typography } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
-import { GRADIENT_TEXT_SX } from '../../theme/tokens'
+import { GRADIENT_TEXT_SX, FINANCIAL_COLORS } from '../../theme/tokens'
 import type { ReactNode } from 'react'
 import type { DashboardOverview, DashboardOrigin } from '../../services/dashboard'
 import { TABLE_BORDER } from '../../theme/tokens'
@@ -26,14 +26,14 @@ export function AttentionPanel({ groups }: { groups: DashboardOverview['attentio
 function ModuleCard({ title, href, icon, children }: { title: string; href: string; icon: ReactNode; children: ReactNode }) {
   return <Card><CardContent><Stack direction="row" gap={1} alignItems="center" mb={2}><Box color="primary.main" display="flex">{icon}</Box><Typography variant="h2" fontSize={17}>{title}</Typography></Stack><Stack spacing={1}>{children}</Stack><Button component={RouterLink} to={href} endIcon={<ArrowForwardRounded />} sx={{ mt: 2 }}>Abrir módulo</Button></CardContent></Card>
 }
-function ModuleValue({ label, value }: { label: string; value: string | number }) {
-  return <Stack direction="row" justifyContent="space-between" gap={2}><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="body2" fontWeight={750} textAlign="right" sx={{ overflowWrap: 'anywhere', minWidth: 0 }}>{value}</Typography></Stack>
+function ModuleValue({ label, value, color }: { label: string; value: string | number; color?: string }) {
+  return <Stack direction="row" justifyContent="space-between" gap={2}><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="body2" fontWeight={750} color={color === 'success.main' ? FINANCIAL_COLORS.income : color === 'error.main' ? FINANCIAL_COLORS.expense : color} textAlign="right" sx={{ overflowWrap: 'anywhere', minWidth: 0 }}>{value}</Typography></Stack>
 }
 export function ModuleSummaries({ modules }: { modules: DashboardOverview['modules'] }) {
   return <Box><Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, mb: .5 }}>Tus módulos</Typography><Typography variant="body2" color="text.secondary" mb={2}>Operaciones del período y disponibilidad actual.</Typography><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${modules.commerce ? 3 : 2}, minmax(0, 1fr))` }, gap: 2 }}>
-    <ModuleCard title="Reparaciones" href="/admin/reparaciones" icon={<BuildRounded />}><ModuleValue label="Ingresaron en el período" value={modules.repairs.received} /><ModuleValue label="Cobrado en el período" value={formatMoney(modules.repairs.income)} /><ModuleValue label="Activas ahora" value={modules.repairs.active} /></ModuleCard>
-    {modules.commerce && <ModuleCard title="Comercio" href="/admin/comercio" icon={<Inventory2Rounded />}><ModuleValue label="Ventas del período" value={modules.commerce.sales} /><ModuleValue label="Importe vendido" value={formatMoney(modules.commerce.revenue)} /><ModuleValue label="Margen bruto de ventas" value={formatMoney(modules.commerce.grossProfit)} /><Typography variant="caption" color="text.secondary">Antes de egresos comerciales.</Typography></ModuleCard>}
-    <ModuleCard title="Venta de equipos" href="/admin/venta-equipos" icon={<PhoneIphoneRounded />}><ModuleValue label="Ventas registradas en el período" value={modules.equipment.sales} /><ModuleValue label="Ganancia de esas ventas" value={formatMoney(modules.equipment.profit)} /><ModuleValue label="Listos para vender ahora" value={modules.equipment.ready} /><ModuleValue label="Equipos sin vender" value={modules.equipment.inProcess} /></ModuleCard>
+    <ModuleCard title="Reparaciones" href="/admin/reparaciones" icon={<BuildRounded />}><ModuleValue label="Ingresaron en el período" value={modules.repairs.received} /><ModuleValue label="Cobrado en el período" color="success.main" value={formatMoney(modules.repairs.income)} /><ModuleValue label="Activas ahora" value={modules.repairs.active} /></ModuleCard>
+    {modules.commerce && <ModuleCard title="Comercio" href="/admin/comercio" icon={<Inventory2Rounded />}><ModuleValue label="Ventas del período" value={modules.commerce.sales} /><ModuleValue label="Importe vendido" color="success.main" value={formatMoney(modules.commerce.revenue)} /><ModuleValue label="Margen bruto de ventas" color={modules.commerce.grossProfit < 0 ? 'error.main' : modules.commerce.grossProfit > 0 ? 'success.main' : 'text.primary'} value={formatMoney(modules.commerce.grossProfit)} /><Typography variant="caption" color="text.secondary">Antes de egresos comerciales.</Typography></ModuleCard>}
+    <ModuleCard title="Venta de equipos" href="/admin/venta-equipos" icon={<PhoneIphoneRounded />}><ModuleValue label="Ventas registradas en el período" value={modules.equipment.sales} /><ModuleValue label="Ganancia de esas ventas" color={modules.equipment.profit < 0 ? 'error.main' : modules.equipment.profit > 0 ? 'success.main' : 'text.primary'} value={formatMoney(modules.equipment.profit)} /><ModuleValue label="Listos para vender ahora" value={modules.equipment.ready} /><ModuleValue label="Equipos sin vender" value={modules.equipment.inProcess} /></ModuleCard>
   </Box></Box>
 }
 
@@ -42,9 +42,9 @@ const movementDate = new Intl.DateTimeFormat('es-AR', { day: '2-digit', month: '
 const movementTime = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digit', timeZone: movementTz })
 const movementDateText = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Fecha no disponible' : movementDate.format(date) }
 const movementTimeText = (value: string) => { const date = new Date(value); return Number.isNaN(date.getTime()) ? '' : movementTime.format(date) }
-const originTone: Record<DashboardOrigin, { bgcolor: string; color: string }> = { REPAIR: { bgcolor: 'rgba(91,63,214,.10)', color: '#5B3FD6' }, COMMERCE: { bgcolor: 'rgba(40,121,194,.12)', color: '#2879C2' }, EQUIPMENT: { bgcolor: 'rgba(31,146,84,.12)', color: '#1F9254' }, GENERAL: { bgcolor: 'rgba(166,107,0,.12)', color: '#A66B00' } }
+const originTone: Record<DashboardOrigin, { bgcolor: string; color: string }> = { REPAIR: { bgcolor: 'var(--td-primary-soft, rgba(91,63,214,.10))', color: 'var(--td-primary, #5B3FD6)' }, COMMERCE: { bgcolor: 'var(--td-info-soft, rgba(40,121,194,.12))', color: 'var(--td-accent, #2879C2)' }, EQUIPMENT: { bgcolor: 'var(--td-success-soft, rgba(31,146,84,.12))', color: 'var(--td-success, #1F9254)' }, GENERAL: { bgcolor: 'var(--td-warning-soft, rgba(166,107,0,.12))', color: 'var(--td-warning, #A66B00)' } }
 const activityColumns = { xs: 'auto minmax(0, 1fr) auto', md: 'minmax(0, 2.2fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, .9fr) minmax(0, 1.05fr) 28px' } as const
-const activityHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: '#9AA0AE', lineHeight: 1.4 } as const
+const activityHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--td-muted, #9AA0AE)', lineHeight: 1.4 } as const
 
 export function RecentActivity({ items }: { items: DashboardOverview['activity'] }) {
   return <Card><CardContent>

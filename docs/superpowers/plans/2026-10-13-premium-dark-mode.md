@@ -1,0 +1,9 @@
+# TecnoDesk — Tema oscuro personal
+
+Base main 6ad815278ba7902d7fbecdae5765e952fa84d5de. Rama feature/premium-dark-mode; worktree exclusivo. Tema claro conserva overrides y fallbacks anteriores; tema oscuro usa tokens CSS semánticos globales y paleta MUI central, sin inversión ni filtros sobre imágenes. AdminVisualScope conserva palette.mode y PreserveAdminVisual vuelve al tema dinámico original. Títulos usan token común del degradado.
+
+AppThemeProvider se coloca dentro de AuthProvider y alrededor de App/CssBaseline para acceder al usuario sin ciclos. LIGHT/DARK se eligen con switch; SYSTEM sigue matchMedia. Preferencia confirmada por usuario en User.themePreference; endpoint propio PATCH /api/profile/theme con autenticación/limiter/body estricto, sin userId ni migración. UI optimista con rollback, escrituras serializadas y protección de identidad frente a logout/cambio de cuenta. Cache visual local vinculada a identidad de sesión, nunca usada como autorización; sincronización de pestañas revalida servidor y respeta usuario actual. Bootstrap temprano aplica modo para reducir flashes.
+
+Apariencia es una tarjeta independiente del formulario de negocio, accesible para el usuario actual, transición reducida con prefers-reduced-motion. No afecta datos operativos ni permisos.
+
+Trabajo: persistencia/auth; temas centrales/bootstrap/settings; auditoría admin/componentes; auditoría públicas/auth/legal/landing; integración pruebas. Bases locales ficticias, ninguna conexión productiva. Verificación de errores/races/usuarios/sistema/cross-tab; typecheck/build/regresiones ambos módulos. Navegador real con API simulada y capturas claro/oscuro en desktop1440/1280 tablet768 y mobile390/360; revisar todas las pantallas, portales, contraste y responsive. Demo local permanente para revisión. PR draft con informe y capturas; no merge/deploy/producción.

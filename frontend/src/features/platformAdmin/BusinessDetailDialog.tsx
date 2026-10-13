@@ -114,7 +114,7 @@ export function BusinessDetailDialog({ businessId, onClose, onChanged }: { busin
           : <Stack spacing={2.5}>
             {detail.loading && <RefreshingBar />}
             {feedback && <Alert severity="success" onClose={() => setFeedback('')}>{feedback}</Alert>}
-            {business.access && <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: '#FBFBFE' }}>
+            {business.access && <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'var(--td-elevated, #FBFBFE)' }}>
               <Typography fontWeight={750}>{remainingLabel(business.access)}</Typography>
               <Typography variant="body2" color="text.secondary">Vencimiento {formatLong(business.access.expiresAt)} · Gracia de {business.access.graceDays} días · Aviso {business.access.warningDays} días antes del vencimiento</Typography>
               {business.access.blockType && <Alert severity="error" sx={{ mt: 1.5 }}>{business.access.blockType === 'MANUAL' ? 'Bloqueo manual' : 'Bloqueo automático por vencimiento'}{business.access.blockReason ? ` · ${business.access.blockReason}` : ''}{business.access.blockNote ? ` · ${business.access.blockNote}` : ''}</Alert>}

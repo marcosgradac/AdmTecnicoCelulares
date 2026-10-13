@@ -278,7 +278,7 @@ async function main() {
     await bare.settle()
     const [title] = titles(bare.root())
     assert.equal(title?.props?.children, 'Otros movimientos', 'el título es exactamente "Otros movimientos"')
-    assert.equal(title?.props?.sx?.color, '#5B3FD6', 'y usa el degradé TecnoDesk con fallback violeta')
+    assert.equal(title?.props?.sx?.color, 'var(--td-primary, #5B3FD6)', 'el token de tema conserva el fallback violeta original en claro')
     assert.equal(title?.props?.sx?.backgroundClip, 'text', 'el degradé se recorta al texto')
     assert.equal(title?.props?.sx?.WebkitTextFillColor, 'transparent', 'y no tapa las letras con un color sólido')
     assert.equal(looseTable(bare.root()).length, 1, 'sin movimientos la tabla sigue dibujándose')

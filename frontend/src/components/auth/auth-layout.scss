@@ -232,3 +232,36 @@ body:has(.auth-shell--login),
   .auth-workspace { padding-inline: 4px; }
   .auth-card, .auth-shell--register .auth-card { padding-inline: 5px; }
 }
+/* Theme overrides leave the approved light composition and photographs intact. */
+[data-theme='dark'] .auth-shell {
+  --auth-ink: var(--td-text);
+  --auth-muted: var(--td-muted);
+  background: var(--td-bg);
+  a, .auth-eyebrow { color: var(--td-primary); }
+  .auth-card { background: var(--td-paper); border-color: var(--td-border); box-shadow: var(--td-shadow); }
+  .auth-tabs { background: var(--td-bg); }
+  .auth-tabs a { color: var(--td-muted); }
+  .auth-tabs a.active { color: var(--td-primary); background: var(--td-elevated); }
+  .auth-card .MuiOutlinedInput-root { background: var(--td-paper) !important; color: var(--td-text); }
+  .MuiOutlinedInput-notchedOutline { border-color: var(--td-border); }
+  .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline { border-color: var(--td-muted); }
+  .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline { border-color: var(--td-primary); }
+  .MuiInputLabel-root, .MuiInputAdornment-root, .MuiIconButton-root,
+  .login-legal-note, .login-legal-note a, .register-section-title,
+  .login-highlights span { color: var(--td-muted); }
+  .MuiInputLabel-root.Mui-focused, .register-time svg, .login-highlights svg { color: var(--td-primary); }
+  .auth-return-link, .login-forgot { color: var(--td-primary) !important; }
+  .login-highlights { border-color: var(--td-border); }
+  input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px var(--td-paper) inset !important;
+    -webkit-text-fill-color: var(--td-text) !important;
+    caret-color: var(--td-text);
+  }
+  .auth-card-content::-webkit-scrollbar-thumb { background: var(--td-border); border-color: var(--td-paper); }
+  .auth-card-content::-webkit-scrollbar-thumb:hover { background: var(--td-muted); }
+}
+[data-theme='dark'] .auth-shell {
+  .MuiInputLabel-root.Mui-error, .MuiInputLabel-root.Mui-error.Mui-focused { color: var(--td-error); }
+  .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline { border-color: var(--td-error); }
+  .MuiOutlinedInput-root.Mui-disabled { color: var(--td-muted); }
+}

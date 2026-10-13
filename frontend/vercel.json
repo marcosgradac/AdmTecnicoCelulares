@@ -1,5 +1,5 @@
 {
-  "git": { "deploymentEnabled": { "codex/repair-hard-delete-main": false, "codex/remove-repair-cancellation": false, "codex/equipment-resale-details-delete": false } },
+  "git": { "deploymentEnabled": { "codex/repair-hard-delete-main": false, "codex/remove-repair-cancellation": false, "codex/equipment-resale-details-delete": false, "feature/premium-dark-mode": false } },
   "rewrites": [
     {
       "source": "/s/:clientSlug/:token",

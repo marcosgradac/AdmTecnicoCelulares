@@ -8,7 +8,7 @@ export function DeviceBrandAvatar({ brand, size = 34 }: { brand?: string | null;
   const tone = deviceBrandTone(brand)
   const logo = deviceBrandLogo(brand)
   const glyph = Math.round(size * 0.56)
-  return <Avatar aria-hidden sx={{ width: size, height: size, flexShrink: 0, bgcolor: tone.background, color: tone.color, border: '1px solid', borderColor: alpha(tone.color, 0.16), '& svg': { fontSize: Math.round(size * 0.5) } }}>{logo ? <svg viewBox="0 0 24 24" width={glyph} height={glyph} fill={logo.color}><path d={logo.path} /></svg> : <SmartphoneRounded />}</Avatar>
+  return <Avatar aria-hidden sx={{ width: size, height: size, flexShrink: 0, bgcolor: `var(--td-brand-paper, ${tone.background})`, color: `var(--td-brand-text, ${tone.color})`, border: '1px solid', borderColor: `var(--td-border, ${alpha(tone.color, 0.16)})`, '& svg': { fontSize: Math.round(size * 0.5) } }}>{logo ? <svg viewBox="0 0 24 24" width={glyph} height={glyph} fill={logo.color}><path d={logo.path} /></svg> : <SmartphoneRounded />}</Avatar>
 }
 
 /** Fila compacta del selector de marca: logo y nombre, con el celular genérico cuando no hay logo. */

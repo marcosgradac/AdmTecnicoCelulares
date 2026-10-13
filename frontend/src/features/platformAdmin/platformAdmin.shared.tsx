@@ -12,21 +12,21 @@ export const StatusPill = ({ label, color, background, icon }: PillMeta) => (
 )
 
 const accessMeta: Record<AccessStatus, PillMeta> = {
-  ACTIVE: { label: 'Activo', color: '#1B7F4C', background: '#E9F8F0', icon: <CheckCircleRounded /> },
-  EXPIRING: { label: 'Por vencer', color: '#8F5A00', background: '#FFF5DF', icon: <ScheduleRounded /> },
-  GRACE: { label: 'En gracia', color: '#B4470F', background: '#FFF0E6', icon: <HourglassBottomRounded /> },
-  BLOCKED: { label: 'Bloqueado', color: '#B3261E', background: '#FDECEC', icon: <BlockRounded /> },
-  NO_EXPIRY: { label: 'Sin vencimiento', color: '#5A6172', background: '#F0F1F6', icon: <HelpOutlineRounded /> },
+  ACTIVE: { label: 'Activo', color: 'var(--td-success, #1B7F4C)', background: 'var(--td-success-soft, #E9F8F0)', icon: <CheckCircleRounded /> },
+  EXPIRING: { label: 'Por vencer', color: 'var(--td-warning, #8F5A00)', background: 'var(--td-warning-soft, #FFF5DF)', icon: <ScheduleRounded /> },
+  GRACE: { label: 'En gracia', color: 'var(--td-warning, #B4470F)', background: 'var(--td-warning-soft, #FFF0E6)', icon: <HourglassBottomRounded /> },
+  BLOCKED: { label: 'Bloqueado', color: 'var(--td-error, #B3261E)', background: 'var(--td-error-soft, #FDECEC)', icon: <BlockRounded /> },
+  NO_EXPIRY: { label: 'Sin vencimiento', color: 'var(--td-muted, #5A6172)', background: 'var(--td-elevated, #F0F1F6)', icon: <HelpOutlineRounded /> },
 }
 export const AccessChip = ({ access }: { access: AccountAccess }) => <StatusPill {...accessMeta[access.status]} />
 
 const subscriptionMeta: Record<SubscriptionStatus, PillMeta> = {
-  TRIALING: { label: 'Prueba', color: '#1D6FB8', background: '#EAF5FF', icon: <RocketLaunchRounded /> },
-  ACTIVE: { label: 'Activa', color: '#1B7F4C', background: '#E9F8F0', icon: <CheckCircleRounded /> },
-  GRACE: { label: 'En gracia', color: '#B4470F', background: '#FFF0E6', icon: <HourglassBottomRounded /> },
-  PAST_DUE: { label: 'Vencida', color: '#8F5A00', background: '#FFF5DF', icon: <ScheduleRounded /> },
-  SUSPENDED: { label: 'Suspendida', color: '#B3261E', background: '#FDECEC', icon: <BlockRounded /> },
-  CANCELED: { label: 'Cancelada', color: '#5A6172', background: '#F0F1F6', icon: <CancelRounded /> },
+  TRIALING: { label: 'Prueba', color: 'var(--td-accent, #1D6FB8)', background: 'var(--td-info-soft, #EAF5FF)', icon: <RocketLaunchRounded /> },
+  ACTIVE: { label: 'Activa', color: 'var(--td-success, #1B7F4C)', background: 'var(--td-success-soft, #E9F8F0)', icon: <CheckCircleRounded /> },
+  GRACE: { label: 'En gracia', color: 'var(--td-warning, #B4470F)', background: 'var(--td-warning-soft, #FFF0E6)', icon: <HourglassBottomRounded /> },
+  PAST_DUE: { label: 'Vencida', color: 'var(--td-warning, #8F5A00)', background: 'var(--td-warning-soft, #FFF5DF)', icon: <ScheduleRounded /> },
+  SUSPENDED: { label: 'Suspendida', color: 'var(--td-error, #B3261E)', background: 'var(--td-error-soft, #FDECEC)', icon: <BlockRounded /> },
+  CANCELED: { label: 'Cancelada', color: 'var(--td-muted, #5A6172)', background: 'var(--td-elevated, #F0F1F6)', icon: <CancelRounded /> },
 }
 export const SubscriptionStatusChip = ({ status }: { status: SubscriptionStatus }) => <StatusPill {...subscriptionMeta[status]} />
 
@@ -36,9 +36,9 @@ export const BusinessStatusChip = ({ subscription, access }: Pick<AdminBusiness,
     : <AccessChip access={access} />
 
 const paymentMeta: Record<PaymentStatus, PillMeta> = {
-  PENDING: { label: 'Pendiente', color: '#8F5A00', background: '#FFF5DF', icon: <ScheduleRounded /> },
-  APPROVED: { label: 'Aprobado', color: '#1B7F4C', background: '#E9F8F0', icon: <CheckCircleRounded /> },
-  REJECTED: { label: 'Rechazado', color: '#B3261E', background: '#FDECEC', icon: <CancelRounded /> },
+  PENDING: { label: 'Pendiente', color: 'var(--td-warning, #8F5A00)', background: 'var(--td-warning-soft, #FFF5DF)', icon: <ScheduleRounded /> },
+  APPROVED: { label: 'Aprobado', color: 'var(--td-success, #1B7F4C)', background: 'var(--td-success-soft, #E9F8F0)', icon: <CheckCircleRounded /> },
+  REJECTED: { label: 'Rechazado', color: 'var(--td-error, #B3261E)', background: 'var(--td-error-soft, #FDECEC)', icon: <CancelRounded /> },
 }
 export const PaymentStatusChip = ({ status }: { status: PaymentStatus }) => <StatusPill {...paymentMeta[status]} />
 

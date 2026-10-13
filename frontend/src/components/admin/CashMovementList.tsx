@@ -31,7 +31,7 @@ export function CashMovementList({ movements, showOrigin = true, emptyTitle = 'T
     return <Chip size="small" variant="outlined" label={income ? 'Ingreso' : 'Egreso'} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: income ? 'success.dark' : 'error.dark', fontWeight: 700 }} />
   }
   if (mobile) return <Stack spacing={1.5}>{movements.map(item => <RecordCard key={item.id}
-    leading={<Box sx={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 2.5, bgcolor: item.type === 'INCOME' ? '#E9F8F0' : '#FFF0F0', color: item.type === 'INCOME' ? 'success.main' : 'error.main' }}>{item.type === 'INCOME' ? <ArrowUpwardRounded fontSize="small" /> : <ArrowDownwardRounded fontSize="small" />}</Box>}
+    leading={<Box sx={{ display: 'grid', placeItems: 'center', width: 36, height: 36, borderRadius: 2.5, bgcolor: item.type === 'INCOME' ? 'var(--td-success-soft, #E9F8F0)' : 'var(--td-error-soft, #FFF0F0)', color: item.type === 'INCOME' ? 'success.main' : 'error.main' }}>{item.type === 'INCOME' ? <ArrowUpwardRounded fontSize="small" /> : <ArrowDownwardRounded fontSize="small" />}</Box>}
     title={item.description}
     status={<Stack direction="row" gap={.75} flexWrap="wrap">{type(item)}{showOrigin && <Chip size="small" variant="outlined" label={CASH_ORIGIN_LABELS[item.origin] ?? item.origin} />}</Stack>}
     subtitle={movementSubject(item)}>

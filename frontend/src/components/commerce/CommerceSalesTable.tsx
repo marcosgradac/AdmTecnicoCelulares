@@ -13,7 +13,7 @@ import { GRADIENT_TEXT_SX, TABLE_BORDER } from '../../theme/tokens'
 
 const PAGE_SIZE = 10
 /** Texto solo para lectores de pantalla en columnas sin encabezado visible. */
-const SR_ONLY = { position: 'absolute', left: 0, top: 0, width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' } as const
+const SR_ONLY = { position: 'absolute', left: 0, top: 0, width: '1px', height: '1px', overflow: 'hidden', clipPath: 'inset(50%)' } as const
 
 const paymentLabels: Record<CommercePaymentMethod, string> = {
   CASH: 'Efectivo', TRANSFER: 'Transferencia', CARD: 'Tarjeta', OTHER: 'Otro',

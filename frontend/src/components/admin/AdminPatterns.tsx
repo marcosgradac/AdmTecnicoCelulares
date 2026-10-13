@@ -17,7 +17,7 @@ export function ListPagination({ page, count, rowsPerPage, onPageChange, disable
 }
 
 export function FilterBar({ children, onClear }: { children: ReactNode; onClear?: () => void }) {
-  return <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5} alignItems={{ md: 'center' }} sx={{ mb: 2.5, p: 1.5, bgcolor: '#F7F8FC', borderRadius: 3, '& > *': { minWidth: 0 }, '& .MuiTextField-root': { flex: 1 } }}>
+  return <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5} alignItems={{ md: 'center' }} sx={{ mb: 2.5, p: 1.5, bgcolor: 'var(--td-elevated, #F7F8FC)', borderRadius: 3, '& > *': { minWidth: 0 }, '& .MuiTextField-root': { flex: 1 } }}>
     {children}{onClear && <Button startIcon={<CloseRounded />} onClick={onClear} sx={{ flexShrink: 0 }}>Limpiar filtros</Button>}
   </Stack>
 }

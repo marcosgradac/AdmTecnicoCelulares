@@ -20,7 +20,7 @@ interface Props {
 const LOW_STOCK = 3
 
 /** Texto solo para lectores de pantalla. */
-const SR_ONLY = { position: 'absolute', width: 1, height: 1, overflow: 'hidden', clipPath: 'inset(50%)' } as const
+const SR_ONLY = { position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clipPath: 'inset(50%)' } as const
 
 const stockState = (stock: number) => {
   if (stock <= 0) return { label: 'Sin stock', color: 'error' as const }

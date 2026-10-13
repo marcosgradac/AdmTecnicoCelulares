@@ -3,10 +3,34 @@
 * { box-sizing: border-box; }
 html, body, #root { min-height: 100%; margin: 0; }
 html { scroll-behavior: smooth; }
-body { background: #F8F9FC; overflow-x: hidden; }
+body { background: var(--td-bg, #F8F9FC); overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
 button, input, textarea { font: inherit; }
-:focus-visible { outline: 3px solid rgba(91, 63, 214, .3); outline-offset: 2px; }
+:focus-visible { outline: 3px solid var(--td-focus, rgba(91, 63, 214, .3)); outline-offset: 2px; }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #CED2DC; border-radius: 8px; }
+::-webkit-scrollbar-thumb { background: var(--td-scrollbar, #CED2DC); border-radius: 8px; }
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --td-bg: #0D111B; --td-paper: #182131; --td-elevated: #202B3D;
+  --td-sidebar: #111827; --td-header: rgba(17,24,39,.94);
+  --td-text: #F3F5FA; --td-muted: #AEBBD0; --td-border: #303B4F;
+  --td-primary: #A58BFF; --td-primary-soft: #302847; --td-accent: #73BAFF;
+  --td-success: #6FE3A5; --td-error: #FF9098; --td-warning: #FFD180;
+  --td-success-soft: #193D32; --td-error-soft: #422A34; --td-warning-soft: #403622; --td-info-soft: #203952;
+  --td-pink: #F4A6DA; --td-pink-soft: #3D2942;
+  --td-table-border: #303B4F; --td-hover: rgba(165,139,255,.10);
+  --td-shadow: 0 8px 28px rgba(0,0,0,.20);
+  --td-focus: rgba(165,139,255,.8); --td-scrollbar: #64748B;
+  --td-title-gradient: linear-gradient(90deg, #FFFFFF 0%, #C9BAFF 55%, #82CAFF 100%);
+}
+html[data-theme='light'] { color-scheme: light; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+html[data-theme='dark'] { --td-brand-paper: #D9E2F1; --td-brand-text: #425573; }
+
+html[data-theme='dark'] { --td-button-text: #111827; --td-primary-hover: #8C70E8; }
