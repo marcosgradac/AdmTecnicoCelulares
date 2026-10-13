@@ -48,7 +48,7 @@ for (const mobile of [false, true]) {
   const chips = collect(trial, 'Chip')
   assert.equal(chips.filter(chip => chip.label === 'En prueba').length, 1)
   assert.ok(!chips.some(chip => chip.label === 'Activo'))
-  assert.equal(chips.find(chip => chip.label === 'En prueba').sx.color, '#1D6FB8')
+  assert.equal(chips.find(chip => chip.label === 'En prueba').sx.color, 'var(--td-accent, #1D6FB8)', 'the theme token preserves the original trial blue in light mode')
   for (const status of ['ACTIVE', 'GRACE', 'SUSPENDED', null]) {
     const row = business(status)
     if (status === null) row.subscription = null

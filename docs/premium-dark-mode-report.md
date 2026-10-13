@@ -16,7 +16,7 @@ PATCH /api/profile/theme acepta exclusivamente {themePreference: LIGHT|DARK|SYST
 
 - Backend: typecheck, build y suite base aprobados; nuevo test:profile-theme aprobado con PostgreSQL local desechable, validación estricta, autenticación, pertenencia, usuarios independientes, persistencia, fallback SYSTEM y 429 real.
 - Aislamiento: 355 peticiones HTTP aprobadas. Permisos: 289 peticiones HTTP aprobadas.
-- Frontend: typecheck y build aprobados; Caja, flujo/edición/borrado de reparaciones, reventa/listado/detalle/borrado, encoding y marcas aprobados.
+- Frontend: typecheck y build aprobados; métricas Super Admin y renovación (11 casos) aprobadas; Caja, flujo/edición/borrado de reparaciones, reventa/listado/detalle/borrado, encoding y marcas aprobados.
 - PWA: 46/46. Preparación de dominio API: aprobada offline.
 - Navegador de preferencias: aprobado con React y API ficticia; cambio inmediato, recarga/relogin, usuarios independientes, SYSTEM, rollback 500, temas MUI anidados, dos pestañas y carreras de sesión/lecturas/escrituras.
 - Seguridad de sesión frontend: 21 comprobaciones UI, 0 grupos fallidos. Browser hardening: 9 grupos aprobados. CSP compilada: aprobada con fixtures aislados, incluyendo MUI/Emotion, API y service worker.
@@ -26,7 +26,7 @@ PATCH /api/profile/theme acepta exclusivamente {themePreference: LIGHT|DARK|SYST
 
 ## Defectos corregidos durante la revisión
 
-Controles de período negros en oscuro; importes del dashboard sin semántica verde/roja; panel de error blanco; cabeceras ocultas de Comercio con width:1 interpretado como 100% y causando overflow; bordes de estados que concatenaban transparencia hexadecimal con variables CSS; temas anidados que anulaban el modo; respuestas tardías de preferencias y lecturas de sesión; cobertura del error boundary exterior al mover AuthProvider.
+Dos aserciones de estilos literales (Caja y chip Trial del Super Admin) se actualizaron a tokens con los fallbacks originales tras reproducir el fallo de CI; las comprobaciones financieras y de estados permanecen intactas. Controles de período negros en oscuro; importes del dashboard sin semántica verde/roja; panel de error blanco; cabeceras ocultas de Comercio con width:1 interpretado como 100% y causando overflow; bordes de estados que concatenaban transparencia hexadecimal con variables CSS; temas anidados que anulaban el modo; respuestas tardías de preferencias y lecturas de sesión; cobertura del error boundary exterior al mover AuthProvider.
 
 ## Demo para revisión
 
@@ -114,5 +114,7 @@ Para publicar posteriormente: coordinar backend con el endpoint y frontend con t
 - frontend/tests/theme-preference.cjs
 - frontend/tests/theme-preference.fixture.html
 - frontend/tests/theme-preference.fixture.tsx
+- frontend/tests/cash-groups.cjs
+- frontend/tests/platform-admin-metrics.cjs
 - docs/premium-dark-mode-report.md
 - docs/screenshots/premium-dark-mode/: 176 PNG y visual-matrix.json.
