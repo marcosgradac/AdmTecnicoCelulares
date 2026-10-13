@@ -44,4 +44,4 @@ async function handleMockRequest(request,state){
  state.unhandled.push({path,method});return result({message:'Fixture API no configurada: '+path},404)
 }
 async function installMockApi(context,state){await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return ['127.0.0.1','localhost'].includes(host)?route.continue():route.abort()});await context.route('**/api/**',async route=>{const req=route.request();let body={};try{body=req.postDataJSON()||{}}catch{}const response=await handleMockRequest({url:req.url(),method:req.method(),headers:req.headers(),body},state);try{await route.fulfill({status:response.status,contentType:'application/json',body:JSON.stringify(response.body)})}catch(error){if(context.pages().length)throw error}})}
-module.exports={createFixtureState,handleMockRequest,installMockApi,fixtures:{owner,client,repair,equipment,sold,plans,subscription,overview,business,product}}
+module.exports={createFixtureState,handleMockRequest,installMockApi,fixtures:{owner,client,repair,equipment,sold,plans,subscription,overview,equipmentSummary,business,product}}

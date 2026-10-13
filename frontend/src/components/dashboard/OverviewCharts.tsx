@@ -7,7 +7,7 @@ import { UiState } from '../common/UiState'
 
 type Charts = NonNullable<DashboardOverview['charts']>
 export const originLabels: Record<DashboardOrigin, string> = { REPAIR: 'Reparaciones', COMMERCE: 'Comercio', EQUIPMENT: 'Equipos', GENERAL: 'General' }
-const originColors: Record<DashboardOrigin, string> = { REPAIR: 'var(--td-primary, #5B3FD6)', COMMERCE: 'var(--td-accent, #2879C2)', EQUIPMENT: 'var(--td-success, #1F9254)', GENERAL: 'var(--td-warning, #A66B00)' }
+const originColors: Record<DashboardOrigin, string> = { REPAIR: 'var(--td-primary, #5B3FD6)', COMMERCE: 'var(--td-accent, #2879C2)', EQUIPMENT: 'var(--td-success, #168047)', GENERAL: 'var(--td-warning, #A66B00)' }
 const compactMoney = (value: number) => '$' + new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 }).format(value)
 const tooltipStyle = { border: '1px solid var(--td-border, #E8EAF3)', borderRadius: 12, fontSize: 13, backgroundColor: 'var(--td-paper, #fff)', color: 'var(--td-text, #171A23)' }
 
@@ -17,7 +17,7 @@ export function FinancialChart({ data }: { data: Charts['cashFlow'] }) {
     <ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{ top: 12, right: 0, left: -12, bottom: 0 }} accessibilityLayer>
       <CartesianGrid stroke="var(--td-border, #EEF0F6)" vertical={false} /><XAxis dataKey="label" minTickGap={26} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--td-muted, #666)' }} /><YAxis tickFormatter={compactMoney} width={66} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--td-muted, #666)' }} />
       <Tooltip formatter={value => formatMoney(Number(value))} contentStyle={tooltipStyle} cursor={{ fill: 'var(--td-elevated, #F7F8FC)' }} /><Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
-      <Bar name="Ingresos" dataKey="income" fill="var(--td-success, #5B3FD6)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} /><Bar name="Egresos" dataKey="expense" fill="var(--td-error, #2F9BFF)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
+      <Bar name="Ingresos" dataKey="income" fill="var(--td-success, #168047)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} /><Bar name="Egresos" dataKey="expense" fill="var(--td-error, #C62828)" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false} />
     </BarChart></ResponsiveContainer>
   </Box>
 }

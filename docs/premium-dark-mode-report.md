@@ -6,7 +6,7 @@ Rama: `feature/premium-dark-mode`. Base verificada: `6ad815278ba7902d7fbecdae576
 
 Apariencia es una tarjeta independiente en Configuración → Mi negocio, con switch accesible, estado claro/oscuro e icono. El cambio es inmediato y se guarda por usuario; no guarda ni altera el formulario del negocio.
 
-`AppThemeProvider` está dentro de `AuthProvider`. Combina LIGHT/DARK/SYSTEM con la preferencia del sistema, crea el tema MUI por modo y aplica tokens CSS compartidos a admin, gráficos, formularios, menús, diálogos, pantallas públicas y Super Admin. Los temas anidados conservan el modo. Los valores originales son los fallbacks del tema claro. No se invierten logos, fotos ni capturas comerciales. Ingresos y ganancias positivas son verdes; egresos y pérdidas, rojos.
+`AppThemeProvider` está dentro de `AuthProvider`. Combina LIGHT/DARK/SYSTEM con la preferencia del sistema, crea el tema MUI por modo y aplica tokens CSS compartidos a admin, gráficos, formularios, menús, diálogos, pantallas públicas y Super Admin. Los temas anidados conservan el modo. Los valores originales son los fallbacks del tema claro, salvo la corrección final solicitada de colores financieros semánticos. No se invierten logos, fotos ni capturas comerciales. Ingresos y ganancias positivas son verdes; egresos y pérdidas, rojos.
 
 `theme-init.js` aplica la preferencia antes de React utilizando una caché ligada a la sesión; el servidor sigue siendo la autoridad. Hay rollback y aviso si falla el guardado, escucha de SYSTEM y sincronización entre pestañas. Identidad y revisión de sesión impiden que respuestas tardías afecten otra cuenta, incluso al volver a entrar con el mismo token. Lecturas antiguas de /auth/me no sobrescriben una preferencia recién confirmada.
 
@@ -37,6 +37,19 @@ Dos aserciones de estilos literales (Caja y chip Trial del Super Admin) se actua
 **Sin migraciones ni cambios de esquema**: themePreference ya existe en main con default SYSTEM. No se modificaron producción, Supabase, credenciales ni archivos .env. No merge ni despliegue. Protección de previews limitada a esta rama en vercel.json; deberá retirarse esa regla específica al preparar la integración final.
 
 Para publicar posteriormente: coordinar backend con el endpoint y frontend con theme-init.js y archivos compilados. No requiere migración. El build conserva la advertencia existente de chunks mayores de 500 kB. Los contrastes documentados son mediciones representativas y no una certificación integral WCAG. Las pruebas públicas no completan desafíos reales de Turnstile; se bloquean recursos externos y se usan fixtures de seguridad. Las imágenes incrustadas de productos/landing conservan su aspecto original. Revisión y aprobación visual del propietario pendientes.
+
+## Corrección visual final del PR #21
+
+- Wordmark adaptado al tema oscuro: Tecno blanco y Desk azul claro (#73BAFF), conservando el icono original azul/violeta y la proporción 3:1. BrandLogo selecciona la variante según el tema en header móvil, menú expandido, login, registro, recuperación, landing y páginas legales. El PNG original y el símbolo compacto no se modifican ni invierten. La variante SVG contiene los bytes originales y aplica color únicamente a las letras. La prueba confirma identidad de los bytes y de los píxeles opacos del icono; permite como máximo 1/255 por canal en bordes translúcidos por rasterización SVG.
+- Caja y Dashboard: ingresos verdes, egresos rojos, resultado/ganancia positivo verde y negativo rojo; cero neutral. Compras y gastos de reparación de equipos son egresos, con su importe neto existente. No se alteran valores, fórmulas, endpoints, filtros, períodos, etiquetas ni diferencia entre Caja y ganancia contable. Los contadores y saldos por cobrar conservan su significado. No se incorporan estimaciones como ingresos reales.
+- Importes en claro: verde #168047 y rojo #C62828 para contraste; oscuro: tokens existentes #6FE3A5 y #FF9098. Verificación DOM de contraste >=4.5:1 en las tarjetas probadas.
+- Reejecutados typecheck y builds backend/frontend; suite base backend, Caja, reventa/detalle/borrado, métricas Super Admin, encoding y preferencia personal en navegador aprobados.
+- Matriz completa regenerada: 374 casos aprobados. Después de reforzar el contraste claro se repitieron los 20 casos de Caja/Dashboard en las cinco resoluciones, actualizando sus registros y capturas.
+- Nueva suite test:premium-final-visual: **84 casos aprobados**, desktop 1440px y móviles 390/360px, ambos temas, logos, menú expandido, importes y ganancias/resultados negativos, cero y positivos. Todas las llamadas operativas se simulan y no se realizan mutaciones financieras. Incorporada a Frontend CI.
+- 176 capturas base actualizadas y **54 capturas adicionales** en [final-correction](screenshots/premium-dark-mode/final-correction): **230 PNG en total**. [Resultados de la corrección](screenshots/premium-dark-mode/final-correction/results.json). Se abrieron e inspeccionaron capturas desktop y móviles, claras y oscuras.
+- Demo local existente conservada y actualizada. Sin cambios de backend, esquema, migraciones ni producción en esta corrección. Sin merge ni despliegue. Se mantiene el bloqueo de previews exclusivo de la rama. El estado final de CI y SHA se informa en el PR para evitar un commit que sólo actualice su propio resultado.
+
+Archivos adicionales o actualizados en esta revisión: BrandLogo.tsx, assets/brand/tecnodesk-logo-dark.svg, StatCard.tsx, CashPage.tsx, DashboardPage.tsx, OverviewSections.tsx, OverviewCharts.tsx, IncomeExpenseChart.tsx, theme/tokens.ts, tests/premium-final-visual.cjs, tests/premium-theme-fixtures.cjs, frontend/package.json, .github/workflows/ci.yml, este informe, README de fixtures y capturas/resultados.
 
 ## Archivos modificados
 

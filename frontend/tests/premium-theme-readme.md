@@ -62,3 +62,11 @@ Open `http://127.0.0.1:5199/admin/configuracion#negocio`. Private routes seed a
 synthetic owner automatically, without credentials. A demo-only CSP blocks external
 services. Use the appearance switch to compare both themes. Appearance changes persist only in the running
 process's synthetic state; financial/destructive writes are refused.
+
+## Final PR #21 correction
+
+Run `npm run test:premium-final-visual` from frontend. It verifies 84 cases across
+desktop, 390px and 360px in both themes; logo source/opaque icon preservation,
+financial colors, AA amount contrast and positive/negative/zero results. Its
+54 screenshots and results are in `docs/screenshots/premium-dark-mode/final-correction`.
+All operations use synthetic local fixtures.

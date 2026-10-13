@@ -28,3 +28,6 @@ export const GRADIENT_TEXT_SX = {
   color: 'var(--td-primary, #5B3FD6)',
   width: 'fit-content',
 }
+
+/** Financial amounts: readable on light paper and semantic dark surfaces. */
+export const FINANCIAL_COLORS = { income: 'var(--td-success, #168047)', expense: 'var(--td-error, #C62828)' } as const

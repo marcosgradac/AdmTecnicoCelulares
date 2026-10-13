@@ -139,6 +139,8 @@ jobs:
         env:
           PREMIUM_THEME_VIEWPORTS: desktop,mobile
         run: npm run test:premium-theme
+      - name: Final logo and financial colors (desktop, 390px, 360px; synthetic API)
+        run: npm run test:premium-final-visual
       - name: Equipment responsive UI and deletion (real React, mocked API)
         run: npm run test:equipment-browser
       - name: Session restoration and cross-tab revocation (real React, mocked API)
