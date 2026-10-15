@@ -1,0 +1,37 @@
+{
+  "cases": 40,
+  "passed": 40,
+  "failures": 0,
+  "source": "completed process14560 console, exit0",
+  "widths": [
+    360,
+    390,
+    768,
+    1440
+  ],
+  "modes": [
+    "light",
+    "dark"
+  ],
+  "flows": [
+    "pos",
+    "team",
+    "warranties",
+    "repair",
+    "category"
+  ],
+  "noWriteRequestsVerifiedCases": 40,
+  "requestDelta0Verified": {
+    "source": "Live results.json inspected during process14560: 26 records grouped at delta0; original full raw records later overwritten by focused run",
+    "cases": 26
+  },
+  "focusedPos": {
+    "results": "focused-results.json",
+    "horizontalOverflowChecked": true,
+    "source": "completed process93220 console, exit0",
+    "cases": 8,
+    "passed": 8,
+    "failures": 0
+  },
+  "note": "Summary reflects completed console output; no individual full-run records reconstructed."
+}

@@ -150,7 +150,8 @@ export function CommercePageV2() {
           onDeleteProduct={removeProduct}
           revision={revision}
         />
-      : <>
+      : <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 0 } }}>
+          <Box sx={{ order: { xs: 2, md: 1 } }}>
           <CommerceCategoryCarousel
             categories={categories}
             canManage={canManage && !saving}
@@ -160,6 +161,8 @@ export function CommercePageV2() {
             onEditCategory={openCategory}
             onDeleteCategory={removeCategory}
           />
+          </Box>
+          <Box sx={{ order: { xs: 1, md: 2 } }}>
           <CommerceProductsSection
             canManage={canManage && !saving}
             onNewProduct={() => openNewProduct()}
@@ -167,7 +170,8 @@ export function CommercePageV2() {
             onDeleteProduct={removeProduct}
             revision={revision}
           />
-        </>}
+          </Box>
+        </Box>}
     <ProductDrawer error={error} open={productOpen} editing={editing} form={productForm} categories={categories} categoryLocked={productCategoryLocked} saving={saving} onChange={setProductForm} onClose={closeProduct} onSave={() => void saveProduct()} />
     <AdminVisualScope enabled>
       <CategoryDrawer editing={!!editingCategory} error={categoryError} open={categoryOpen} name={categoryName} iconKey={categoryIconKey} saving={saving} onName={setCategoryName} onIcon={setCategoryIconKey} onClose={() => { if (!saving) setCategoryOpen(false) }} onSave={() => void saveCategory()} />

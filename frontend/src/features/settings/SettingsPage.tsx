@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Alert, Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { BusinessRounded, ChevronRightRounded, ContactSupportRounded, DeleteOutlineRounded, GroupsRounded, ImageRounded, SchoolRounded, SecurityRounded, UploadRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
@@ -14,6 +14,7 @@ import { PasswordChangeFlow } from './PasswordChangeFlow'
 import { AccountDeletionSection } from './AccountDeletionSection'
 import './settings.scss'
 import { AppearanceCard } from './AppearanceCard'
+import { FACEBOOK_SUPPORT_URL, INSTAGRAM_SUPPORT_URL, WHATSAPP_SUPPORT_URL } from '../../config/socialLinks'
 import { openGuidedTutorial } from '../../components/onboarding/GuidedTutorial'
 
 const statusLabels: Record<Subscription['status'], string> = { TRIALING: 'Prueba gratis', ACTIVE: 'Activa', GRACE: 'En período de gracia', PAST_DUE: 'Pago pendiente', SUSPENDED: 'Suspendida', CANCELED: 'Cancelada' }
@@ -32,6 +33,10 @@ function ConfirmDialog({ open, title, text, confirmLabel, onClose, onConfirm }: 
 }
 export function SettingsPage() {
   const { user, logout, refreshUser } = useAuth(), navigate = useNavigate(), location = useLocation()
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
+  const hashId = location.hash.slice(1)
+  const activeSection = entries.some(([id]) => id === hashId) ? hashId : 'negocio'
+  const menuRef = useRef<HTMLElement>(null)
   const logoInput = useRef<HTMLInputElement>(null)
   const [business, setBusiness] = useState(emptyBusiness), [savedBusiness, setSavedBusiness] = useState(emptyBusiness), [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [logoSaving, setLogoSaving] = useState(false), [notice, setNotice] = useState(''), [error, setError] = useState('')
   const [teamCount, setTeamCount] = useState<number | null>(null), [teamError, setTeamError] = useState(false), [subscription, setSubscription] = useState<Subscription | null>(null), [subscriptionError, setSubscriptionError] = useState(false)
@@ -46,8 +51,15 @@ export function SettingsPage() {
     void getSubscription().then(setSubscription).catch(() => setSubscriptionError(true))
   }, [owner])
   useEffect(() => {
-    if (!loading && location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [loading, location.hash])
+    if (!loading && location.hash && !mobile) document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+    if (mobile) {
+      const menu = menuRef.current, selected = menu?.querySelector<HTMLElement>('[aria-current="location"]')
+      if (menu && selected) {
+        if (selected.offsetLeft < menu.scrollLeft) menu.scrollLeft = selected.offsetLeft
+        else if (selected.offsetLeft + selected.offsetWidth > menu.scrollLeft + menu.clientWidth) menu.scrollLeft = selected.offsetLeft + selected.offsetWidth - menu.clientWidth
+      }
+    }
+  }, [loading, location.hash, mobile])
   const saveBusiness = async (event: FormEvent) => {
     event.preventDefault()
     if (saving) return
@@ -99,9 +111,9 @@ export function SettingsPage() {
   if (loading) return <Box display="grid" minHeight="45vh" sx={{ placeItems: 'center' }}><CircularProgress /></Box>
   return <Box className="settings-page"><PageHeader eyebrow="PREFERENCIAS" title="Configuración" description="Centro de control de tu negocio en TecnoDesk." />
     {(notice || error) && <Alert severity={error ? 'error' : 'success'} onClose={() => { setNotice(''); setError('') }} sx={{ mb: 2 }}>{error || notice}</Alert>}
-    <Box className="settings-layout"><nav className="settings-menu">{entries.map(([id, label, description, Icon]) => <button key={id} onClick={() => id === 'soporte' ? navigate('/admin/configuracion/soporte') : navigate(`/admin/configuracion#${id}`)}><span><Icon /><span><strong>{label}</strong><small>{description}</small></span></span><ChevronRightRounded /></button>)}</nav>
+    <Box className="settings-layout"><nav ref={menuRef} className="settings-menu" aria-label="Secciones de configuración">{entries.map(([id, label, description, Icon]) => <button type="button" key={id} aria-current={activeSection === id ? 'location' : undefined} aria-controls={id} onClick={() => id === 'soporte' && !mobile ? navigate('/admin/configuracion/soporte') : navigate(`/admin/configuracion#${id}`)}><span><Icon /><span><strong>{label}</strong><small>{description}</small></span></span><ChevronRightRounded /></button>)}</nav>
     <Stack spacing={2} className="settings-content">
-      <SettingsSection id="negocio" title="Mi negocio" description={owner ? 'Estos datos se usan en seguimientos y comprobantes.' : 'Sólo el propietario puede modificar estos datos.'}>
+      <SettingsSection active={activeSection === 'negocio'} id="negocio" title="Mi negocio" description={owner ? 'Estos datos se usan en seguimientos y comprobantes.' : 'Sólo el propietario puede modificar estos datos.'}>
         <Stack spacing={3}>
           <AppearanceCard />
           <Box className="business-logo"><Avatar variant="circular" src={business.logoUrl ?? undefined} alt={`Logo de ${business.name || 'tu negocio'}`}><ImageRounded /></Avatar><Box className="business-logo__content"><Typography variant="h6">Logo del negocio</Typography><Typography variant="body2" color="text.secondary">PNG, JPG o WEBP. Tamaño máximo: 2 MB.</Typography>{owner && <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} mt={1.5}><input ref={logoInput} hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={changeLogo} /><Button variant="outlined" startIcon={logoSaving ? <CircularProgress size={16} /> : <UploadRounded />} disabled={logoSaving} onClick={() => logoInput.current?.click()}>{business.logoUrl ? 'Cambiar logo' : 'Subir logo'}</Button>{business.logoUrl && <Button color="error" variant="text" startIcon={<DeleteOutlineRounded />} disabled={logoSaving} onClick={() => setConfirm('logo')}>Eliminar logo</Button>}</Stack>}</Box></Box>
@@ -116,17 +128,25 @@ export function SettingsPage() {
           </Stack></Box>
         </Stack>
       </SettingsSection>
-      <SettingsSection id="equipo" title="Equipo" description="Resumen de tus usuarios. La gestión completa se hace en Empleados.">
+      <SettingsSection id="soporte" active={activeSection === 'soporte'} mobileOnly title="Soporte" description="Elegí un canal para comunicarte con nuestro equipo.">
+        <Stack spacing={1.5}>
+          <Button variant="outlined" href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noopener noreferrer">Hablar por WhatsApp</Button>
+          <Button variant="outlined" href={INSTAGRAM_SUPPORT_URL} target="_blank" rel="noopener noreferrer">Abrir Instagram</Button>
+          <Button variant="outlined" href={FACEBOOK_SUPPORT_URL} target="_blank" rel="noopener noreferrer">Abrir Facebook</Button>
+          <Button onClick={() => navigate('/admin/configuracion/soporte')}>Ver temas de ayuda y soporte completo</Button>
+        </Stack>
+      </SettingsSection>
+      <SettingsSection active={activeSection === 'equipo'} id="equipo" title="Equipo" description="Resumen de tus usuarios. La gestión completa se hace en Empleados.">
         {owner ? <Stack spacing={2}>{teamError ? <Typography color="text.secondary">No pudimos cargar el resumen del equipo.</Typography> : <Chip icon={<GroupsRounded />} label={teamCount === null ? 'Cargando…' : `${teamCount} miembro${teamCount === 1 ? '' : 's'} activo${teamCount === 1 ? '' : 's'}`} color="primary" variant="outlined" sx={{ alignSelf: 'flex-start' }} />}<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}><Button variant="contained" onClick={() => navigate('/admin/empleados')}>Gestionar equipo y permisos</Button></Stack></Stack> : <Typography color="text.secondary">Esta sección está reservada al propietario.</Typography>}
       </SettingsSection>
-      <SettingsSection id="suscripcion" title="Suscripción" description="Resumen de tu plan. Para cambiar de plan o pagar, ingresá a Suscripción.">
+      <SettingsSection active={activeSection === 'suscripcion'} id="suscripcion" title="Suscripción" description="Resumen de tu plan. Para cambiar de plan o pagar, ingresá a Suscripción.">
         {owner ? (subscriptionError ? <Typography color="text.secondary">No pudimos cargar los datos de suscripción.</Typography> : subscription ? <Stack spacing={2}>
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"><Chip label={planName[subscription.effectivePlanCode]} color="primary" /><Chip label={statusLabels[subscription.status]} color={subscription.status === 'ACTIVE' ? 'success' : subscription.status === 'TRIALING' ? 'info' : 'warning'} variant="outlined" /></Stack>
           <Typography variant="body2" color="text.secondary">{subscription.status === 'TRIALING' ? `Te quedan ${subscription.daysRemaining} día${subscription.daysRemaining === 1 ? '' : 's'} de prueba.` : subscription.access.expiresAt ? `Vigencia hasta ${new Date(subscription.access.expiresAt).toLocaleDateString('es-AR')}.` : 'Sin vencimiento registrado.'}</Typography>
           <Button variant="contained" sx={{ alignSelf: 'flex-start' }} onClick={() => navigate('/admin/suscripcion')}>Ver planes / Gestionar suscripción</Button>
         </Stack> : <Typography color="text.secondary">Cargando…</Typography>) : <Typography color="text.secondary">Esta sección está reservada al propietario.</Typography>}
       </SettingsSection>
-      <SettingsSection id="seguridad" title="Seguridad" description="Contraseña y sesiones de tu usuario.">
+      <SettingsSection active={activeSection === 'seguridad'} id="seguridad" title="Seguridad" description="Contraseña y sesiones de tu usuario.">
         <Stack spacing={3}>
           <Box><Typography variant="h6" mb={1}>Datos personales</Typography><Button variant="outlined" onClick={() => navigate('/admin/perfil')}>Editar mis datos</Button></Box>
           <PasswordChangeFlow onCompleted={() => { logout(); navigate('/login', { replace: true }) }} />
@@ -134,7 +154,7 @@ export function SettingsPage() {
           {owner && user?.platformRole !== 'SUPER_ADMIN' && <AccountDeletionSection />}
         </Stack>
       </SettingsSection>
-      <SettingsSection id="tutorial" title="Tutorial de TecnoDesk" description="Volvé a recorrer las funciones principales del sistema."><Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={1.5}><Button variant="outlined" startIcon={<SchoolRounded />} onClick={openGuidedTutorial}>Ver tutorial</Button>{user?.tutorialSeen && <Typography variant="body2" color="success.main" fontWeight={750}>Completado ✓</Typography>}</Stack></SettingsSection>
+      <SettingsSection active={activeSection === 'tutorial'} id="tutorial" title="Tutorial de TecnoDesk" description="Volvé a recorrer las funciones principales del sistema."><Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'center' }} gap={1.5}><Button variant="outlined" startIcon={<SchoolRounded />} onClick={openGuidedTutorial}>Ver tutorial</Button>{user?.tutorialSeen && <Typography variant="body2" color="success.main" fontWeight={750}>Completado ✓</Typography>}</Stack></SettingsSection>
     </Stack></Box>
     <ConfirmDialog open={confirm === 'logo'} title="Eliminar logo" text="El logo actual se quitará de tu negocio. Esta acción no se puede deshacer." confirmLabel="Eliminar" onClose={() => setConfirm(null)} onConfirm={() => void removeLogo()} />
     <ConfirmDialog open={confirm === 'sessions'} title="Cerrar sesiones" text="Se cerrarán todas tus sesiones, incluida la de este dispositivo. Tendrás que iniciar sesión nuevamente." confirmLabel="Cerrar sesiones" onClose={() => setConfirm(null)} onConfirm={() => void logoutOtherSessions().then(() => { logout(); navigate('/login', { replace: true }) })} />

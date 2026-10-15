@@ -44,7 +44,7 @@ export function WarrantyClaimDetails({ claim, currentWarrantyStartedAt, onSaved 
   const title = action === 'expense' ? 'Agregar gasto del reclamo' : action === 'delivery' ? 'Registrar nueva entrega' : 'Actualizar reclamo'
   const coverageStatus = claim.newWarrantyStartedAt !== currentWarrantyStartedAt ? 'Reemplazada por otra entrega' : new Date(claim.newWarrantyExpiresAt!).getTime() < Date.now() ? 'Vencida' : 'Activa'
   const invalid = action === 'expense' ? concept.trim().length < 2 || amount < 1 || amount > 2147483647 : action === 'delivery' ? newWarranty !== 'none' && (days < 1 || days > 365) : false
-  return <Box sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper', minWidth: 0, overflowWrap: 'anywhere' }}>
+  return <Box sx={{ '& .MuiButton-root': { minHeight: { xs: 44, md: 32 } }, p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'background.paper', minWidth: 0, overflowWrap: 'anywhere' }}>
     <Stack direction="row" flexWrap="wrap" gap={1} alignItems="center" mb={1}><Chip size="small" variant="outlined" label={labels[claim.status]} /><Typography variant="caption" color="text.secondary">{formatDate(claim.createdAt)}</Typography></Stack>
     <Typography variant="body2" fontWeight={650}>{claim.description}</Typography>
     {claim.coveredWarrantyStartedAt && <Typography variant="caption" color="text.secondary" display="block" mt={.75}>Garantía del reclamo: {claim.coveredWarrantyDurationDays} días · {formatDate(claim.coveredWarrantyStartedAt)} a {formatDate(claim.coveredWarrantyExpiresAt!)}{claim.coveredWarrantyConditions ? ` · ${claim.coveredWarrantyConditions}` : ''}</Typography>}

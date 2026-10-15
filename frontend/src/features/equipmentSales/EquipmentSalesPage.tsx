@@ -1,10 +1,12 @@
 import { FilterBar, ListPagination } from '../../components/admin/AdminPatterns'
 import { useEffect, useState } from 'react'
 import { AddRounded, ArrowForwardRounded, BuildRounded, CheckCircleRounded, PaymentsRounded, PhoneIphoneRounded, SearchRounded, TrendingUpRounded } from '@mui/icons-material'
-import { Alert, Box, Button, Card, CardContent, Chip, Grid, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, Chip, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { useAuth } from '../../auth/AuthContext'
 import { canAccess } from '../../auth/permissions'
 import { PageHeader } from '../../components/common/PageHeader'
+import { MobileCarousel } from '../../components/common/MobileCarousel'
+import { compactRecordContentSx } from '../../components/records/recordResponsiveStyles'
 import { StatCard } from '../../components/common/StatCard'
 import { UiState } from '../../components/common/UiState'
 import { getEquipmentPage, getEquipmentSummary, type EquipmentStatus, type EquipmentSummary, type ResaleDevice } from '../../services/equipmentSales'
@@ -58,15 +60,15 @@ export function EquipmentSalesPage() {
   return <Box>
     <PageHeader eyebrow="COMPRA Y REVENTA" title="Compra y reventa de equipos" description="Registrá los equipos que comprás rotos, llevá la inversión de la reparación y vendelos cuando estén listos." action={canManage ? <Button variant="contained" startIcon={<AddRounded />} onClick={() => openEditor(null)}>Nuevo equipo</Button> : undefined} />
     {summaryError && <Alert severity="error" sx={{ mb: 2 }} action={<Button color="inherit" onClick={() => setSummaryRetry(value => value + 1)}>Reintentar resumen</Button>}>{summaryError}</Alert>}
-    <Grid container spacing={1.5} mb={2}>
-      <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Equipos en proceso" value={summary ? String(summary.inProcess) : '—'} icon={<BuildRounded />} tone="warning" /></Grid>
-      <Grid size={{ xs: 6, lg: 3 }}><Box sx={{ '& .MuiTypography-root:last-of-type': { color: 'error.main' } }}><StatCard label="Total invertido" value={summary ? formatMoney(summary.totalInvested) : '—'} icon={<PaymentsRounded />} /></Box></Grid>
-      <Grid size={{ xs: 6, lg: 3 }}><StatCard label="Listos para vender" value={summary ? String(summary.readyForSale) : '—'} icon={<CheckCircleRounded />} tone="info" /></Grid>
-      <Grid size={{ xs: 6, lg: 3 }}><Box sx={{ '& .MuiTypography-root:last-of-type': { color: summary && summary.realizedProfit < 0 ? 'error.main' : 'success.main' } }}><StatCard label="Ganancia realizada" value={summary ? formatMoney(summary.realizedProfit) : '—'} icon={<TrendingUpRounded />} tone={summary && summary.realizedProfit < 0 ? 'warning' : 'success'} /></Box></Grid>
-    </Grid>
-    <Card><CardContent>
+    <MobileCarousel label="Resumen de equipos" itemLabels={['Equipos en proceso', 'Total invertido', 'Listos para vender', 'Ganancia realizada']} desktopSx={{ display: 'grid', gridTemplateColumns: { md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 1.5, mb: 2 }}>
+      <StatCard label="Equipos en proceso" value={summary ? String(summary.inProcess) : '—'} icon={<BuildRounded />} tone="warning" />
+      <Box sx={{ '& .MuiTypography-root:last-of-type': { color: 'error.main' } }}><StatCard label="Total invertido" value={summary ? formatMoney(summary.totalInvested) : '—'} icon={<PaymentsRounded />} /></Box>
+      <StatCard label="Listos para vender" value={summary ? String(summary.readyForSale) : '—'} icon={<CheckCircleRounded />} tone="info" />
+      <Box sx={{ '& .MuiTypography-root:last-of-type': { color: summary && summary.realizedProfit < 0 ? 'error.main' : 'success.main' } }}><StatCard label="Ganancia realizada" value={summary ? formatMoney(summary.realizedProfit) : '—'} icon={<TrendingUpRounded />} tone={summary && summary.realizedProfit < 0 ? 'warning' : 'success'} /></Box>
+    </MobileCarousel>
+    <Card><CardContent sx={compactRecordContentSx}>
       <Stack direction="row" spacing={1} alignItems="center" mb={2}><PhoneIphoneRounded color="primary" /><Box sx={{ flex: 1 }}><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Tus equipos</Typography></Box><Chip size="small" label={`${total} equipos`} /></Stack>
-      <Stack direction={{ xs: 'column', md: 'row' }} flexWrap="wrap" gap={1} mb={2.5} aria-label="Flujo del equipo" sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 3 }}>{(Object.keys(statusLabels) as EquipmentStatus[]).map((status, index) => <Stack key={status} direction="row" alignItems="center" spacing={1} sx={{ flex: 1 }}><Typography variant="caption" color="text.secondary" fontWeight={700}>{index + 1}.</Typography><Chip size="small" variant="outlined" color={statusColors[status]} label={statusLabels[status]} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: statusColors[status] === 'default' ? 'text.secondary' : `${statusColors[status]}.dark` }} />{index < 3 && <ArrowForwardRounded sx={{ fontSize: 15, color: 'text.disabled' }} />}</Stack>)}</Stack>
+      <Stack direction="row" gap={{ xs: 0.5, md: 1 }} mb={{ xs: 1.5, md: 2.5 }} aria-label="Flujo del equipo" sx={{ p: { xs: 0.75, md: 1.5 }, bgcolor: 'action.hover', borderRadius: 3, minWidth: 0 }}>{(Object.keys(statusLabels) as EquipmentStatus[]).map((status, index) => <Stack key={status} direction="row" alignItems="center" spacing={{ xs: 0.25, md: 1 }} sx={{ flex: 1, minWidth: 0 }}><Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: { xs: 'none', md: 'block' } }}>{index + 1}.</Typography><Chip size="small" variant="outlined" color={statusColors[status]} aria-label={statusLabels[status]} label={<><Box component="span" sx={{ display: { xs: 'inline', md: 'none' } }}>{['Compra', 'Reparación', 'Listo', 'Vendido'][index]}</Box><Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>{statusLabels[status]}</Box></>} sx={{ bgcolor: 'transparent', borderColor: 'currentColor', color: statusColors[status] === 'default' ? 'text.secondary' : { xs: `${statusColors[status]}.main`, md: `${statusColors[status]}.dark` }, fontSize: { xs: '0.65rem', md: '0.8125rem' }, '& .MuiChip-label': { px: { xs: 0.5, md: 1 } } }} />{index < 3 && <ArrowForwardRounded sx={{ fontSize: { xs: 11, md: 15 }, color: 'text.disabled', flexShrink: 0 }} />}</Stack>)}</Stack>
       <FilterBar onClear={search || filters.status ? () => { setSearch(''); setFilters({ search: '', page: 0, status: '' }) } : undefined}>
         <TextField fullWidth size="small" label="Buscar por marca o modelo" value={search} onChange={event => setSearch(event.target.value)} slotProps={{ htmlInput: { maxLength: 120 }, input: { startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> } }} />
         <TextField select size="small" label="Estado" value={filters.status} onChange={event => setFilters(current => ({ ...current, status: event.target.value as EquipmentStatus | '', page: 0 }))} sx={{ minWidth: 180 }}><MenuItem value="">Todos los estados</MenuItem>{Object.entries(statusLabels).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</TextField>

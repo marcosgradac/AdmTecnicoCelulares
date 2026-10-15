@@ -80,6 +80,7 @@ export function PlatformAdminPage() {
             <Button color="inherit" startIcon={<LogoutRounded />} onClick={logout}>Cerrar sesión</Button>
           </Stack>
         </Box>
+        {mobile && <nav className="platform-section-tabs" aria-label="Secciones de plataforma">{sections.map(({ id, label }) => <Button key={id} aria-current={section === id ? 'page' : undefined} onClick={() => go(id)}>{label}</Button>)}</nav>}
         <Box className="platform-content">
           <Typography color="text.secondary" mb={{ xs: 2, sm: 3 }}>{current.description}</Typography>
           {section === 'dashboard' && <DashboardSection refreshToken={refreshToken} onOpenBusiness={setQuickBusinessId} />}

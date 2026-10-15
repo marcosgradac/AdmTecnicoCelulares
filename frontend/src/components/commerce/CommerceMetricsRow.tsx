@@ -1,9 +1,10 @@
-import { Box, Card, CardContent, Stack, Typography } from '@mui/material'
+import { Box, Card, CardContent, Stack, Typography, useMediaQuery, useTheme } from '@mui/material'
 import {
   AccountBalanceWalletRounded, PaidRounded, PriceChangeRounded,
   ReceiptLongRounded, TrendingUpRounded,
 } from '@mui/icons-material'
 import type { SvgIconComponent } from '@mui/icons-material'
+import { MobileCarousel } from '../common/MobileCarousel'
 import { CardCarousel } from './CardCarousel'
 import { useAdaptiveRow } from './useAdaptiveRow'
 
@@ -38,10 +39,10 @@ function MetricCard({ metric, width }: { metric: CommerceMetric; width: number |
   const solid = metric.tone === 'strongSuccess'
   return (
     <Card sx={{ width, minWidth: 0, height: '100%', scrollSnapAlign: 'start', ...(width !== '100%' && { flex: '0 0 auto' }) }}>
-      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <CardContent sx={{ p: { xs: 1.5, md: 2 }, '&:last-child': { pb: { xs: 1.5, md: 2 } } }}>
         <Stack direction="row" alignItems="center" gap={1} mb={1.25} sx={{ minWidth: 0 }}>
           <Box sx={{ width: 30, height: 30, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: 2, color, bgcolor: background, '& svg': { fontSize: 17 } }}><Icon /></Box>
-          <Typography variant="caption" color="text.secondary" fontWeight={600} lineHeight={1.35} noWrap title={metric.label}>{metric.label}</Typography>
+          <Typography variant="caption" color="text.secondary" fontWeight={600} lineHeight={1.35} sx={{ whiteSpace: { xs: 'normal', md: 'nowrap' }, overflow: 'hidden', textOverflow: 'ellipsis' }} title={metric.label}>{metric.label}</Typography>
         </Stack>
         <Typography sx={{ fontSize: '1.45rem', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-.035em', fontVariantNumeric: 'tabular-nums', color: solid ? color : 'text.primary', overflowWrap: 'anywhere' }}>{metric.value}</Typography>
       </CardContent>
@@ -54,12 +55,15 @@ function MetricCard({ metric, width }: { metric: CommerceMetric; width: number |
  * y, si no entran cómodas, se convierten en carrusel horizontal. Nunca envuelven a una segunda fila.
  */
 export function CommerceMetricsRow({ metrics }: Props) {
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
   // Se exige el ancho de las cinco cards para mantener la fila; en cualquier otro caso, carrusel.
   const { containerRef, useCarousel } = useAdaptiveRow(metrics.length, { minCardWidth: MIN_CARD_WIDTH, carouselFrom: Number.POSITIVE_INFINITY, columns: metrics.length })
 
   return (
     <Box ref={containerRef} sx={{ minWidth: 0, mb: 3 }}>
-      {useCarousel ? (
+      {mobile ? (
+        <MobileCarousel label="Métricas de comercio" itemWidth="clamp(200px, 64vw, 260px)" itemLabels={metrics.map(metric => metric.label)}>{metrics.map(metric => <MetricCard key={metric.label} metric={metric} width="100%" />)}</MobileCarousel>
+      ) : useCarousel ? (
         <CardCarousel cardWidth={CARD_WIDTH} label="métricas">
           {metrics.map(metric => <MetricCard key={metric.label} metric={metric} width={CARD_WIDTH} />)}
         </CardCarousel>

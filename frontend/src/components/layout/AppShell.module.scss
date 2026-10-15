@@ -56,7 +56,7 @@ $sidebar-collapsed: 78px;
   .businessAccessText { max-width: 130px; }
   .businessAccessName { font-size: 13.5px !important; }
   .businessAccessLabel { font-size: 10.5px !important; }
-  .content { padding: 84px 16px calc(100px + env(safe-area-inset-bottom)); }
+  .content { padding: 80px 16px calc(24px + env(safe-area-inset-bottom)); }
   .repairFab { display: inline-flex !important; position: fixed !important; z-index: 1200; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 8px 24px rgba(38, 25, 94, .24) !important; }
 }
 @media (max-width: 599px) {

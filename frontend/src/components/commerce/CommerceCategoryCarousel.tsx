@@ -1,8 +1,9 @@
-import { Box, Card, CardContent, IconButton, InputAdornment, Stack, TextField, Typography } from '@mui/material'
+import { Box, Card, CardContent, IconButton, InputAdornment, Stack, TextField, Typography, useMediaQuery, useTheme } from '@mui/material'
 import {
   ClearRounded, SearchRounded,
 } from '@mui/icons-material'
 import type { CommerceCategory } from '../../services/commerce'
+import { MobileCarousel } from '../common/MobileCarousel'
 import { CategoryCard } from './CategoryCard'
 import { CircularCategoryCarousel } from './CircularCategoryCarousel'
 import { useAdaptiveRow } from './useAdaptiveRow'
@@ -25,6 +26,7 @@ export function CommerceCategoryCarousel({
   categories, canManage, searchQuery, onSearchChange,
   onSelectCategory, onEditCategory, onDeleteCategory,
 }: Props) {
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase()
   const filteredCategories = categories.filter(cat => cat.name.toLocaleLowerCase().includes(normalizedQuery))
   // Grid mientras la fila se lea cómoda; carrusel desde las cinco categorías o cuando el ancho no alcanza.
@@ -42,8 +44,8 @@ export function CommerceCategoryCarousel({
   )
 
   return (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
+    <Card sx={{ mb: { xs: 0, md: 3 } }}>
+      <CardContent sx={theme => ({ [theme.breakpoints.down('md')]: { p: 1.5, '&:last-child': { pb: 1.5 }, '& .MuiTextField-root .MuiInputBase-root': { minHeight: 44 }, '& .MuiTextField-root .MuiIconButton-root': { minWidth: 44, minHeight: 44 } } })}>
         <Box minWidth={0} sx={{ mb: 1.5 }}>
           <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Categorías</Typography>
           <Typography variant="body2" color="text.secondary">Organizá tus productos y administrá su inventario.</Typography>
@@ -70,6 +72,8 @@ export function CommerceCategoryCarousel({
                 {searchQuery.trim() ? 'No encontramos categorías que coincidan con la búsqueda.' : 'Todavía no hay categorías creadas.'}
               </Typography>
             </Box>
+          ) : mobile ? (
+            <MobileCarousel label="Categorías de comercio" itemLabels={filteredCategories.map(cat => cat.name)} itemWidth="clamp(210px, 70vw, 280px)">{filteredCategories.map(card)}</MobileCarousel>
           ) : useCarousel ? (
             <CircularCategoryCarousel
               categories={filteredCategories}

@@ -19,7 +19,7 @@ async function main() {
   assert.equal(drawer.props.open, true)
   assert.ok(!JSON.stringify(page.root()).includes('Editar datos generales'))
   assert.ok(!find(page, 'Button', 'Corregir costo/gasto')); assert.ok(!find(page, 'Button', 'Corregir adelanto inicial'))
-  const titles = collect(page.root(), n => n.type === 'Typography').map(n => n.props.children)
+  const titles = collect(page.root(), n => n.type === 'Typography' || n.type === 'RecordDetailSection').map(n => n.type === 'RecordDetailSection' ? n.props.title : n.props.children)
   assert.ok(titles.indexOf('Equipo y cliente') < titles.indexOf('Resumen de pago'))
   assert.ok(titles.indexOf('Resumen de pago') < titles.indexOf('Garantía'))
   assert.ok(titles.indexOf('Garantía') < titles.indexOf('Historial'))

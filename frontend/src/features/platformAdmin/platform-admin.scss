@@ -47,3 +47,15 @@
   .platform-header__title { font-size: 1.35rem !important; }
   .platform-nav__foot { display: none; }
 }
+
+@media (max-width: 899px) {
+  .platform-header { position: static; gap: 8px; padding: 10px 16px; }
+  .platform-header__heading { flex-basis: 100%; }
+  .platform-header__actions .MuiButton-root, .platform-header .MuiIconButton-root { min-height: 44px; }
+  .platform-section-tabs { display: flex; gap: 4px; overflow-x: auto; min-width: 0; padding: 4px 16px; border-bottom: 1px solid var(--td-border); background: var(--td-paper); }
+  .platform-section-tabs .MuiButton-root { flex: 0 0 auto; min-height: 44px; white-space: nowrap; }
+  .platform-section-tabs [aria-current='page'] { background: var(--td-primary-soft); color: var(--td-primary); }
+  .platform-content { padding-top: 12px; }
+  .platform-content > p:first-child { margin-bottom: 16px; font-size: .875rem; }
+  .platform-content .MuiTab-root { min-height: 44px; }
+}

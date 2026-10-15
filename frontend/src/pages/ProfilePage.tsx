@@ -21,8 +21,8 @@ export function ProfilePage() {
   }
   return <Box maxWidth={720}>
     <PageHeader eyebrow="CUENTA" title="Mi perfil" description="Administrá tus datos personales de TecnoDesk." />
-    <Card><CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-      <Stack direction="row" spacing={2} alignItems="center" mb={3}><Avatar sx={{ width: 58, height: 58, bgcolor: 'primary.main' }}>{user.fullName.charAt(0).toUpperCase()}</Avatar><Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Typography fontWeight={850} fontSize={18}>{user.fullName}</Typography><Typography color="text.secondary">{user.email}</Typography><Typography variant="caption">{user.business.name} · {user.role === 'OWNER' ? 'Propietario' : 'Técnico'}</Typography></Box></Stack>
+    <Card><CardContent sx={{ p: { xs: 2, md: 4 } }}>
+      <Stack direction="row" spacing={2} alignItems="center" mb={{ xs: 2, md: 3 }}><Avatar sx={{ width: { xs: 44, md: 58 }, height: { xs: 44, md: 58 }, flexShrink: 0, bgcolor: 'primary.main' }}>{user.fullName.charAt(0).toUpperCase()}</Avatar><Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}><Typography fontWeight={850} fontSize={18}>{user.fullName}</Typography><Typography color="text.secondary">{user.email}</Typography><Typography variant="caption">{user.business.name} · {user.role === 'OWNER' ? 'Propietario' : 'Técnico'}</Typography></Box></Stack>
       <Stack component="form" onSubmit={submit} spacing={2}>
         {message && <Alert severity={message.type}>{message.text}</Alert>}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

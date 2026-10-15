@@ -29,3 +29,14 @@
   --billing-meter-border: var(--td-border);
   --billing-meter-paper: var(--td-paper);
 }
+
+.billing-summary-card { padding: 20px; border: 1px solid var(--td-border, #e6e3ef); border-radius: 18px; background: var(--td-paper, #fff); box-shadow: var(--td-shadow, 0 12px 35px rgb(47 36 91 / 6%)); }
+.billing-summary-card small { display: block; color: var(--td-muted, #747184); margin-bottom: 7px; }
+.billing-summary-card strong { font-size: 1.1rem; color: var(--td-text, #191725); }
+@media (max-width: 899px) {
+  .billing-page { gap: 18px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+  .billing-page .billing-summary-card { padding: 16px; }
+  .billing-page .billing-plan-card { padding: 24px 20px; margin-top: 12px; height: calc(100% - 12px); box-sizing: border-box; }
+  .billing-page .billing-plan-card .MuiButton-root { min-height: 44px; margin-top: auto; }
+  .billing-page .billing-panel { padding: 18px; }
+}

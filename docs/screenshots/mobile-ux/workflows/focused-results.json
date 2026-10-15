@@ -1,0 +1,58 @@
+[
+  {
+    "name": "pos",
+    "width": 360,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 360,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 390,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 390,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 768,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 768,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 1440,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 1440,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  }
+]

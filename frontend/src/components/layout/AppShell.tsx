@@ -1,7 +1,7 @@
 import { AdminVisualScope } from '../admin/AdminVisualScope'
 import { useState } from 'react'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AppBar, Avatar, Box, CircularProgress, Drawer, Fab, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
+import { AppBar, Avatar, Box, CircularProgress, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Tooltip, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { BuildRounded, ChevronRightRounded, DashboardRounded, GroupsRounded, Inventory2Rounded, LockRounded, LogoutRounded, MenuRounded, PeopleRounded, PhoneIphoneRounded, PointOfSaleRounded, SettingsRounded, StorefrontRounded, VerifiedRounded, WorkspacePremiumRounded } from '@mui/icons-material'
 import { useAuth } from '../../auth/AuthContext'
 import { ProfileCompletionDialog } from '../auth/ProfileCompletionDialog'
@@ -74,11 +74,11 @@ function AppShellContent() {
       {mobile && <IconButton aria-label="Abrir menú" onClick={() => setOpen(true)}><MenuRounded /></IconButton>}
       {mobile ? <Box className={styles.mobileBrand}><BrandLogo /></Box> : <Box><Typography variant="caption" color="text.secondary">Espacio de trabajo</Typography><Typography fontWeight={700} fontSize={14}>{navItems.find(item => selected(item.path))?.label ?? 'Mi perfil'}</Typography></Box>}
       <Box flex={1} />
+      {!renewalMode && mobile && canAccess(user, 'repairs.create') && <IconButton data-tutorial="new-repair" color="primary" aria-label="Crear nueva reparación" onClick={() => go('/admin/reparaciones/nueva')} sx={{width:44,height:44,flexShrink:0}}><BuildRounded /></IconButton>}
       {!renewalMode && <Box className={styles.businessAccess} role="button" tabIndex={0} aria-label="Abrir Mi negocio" onClick={() => go('/admin/configuracion#negocio')} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') go('/admin/configuracion#negocio') }}><Avatar src={user?.business.logoUrl ?? undefined} imgProps={{ style: { objectFit: 'cover', objectPosition: 'center' } }}>{businessInitials}</Avatar><Box className={styles.businessAccessText}><Typography component="span" className={styles.businessAccessName}>{user?.business.name}</Typography><Typography component="span" className={styles.businessAccessLabel}>Administrador</Typography></Box><ChevronRightRounded className={styles.businessAccessArrow} /></Box>}
     </Toolbar></AppBar>
     <ProfileCompletionDialog /><TrialStartedDialog />{!renewalMode && <GuidedTutorial />}
     <Box component="main" className={styles.content}><Box className={styles.inner}><SubscriptionBanner/><AdminVisualScope enabled={/^\/admin\/(reparaciones(?:\/|$)|clientes$|caja$|comercio$|punto-de-venta$|venta-equipos$|empleados$|garantias$|perfil$|sin-modulos$)/.test(location.pathname)}><Outlet /></AdminVisualScope></Box></Box>
-    {!renewalMode && mobile && canAccess(user, 'repairs.create') && <Fab data-tutorial="new-repair" color="primary" aria-label="Crear nueva reparación" className={styles.repairFab} onClick={() => go('/admin/reparaciones/nueva')}><BuildRounded /></Fab>}
   </Box>
 }
 

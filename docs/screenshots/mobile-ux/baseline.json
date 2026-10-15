@@ -1,0 +1,92 @@
+{
+  "baseCommit": "6aa00849b46d3916d05834e459404474d3d5fee3",
+  "branch": "feature/mobile-ux-carousels",
+  "htmlSha256": "61a3e05417d26b2644dcca81f5d1b518f339bd2363fa6b89827f3b0189d7f3ed",
+  "assets": [
+    {
+      "file": "AccountDeletionSection-CXRqXJUi.js",
+      "sha256": "e6de6cc568bea092ccbcade1ad47e8abdf81c98716d8b37759d50b704a792bac"
+    },
+    {
+      "file": "BusinessRounded-DUCjKyDR.js",
+      "sha256": "f815c13764e77530486d4a39e042ef8172b15db08b2ffecee460c1834a5d07e0"
+    },
+    {
+      "file": "CommercePageV2-2XU-r8xV.js",
+      "sha256": "9293cbc5e41f13e3c9799e56879361a7f1ad1852606192362ad787529a597731"
+    },
+    {
+      "file": "DashboardPage-DJx43eT-.js",
+      "sha256": "c93b5217f9428304485aae1099c2b8fdbce7da26206ff2a6eb6f48f057b1ba7b"
+    },
+    {
+      "file": "EquipmentSalesPage-B9-qvAH2.js",
+      "sha256": "c1bc8c0ba19f60c312932c7b9203527424bcc7d2f6545c7fb1197867d4e6129d"
+    },
+    {
+      "file": "LegalDocumentPage-CwRaCjaw.css",
+      "sha256": "ebb194cae4abd6e24ff2063b0d4ad6dab5263be322a04b0d3a7e099c698d8e37"
+    },
+    {
+      "file": "LegalDocumentPage-Dkza9ruM.js",
+      "sha256": "116a97c0f32c3d546bbb38a5ff711f708147c36bfa238abb3b529a7dbb5b42c1"
+    },
+    {
+      "file": "LockedCommerce-DmI0YMRE.js",
+      "sha256": "9e10621b94197a9b020c0050d31f9e895151485446516c3a9571d0abba544140"
+    },
+    {
+      "file": "PlatformAdminPage-Cy25oo8U.css",
+      "sha256": "3a8cccb930a460d1c91a15d8314072bf90419334becce191fdd478a7d9319b48"
+    },
+    {
+      "file": "PlatformAdminPage-YN968i1J.js",
+      "sha256": "f11c3bed0a680db48d5c4169d26fa61fad9547b5ad5f9e3af81024bf55fd4975"
+    },
+    {
+      "file": "PointOfSalePage-Djs2quug.js",
+      "sha256": "1f515cc8d7b7a8450998619f16ff012cce3c4b407edce92a52b5211e5ab35054"
+    },
+    {
+      "file": "premium-theme-browser-C8OIJ8qn.js",
+      "sha256": "4d070995efc8e33ae711251f847d06289edd243f0b1dcd6949650d5475132b54"
+    },
+    {
+      "file": "premium-theme-browser-Dur9GL3D.css",
+      "sha256": "da56cedfd2ce8609bdfedda0098f5c88068330f0150d0d195d9d27f857aa2a8d"
+    },
+    {
+      "file": "PrivacyPage-BldhpYpa.js",
+      "sha256": "dbd282b2e1d6fce4625410d5ef87ddc77a9f0fd7b30b59a9023bc4e578ec4c4f"
+    },
+    {
+      "file": "SettingsPage-B3hWgh1T.js",
+      "sha256": "5b09faf88dcddb256a08a9f73e65ef1163e3d6cbdfc7e5c6b260eff8b3b76fee"
+    },
+    {
+      "file": "SettingsPage-DT-jfFT7.css",
+      "sha256": "ea2061c094182bcefa7222643f8acbea0fa0bcbc647f64638e9537699336f11f"
+    },
+    {
+      "file": "SubscriptionPage-C83r_YFD.js",
+      "sha256": "695b1f37f1fe09d80fd010e60e5e2e9e4eca31d5617fde43ae84f9f6d91a8260"
+    },
+    {
+      "file": "team-drfVyk3e.js",
+      "sha256": "abcb8efa92ae1d28874db39d103439568f27f1468e0409aa3cebdceb66111b0f"
+    },
+    {
+      "file": "TeamPage-DJIcXM3O.js",
+      "sha256": "c23c11a3d8694ce9082f3f016a2914744d2ac24a734a01136c3f1d94b4e8ac22"
+    },
+    {
+      "file": "TermsPage-O13MsapY.js",
+      "sha256": "8461a1831d8e8fdfd10d8dbcb3d0c14e3253c992bc90b11ef54a868fd962f4e9"
+    },
+    {
+      "file": "WarrantiesPage-CQPfqoXq.js",
+      "sha256": "59488cc2f8147ffc2e4304bc6c33ed3f61f23c79c10ca717ccbd00549db2aa50"
+    }
+  ],
+  "notes": "Bundle compiled from main before product edits. Browser/API fixtures are synthetic and unchanged between phases except opt-in scenario selection."
+}

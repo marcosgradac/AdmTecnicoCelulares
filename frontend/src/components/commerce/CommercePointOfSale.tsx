@@ -180,7 +180,7 @@ export function CommercePointOfSale({
                   ? <Typography variant="caption" sx={{ color: 'warning.dark', fontWeight: 650 }}>Quedan {product.currentStock}{inCartQty > 0 ? ` · ${inCartQty} en carrito` : ''}</Typography>
                   : <Typography variant="caption" color="text.disabled" sx={{ fontWeight: 600 }}>Stock {product.currentStock}{inCartQty > 0 ? ` · ${inCartQty} en carrito` : ''}</Typography>}
             </Box>
-            <IconButton aria-label={`Agregar ${product.name} al carrito`} disabled={disabled} onClick={event => { event.stopPropagation(); add() }} sx={{ flexShrink: 0, width: 38, height: 38, borderRadius: '11px', border: '1px solid', borderColor: availableToAdd > 0 ? alpha(theme.palette.primary.main, 0.28) : TABLE_BORDER, color: availableToAdd > 0 ? 'primary.main' : 'text.disabled', '&:hover': { bgcolor: t => alpha(t.palette.primary.main, 0.08) } }}>
+            <IconButton aria-label={`Agregar ${product.name} al carrito`} disabled={disabled} onClick={event => { event.stopPropagation(); add() }} sx={{ flexShrink: 0, width: { xs: 44, md: 38 }, height: { xs: 44, md: 38 }, borderRadius: '11px', border: '1px solid', borderColor: availableToAdd > 0 ? alpha(theme.palette.primary.main, 0.28) : TABLE_BORDER, color: availableToAdd > 0 ? 'primary.main' : 'text.disabled', '&:hover': { bgcolor: t => alpha(t.palette.primary.main, 0.08) } }}>
               <AddRounded fontSize="small" />
             </IconButton>
           </Stack>
@@ -195,7 +195,7 @@ export function CommercePointOfSale({
    */
   const cartPanel = (
     <Card sx={{ display: 'flex', flexDirection: 'column', borderRadius: '15px' }}>
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+      <CardContent sx={theme => ({ [theme.breakpoints.down('md')]: { '& .MuiIconButton-root': { minWidth: 44, minHeight: 44 } }, display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 })}>
         <Stack direction="row" alignItems="center" spacing={1.25} sx={{ pb: 2, borderBottom: '1px solid', borderColor: TABLE_BORDER }}>
           <Box sx={{ width: 36, height: 36, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: '10px', bgcolor: t => alpha(t.palette.primary.main, 0.08), color: 'primary.main' }}>
             <ShoppingCartOutlined sx={{ fontSize: 20 }} />
@@ -302,10 +302,11 @@ export function CommercePointOfSale({
           <CardContent>
             {/* Sin instrucción redundante: la card clickeable se explica sola. */}
             <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 2.5 }}>
-              <Box sx={{ width: 36, height: 36, flexShrink: 0, display: 'grid', placeItems: 'center', borderRadius: '10px', bgcolor: t => alpha(t.palette.primary.main, 0.08), color: 'primary.main' }}>
+              <Box sx={{ width: 36, height: 36, flexShrink: 0, display: compact ? 'none' : 'grid', placeItems: 'center', borderRadius: '10px', bgcolor: t => alpha(t.palette.primary.main, 0.08), color: 'primary.main' }}>
                 <PointOfSaleRounded sx={{ fontSize: 20 }} />
               </Box>
-              <Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, fontSize: '1.05rem', lineHeight: 1.2 }}>Productos</Typography>
+              <Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, fontSize: '1.05rem', lineHeight: 1.2, flex: 1 }}>Productos</Typography>
+              {compact && <Button aria-label={`Ver carrito (${cartLines.length}) · ${formatMoney(cartTotal)}`} variant={cartLines.length ? 'contained' : 'outlined'} size="small" onClick={() => setCartOpen(true)} startIcon={<ShoppingCartOutlined />} endIcon={<Box component="span" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{formatMoney(cartTotal)}</Box>} sx={{ minHeight: 44, flexShrink: 0, px: 1, fontSize: '.75rem', gap: .5 }}>Carrito ({cartLines.length})</Button>}
             </Stack>
 
             <TextField
@@ -319,7 +320,7 @@ export function CommercePointOfSale({
                   endAdornment: search ? <InputAdornment position="end"><IconButton size="small" aria-label="Limpiar búsqueda" onClick={() => setSearch('')} edge="end"><ClearRounded fontSize="small" /></IconButton></InputAdornment> : null,
                 },
               }}
-              sx={{ mb: 2.5 }}
+              sx={{ mb: 2.5, '& .MuiInputBase-root': { minHeight: { xs: 44, md: 'auto' } }, '& .MuiIconButton-root': { minWidth: { xs: 44, md: 30 }, minHeight: { xs: 44, md: 30 } } }}
             />
 
             {searchError && (
@@ -359,6 +360,7 @@ export function CommercePointOfSale({
             )}
 
             <ListPagination count={total} page={page} rowsPerPage={PAGE_SIZE} onPageChange={setPage} />
+            {compact && cartLines.length > 0 && <Button fullWidth variant="contained" onClick={() => setCartOpen(true)} startIcon={<ShoppingCartOutlined />} sx={{ minHeight: 44, mt: 1 }}>Ver carrito ({cartLines.length}) · {formatMoney(cartTotal)}</Button>}
           </CardContent>
         </Card>
       </Box>
@@ -367,21 +369,6 @@ export function CommercePointOfSale({
       <Box sx={{ flex: '0 0 380px', maxWidth: '100%', display: { xs: 'none', lg: 'block' }, position: 'sticky', top: 88 }}>
         {cartPanel}
       </Box>
-
-      {/* Barra compacta de mobile: el carrito no vive abajo en la página, se abre acá. */}
-      {compact && cartLines.length > 0 && (
-        <Box sx={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: theme => theme.zIndex.appBar, p: 1.5, pb: 'max(12px, env(safe-area-inset-bottom))', bgcolor: 'var(--td-header, rgba(255,255,255,.94))', backdropFilter: 'blur(8px)', borderTop: '1px solid', borderColor: TABLE_BORDER }}>
-          <Button
-            fullWidth variant="contained" size="large"
-            onClick={() => setCartOpen(true)}
-            startIcon={<ShoppingCartOutlined />}
-            endIcon={<Box component="span" sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{formatMoney(cartTotal)}</Box>}
-            sx={{ py: 1.25, borderRadius: '12px', justifyContent: 'space-between' }}
-          >
-            Ver carrito ({cartLines.length})
-          </Button>
-        </Box>
-      )}
 
       {/* Mismo panel del carrito, en drawer, para mobile. */}
       <Drawer
@@ -394,7 +381,7 @@ export function CommercePointOfSale({
           <Box sx={{ width: 40, height: 4, borderRadius: '999px', bgcolor: 'divider' }} />
         </Box>
         {cartPanel}
-        <Button fullWidth onClick={() => setCartOpen(false)} sx={{ mt: 1.5, color: 'text.secondary' }}>Volver a productos</Button>
+        <Button fullWidth onClick={() => setCartOpen(false)} sx={{ mt: 1.5, minHeight: 44, color: 'text.secondary' }}>Volver a productos</Button>
       </Drawer>
     </Box>
   )

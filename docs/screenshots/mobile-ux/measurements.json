@@ -1,0 +1,6312 @@
+{
+  "comparisons": [
+    {
+      "screen": "repair-detail",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1179,
+        "requiredScroll": 459,
+        "scrollToRecordTop": 1079
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 1017,
+        "requiredScroll": 297,
+        "scrollToRecordTop": 917
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 791,
+        "requiredScroll": 71,
+        "scrollToRecordTop": 691
+      },
+      "delta": -226,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 716,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 616
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 672,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 572
+      },
+      "delta": -44,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1919,
+        "requiredScroll": 1199
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1179,
+        "requiredScroll": 459,
+        "scrollToRecordTop": 1079
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 1017,
+        "requiredScroll": 297,
+        "scrollToRecordTop": 917
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 791,
+        "requiredScroll": 71,
+        "scrollToRecordTop": 691
+      },
+      "delta": -226,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 716,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 616
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 672,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 572
+      },
+      "delta": -44,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1919,
+        "requiredScroll": 1199
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1179,
+        "requiredScroll": 415,
+        "scrollToRecordTop": 1079
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 1017,
+        "requiredScroll": 253,
+        "scrollToRecordTop": 917
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 791,
+        "requiredScroll": 27,
+        "scrollToRecordTop": 691
+      },
+      "delta": -226,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 716,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 616
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 672,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 572
+      },
+      "delta": -44,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1692,
+        "requiredScroll": 928
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1179,
+        "requiredScroll": 415,
+        "scrollToRecordTop": 1079
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 1017,
+        "requiredScroll": 253,
+        "scrollToRecordTop": 917
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 791,
+        "requiredScroll": 27,
+        "scrollToRecordTop": 691
+      },
+      "delta": -226,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 716,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 616
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 672,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 572
+      },
+      "delta": -44,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1692,
+        "requiredScroll": 928
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1156,
+        "requiredScroll": 336,
+        "scrollToRecordTop": 1056
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 965,
+        "requiredScroll": 145,
+        "scrollToRecordTop": 865
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 739,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 639
+      },
+      "delta": -226,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 716,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 616
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 672,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 572
+      },
+      "delta": -44,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1639,
+        "requiredScroll": 819
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1156,
+        "requiredScroll": 336,
+        "scrollToRecordTop": 1056
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 965,
+        "requiredScroll": 145,
+        "scrollToRecordTop": 865
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 739,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 639
+      },
+      "delta": -226,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 716,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 616
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 672,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 572
+      },
+      "delta": -44,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1639,
+        "requiredScroll": 819
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1117,
+        "requiredScroll": 173,
+        "scrollToRecordTop": 1017
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 860,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 760
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 684,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 584
+      },
+      "delta": -176,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 756,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 656
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 680,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 580
+      },
+      "delta": -76,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1567,
+        "requiredScroll": 623
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 1117,
+        "requiredScroll": 173,
+        "scrollToRecordTop": 1017
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 860,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 760
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 684,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 584
+      },
+      "delta": -176,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Lucas Demo",
+        "documentTop": 756,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 656
+      },
+      "after": {
+        "text": "Lucas Demo",
+        "documentTop": 680,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 580
+      },
+      "delta": -76,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1567,
+        "requiredScroll": 623
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 156,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 56
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 945,
+        "requiredScroll": 125,
+        "scrollToRecordTop": 845
+      },
+      "after": {
+        "text": "Pantalla dañada",
+        "documentTop": 954,
+        "requiredScroll": 134,
+        "scrollToRecordTop": 854
+      },
+      "delta": 9,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "ReparaciónEquipoClienteEstadoCobroIngresoEntregaAcción#1048Apple iPhone 13Pantalla dañadaJuan Demo11",
+        "documentTop": 341,
+        "requiredScroll": 0
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 459,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 359
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 459,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 359
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "LDLucas Demotechnician@example.test2 permisos asignados1155550101TécnicoActivo13 de oct de 2026",
+        "documentTop": 517,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 417
+      },
+      "after": {
+        "text": "LDLucas Demotechnician@example.test2 permisos asignados1155550101TécnicoActivo13 de oct de 2026",
+        "documentTop": 517,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 417
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1554,
+        "requiredScroll": 734
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 198,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 98
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 904,
+        "requiredScroll": 84,
+        "scrollToRecordTop": 804
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 1125,
+        "requiredScroll": 305,
+        "scrollToRecordTop": 1025
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 1276,
+        "requiredScroll": 456,
+        "scrollToRecordTop": 1176
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 1496,
+        "requiredScroll": 676,
+        "scrollToRecordTop": 1396
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 198,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 98
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-detail",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Pantalla dañada",
+        "documentTop": 945,
+        "requiredScroll": 125,
+        "scrollToRecordTop": 845
+      },
+      "after": {
+        "text": "Pantalla dañada",
+        "documentTop": 954,
+        "requiredScroll": 134,
+        "scrollToRecordTop": 854
+      },
+      "delta": 9,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repair-new",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "ReparaciónEquipoClienteEstadoCobroIngresoEntregaAcción#1048Apple iPhone 13Pantalla dañadaJuan Demo11",
+        "documentTop": 341,
+        "requiredScroll": 0
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "client-detail",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 459,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 359
+      },
+      "after": {
+        "text": "#1048 · Apple iPhone 13",
+        "documentTop": 459,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 359
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "team",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "LDLucas Demotechnician@example.test2 permisos asignados1155550101TécnicoActivo13 de oct de 2026",
+        "documentTop": 517,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 417
+      },
+      "after": {
+        "text": "LDLucas Demotechnician@example.test2 permisos asignados1155550101TécnicoActivo13 de oct de 2026",
+        "documentTop": 517,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 417
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "profile",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "support",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "no-modules",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "connection-error",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "startup-error",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "loading",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-error",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "landing",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "login",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "register",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "forgot-password",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "reset-password",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-expired",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "tracking-missing",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "terms",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "privacy",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Clientes finales",
+        "documentTop": 1554,
+        "requiredScroll": 734
+      },
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-commerce-limited",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce-limited",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos-limited",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-negocio",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 198,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 98
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-equipo",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 904,
+        "requiredScroll": 84,
+        "scrollToRecordTop": 804
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-suscripcion",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 1125,
+        "requiredScroll": 305,
+        "scrollToRecordTop": 1025
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-seguridad",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 1276,
+        "requiredScroll": 456,
+        "scrollToRecordTop": 1176
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-tutorial",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 1495,
+        "requiredScroll": 675,
+        "scrollToRecordTop": 1395
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "settings-soporte",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": {
+        "text": "Mi negocioDatos y logo de tu servicio",
+        "documentTop": 198,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 98
+      },
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3085,
+        "requiredScroll": 2365,
+        "scrollToRecordTop": 2985
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1798,
+        "requiredScroll": 1078,
+        "scrollToRecordTop": 1698
+      },
+      "delta": -1287,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 457,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 357
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 393,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 293
+      },
+      "delta": -64,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -52,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 897,
+        "requiredScroll": 177,
+        "scrollToRecordTop": 797
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 636,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 536
+      },
+      "delta": -261,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 990,
+        "requiredScroll": 270,
+        "scrollToRecordTop": 890
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 594,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 494
+      },
+      "delta": -396,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 324,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 224
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 314,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 214
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 889,
+        "requiredScroll": 169,
+        "scrollToRecordTop": 789
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 644,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 544
+      },
+      "delta": -245,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 456,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 356
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 375,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 275
+      },
+      "delta": -81,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "",
+        "documentTop": 1177,
+        "requiredScroll": 457,
+        "scrollToRecordTop": 1077
+      },
+      "after": {
+        "text": "",
+        "documentTop": 787,
+        "requiredScroll": 67,
+        "scrollToRecordTop": 687
+      },
+      "delta": -390,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "360",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1905,
+        "requiredScroll": 1185,
+        "scrollToRecordTop": 1805
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1615,
+        "requiredScroll": 895,
+        "scrollToRecordTop": 1515
+      },
+      "delta": -290,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 1016,
+        "requiredScroll": 296,
+        "scrollToRecordTop": 916
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 748,
+        "requiredScroll": 28,
+        "scrollToRecordTop": 648
+      },
+      "delta": -268,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "360",
+      "mode": "light",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 980,
+        "requiredScroll": 260,
+        "scrollToRecordTop": 880
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 691,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 591
+      },
+      "delta": -289,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3085,
+        "requiredScroll": 2365,
+        "scrollToRecordTop": 2985
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1798,
+        "requiredScroll": 1078,
+        "scrollToRecordTop": 1698
+      },
+      "delta": -1287,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 457,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 357
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 393,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 293
+      },
+      "delta": -64,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -52,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 897,
+        "requiredScroll": 177,
+        "scrollToRecordTop": 797
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 636,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 536
+      },
+      "delta": -261,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 990,
+        "requiredScroll": 270,
+        "scrollToRecordTop": 890
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 594,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 494
+      },
+      "delta": -396,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 324,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 224
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 314,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 214
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 889,
+        "requiredScroll": 169,
+        "scrollToRecordTop": 789
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 644,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 544
+      },
+      "delta": -245,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 456,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 356
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 375,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 275
+      },
+      "delta": -81,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "",
+        "documentTop": 1177,
+        "requiredScroll": 457,
+        "scrollToRecordTop": 1077
+      },
+      "after": {
+        "text": "",
+        "documentTop": 787,
+        "requiredScroll": 67,
+        "scrollToRecordTop": 687
+      },
+      "delta": -390,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "360",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1905,
+        "requiredScroll": 1185,
+        "scrollToRecordTop": 1805
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1615,
+        "requiredScroll": 895,
+        "scrollToRecordTop": 1515
+      },
+      "delta": -290,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 1016,
+        "requiredScroll": 296,
+        "scrollToRecordTop": 916
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 748,
+        "requiredScroll": 28,
+        "scrollToRecordTop": 648
+      },
+      "delta": -268,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "360",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 980,
+        "requiredScroll": 260,
+        "scrollToRecordTop": 880
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 691,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 591
+      },
+      "delta": -289,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3064,
+        "requiredScroll": 2300,
+        "scrollToRecordTop": 2964
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1779,
+        "requiredScroll": 1015,
+        "scrollToRecordTop": 1679
+      },
+      "delta": -1285,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 437,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 337
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 374,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 274
+      },
+      "delta": -63,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -52,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 877,
+        "requiredScroll": 113,
+        "scrollToRecordTop": 777
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "delta": -260,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 919,
+        "requiredScroll": 155,
+        "scrollToRecordTop": 819
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 542,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 442
+      },
+      "delta": -377,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 324,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 224
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 314,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 214
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 870,
+        "requiredScroll": 106,
+        "scrollToRecordTop": 770
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 625,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 525
+      },
+      "delta": -245,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 451,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 351
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 375,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 275
+      },
+      "delta": -76,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "",
+        "documentTop": 1158,
+        "requiredScroll": 394,
+        "scrollToRecordTop": 1058
+      },
+      "after": {
+        "text": "",
+        "documentTop": 767,
+        "requiredScroll": 3,
+        "scrollToRecordTop": 667
+      },
+      "delta": -391,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "390",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1884,
+        "requiredScroll": 1120,
+        "scrollToRecordTop": 1784
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1596,
+        "requiredScroll": 832,
+        "scrollToRecordTop": 1496
+      },
+      "delta": -288,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 974,
+        "requiredScroll": 210,
+        "scrollToRecordTop": 874
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 709,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 609
+      },
+      "delta": -265,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "390",
+      "mode": "light",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 929,
+        "requiredScroll": 165,
+        "scrollToRecordTop": 829
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 671,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 571
+      },
+      "delta": -258,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3064,
+        "requiredScroll": 2300,
+        "scrollToRecordTop": 2964
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1779,
+        "requiredScroll": 1015,
+        "scrollToRecordTop": 1679
+      },
+      "delta": -1285,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 437,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 337
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 374,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 274
+      },
+      "delta": -63,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -52,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 877,
+        "requiredScroll": 113,
+        "scrollToRecordTop": 777
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "delta": -260,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 919,
+        "requiredScroll": 155,
+        "scrollToRecordTop": 819
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 542,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 442
+      },
+      "delta": -377,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 324,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 224
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 314,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 214
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 870,
+        "requiredScroll": 106,
+        "scrollToRecordTop": 770
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 625,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 525
+      },
+      "delta": -245,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 451,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 351
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 375,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 275
+      },
+      "delta": -76,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "",
+        "documentTop": 1158,
+        "requiredScroll": 394,
+        "scrollToRecordTop": 1058
+      },
+      "after": {
+        "text": "",
+        "documentTop": 767,
+        "requiredScroll": 3,
+        "scrollToRecordTop": 667
+      },
+      "delta": -391,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "390",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1884,
+        "requiredScroll": 1120,
+        "scrollToRecordTop": 1784
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1596,
+        "requiredScroll": 832,
+        "scrollToRecordTop": 1496
+      },
+      "delta": -288,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 974,
+        "requiredScroll": 210,
+        "scrollToRecordTop": 874
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 709,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 609
+      },
+      "delta": -265,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "390",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 929,
+        "requiredScroll": 165,
+        "scrollToRecordTop": 829
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 671,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 571
+      },
+      "delta": -258,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3042,
+        "requiredScroll": 2222,
+        "scrollToRecordTop": 2942
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1760,
+        "requiredScroll": 940,
+        "scrollToRecordTop": 1660
+      },
+      "delta": -1282,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 437,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 337
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 374,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 274
+      },
+      "delta": -63,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -52,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 875,
+        "requiredScroll": 55,
+        "scrollToRecordTop": 775
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "delta": -258,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 899,
+        "requiredScroll": 79,
+        "scrollToRecordTop": 799
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 522,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 422
+      },
+      "delta": -377,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 324,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 224
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 314,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 214
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 865,
+        "requiredScroll": 45,
+        "scrollToRecordTop": 765
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 625,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 525
+      },
+      "delta": -240,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 451,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 351
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 375,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 275
+      },
+      "delta": -76,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "",
+        "documentTop": 1135,
+        "requiredScroll": 315,
+        "scrollToRecordTop": 1035
+      },
+      "after": {
+        "text": "",
+        "documentTop": 745,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 645
+      },
+      "delta": -390,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "430",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1843,
+        "requiredScroll": 1023,
+        "scrollToRecordTop": 1743
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1558,
+        "requiredScroll": 738,
+        "scrollToRecordTop": 1458
+      },
+      "delta": -285,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 972,
+        "requiredScroll": 152,
+        "scrollToRecordTop": 872
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 709,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 609
+      },
+      "delta": -263,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "430",
+      "mode": "light",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 929,
+        "requiredScroll": 109,
+        "scrollToRecordTop": 829
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 671,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 571
+      },
+      "delta": -258,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3042,
+        "requiredScroll": 2222,
+        "scrollToRecordTop": 2942
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1760,
+        "requiredScroll": 940,
+        "scrollToRecordTop": 1660
+      },
+      "delta": -1282,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 437,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 337
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 374,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 274
+      },
+      "delta": -63,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -52,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 875,
+        "requiredScroll": 55,
+        "scrollToRecordTop": 775
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "delta": -258,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 899,
+        "requiredScroll": 79,
+        "scrollToRecordTop": 799
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 522,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 422
+      },
+      "delta": -377,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 324,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 224
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 314,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 214
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 865,
+        "requiredScroll": 45,
+        "scrollToRecordTop": 765
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 625,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 525
+      },
+      "delta": -240,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 451,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 351
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 375,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 275
+      },
+      "delta": -76,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "",
+        "documentTop": 1135,
+        "requiredScroll": 315,
+        "scrollToRecordTop": 1035
+      },
+      "after": {
+        "text": "",
+        "documentTop": 745,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 645
+      },
+      "delta": -390,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "430",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1843,
+        "requiredScroll": 1023,
+        "scrollToRecordTop": 1743
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1558,
+        "requiredScroll": 738,
+        "scrollToRecordTop": 1458
+      },
+      "delta": -285,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 972,
+        "requiredScroll": 152,
+        "scrollToRecordTop": 872
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 709,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 609
+      },
+      "delta": -263,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "430",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 929,
+        "requiredScroll": 109,
+        "scrollToRecordTop": 829
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 671,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 571
+      },
+      "delta": -258,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3073,
+        "requiredScroll": 2129,
+        "scrollToRecordTop": 2973
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1830,
+        "requiredScroll": 886,
+        "scrollToRecordTop": 1730
+      },
+      "delta": -1243,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 445,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 345
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 374,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 274
+      },
+      "delta": -71,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 380,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 280
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -60,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 728,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 628
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 601,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 501
+      },
+      "delta": -127,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 870,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 770
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 503,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 403
+      },
+      "delta": -367,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 332,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 232
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 322,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 222
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 884,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 784
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 621,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 521
+      },
+      "delta": -263,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 470,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 370
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 379,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 279
+      },
+      "delta": -91,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "",
+        "documentTop": 996,
+        "requiredScroll": 52,
+        "scrollToRecordTop": 896
+      },
+      "after": {
+        "text": "",
+        "documentTop": 606,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 506
+      },
+      "delta": -390,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "768",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1835,
+        "requiredScroll": 891,
+        "scrollToRecordTop": 1735
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1558,
+        "requiredScroll": 614,
+        "scrollToRecordTop": 1458
+      },
+      "delta": -277,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 801,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 701
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 670,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 570
+      },
+      "delta": -131,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "768",
+      "mode": "light",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 757,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 657
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 636,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 536
+      },
+      "delta": -121,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 3073,
+        "requiredScroll": 2129,
+        "scrollToRecordTop": 2973
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1830,
+        "requiredScroll": 886,
+        "scrollToRecordTop": 1730
+      },
+      "delta": -1243,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 445,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 345
+      },
+      "after": {
+        "text": "En reparaciónApple iPhone 13#1048 · Juan Demo1155550102Total$ 120.000Pagado$ 40.000Saldo$ 80.000Ingr",
+        "documentTop": 374,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 274
+      },
+      "delta": -71,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 380,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 280
+      },
+      "after": {
+        "text": "Juan Demo1155550102Reparaciones2Última reparaciónApple iPhone 13Cliente desde13 de oct de 2026",
+        "documentTop": 320,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 220
+      },
+      "delta": -60,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 728,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 628
+      },
+      "after": {
+        "text": "IngresoReparacionesAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha",
+        "documentTop": 601,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 501
+      },
+      "delta": -127,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 870,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 770
+      },
+      "after": {
+        "text": "12 en stockCargador USB-CAccesoriosPrecio de venta$ 10.000Ganancia por unidad$ 5.000Costo$ 5.000Stoc",
+        "documentTop": 503,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 403
+      },
+      "delta": -367,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Cargador USB-C",
+        "documentTop": 332,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 232
+      },
+      "after": {
+        "text": "Cargador USB-C",
+        "documentTop": 322,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 222
+      },
+      "delta": -10,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 884,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 784
+      },
+      "after": {
+        "text": "Listo para venderSamsungGalaxy A54Inversión total$ 120.000Precio estimado de venta$ 180.000",
+        "documentTop": 621,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 521
+      },
+      "delta": -263,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 470,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 370
+      },
+      "after": {
+        "text": "ActivaApple iPhone 13Reparación #1048 · Juan Demo · 1155550102VigenciaVence el 13 de nov de 202629 d",
+        "documentTop": 379,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 279
+      },
+      "delta": -91,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "",
+        "documentTop": 996,
+        "requiredScroll": 52,
+        "scrollToRecordTop": 896
+      },
+      "after": {
+        "text": "",
+        "documentTop": 606,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 506
+      },
+      "delta": -390,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "768",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1835,
+        "requiredScroll": 891,
+        "scrollToRecordTop": 1735
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1558,
+        "requiredScroll": 614,
+        "scrollToRecordTop": 1458
+      },
+      "delta": -277,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 801,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 701
+      },
+      "after": {
+        "text": "Reparación #10482 movimientosJuan Demo · Apple iPhone 13Ingresos+$ 40.000Egresos−$ 50.000Neto−$ 10.0",
+        "documentTop": 670,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 570
+      },
+      "delta": -131,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "768",
+      "mode": "dark",
+      "before": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 757,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 657
+      },
+      "after": {
+        "text": "IngresoAdelanto reparación #1048Juan DemoImporte+$ 40.000Medio de pagoTransferenciaFecha13/10/2026Ho",
+        "documentTop": 636,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 536
+      },
+      "delta": -121,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 2414,
+        "requiredScroll": 1594,
+        "scrollToRecordTop": 2314
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 2414,
+        "requiredScroll": 1594,
+        "scrollToRecordTop": 2314
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "#1048Apple iPhone 13Pantalla dañadaJuan Demo1155550102En reparaciónTotal $ 120.000Pagado $ 40.000Sal",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "#1048Apple iPhone 13Pantalla dañadaJuan Demo1155550102En reparaciónTotal $ 120.000Pagado $ 40.000Sal",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Juan Demo11555501022Apple iPhone 1313 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo11555501022Apple iPhone 1313 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048Juan DemoReparacionesTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 597,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 497
+      },
+      "after": {
+        "text": "Adelanto reparación #1048Juan DemoReparacionesTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 597,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 497
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Cargador USB-CAccesorios12 en stock$ 5.000$ 10.000$ 5.000",
+        "documentTop": 880,
+        "requiredScroll": 60,
+        "scrollToRecordTop": 780
+      },
+      "after": {
+        "text": "Cargador USB-CAccesorios12 en stock$ 5.000$ 10.000$ 5.000",
+        "documentTop": 904,
+        "requiredScroll": 84,
+        "scrollToRecordTop": 804
+      },
+      "delta": 24,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Cargador USB-CAccesorios12$ 10.000",
+        "documentTop": 370,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 270
+      },
+      "after": {
+        "text": "Cargador USB-CAccesorios12$ 10.000",
+        "documentTop": 362,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 262
+      },
+      "delta": -8,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "SamsungGalaxy A54Listo para vender$ 120.000$ 180.000Estimado",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "after": {
+        "text": "SamsungGalaxy A54Listo para vender$ 120.000$ 180.000Estimado",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Reparación #1048Garantía de demostraciónJuan Demo1155550102Apple iPhone 13ActivaVence el 13 de nov d",
+        "documentTop": 429,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 329
+      },
+      "after": {
+        "text": "Reparación #1048Garantía de demostraciónJuan Demo1155550102Apple iPhone 13ActivaVence el 13 de nov d",
+        "documentTop": 429,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 329
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "",
+        "documentTop": 575,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 475
+      },
+      "after": {
+        "text": "",
+        "documentTop": 575,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 475
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "1440",
+      "mode": "light",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1443,
+        "requiredScroll": 623,
+        "scrollToRecordTop": 1343
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1443,
+        "requiredScroll": 623,
+        "scrollToRecordTop": 1343
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Reparación #1048Juan DemoApple iPhone 132 movimientos+$ 40.000−$ 50.000−$ 10.00013/10/202609:00",
+        "documentTop": 654,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 554
+      },
+      "after": {
+        "text": "Reparación #1048Juan DemoApple iPhone 132 movimientos+$ 40.000−$ 50.000−$ 10.00013/10/202609:00",
+        "documentTop": 654,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 554
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "1440",
+      "mode": "light",
+      "before": {
+        "text": "Adelanto reparación #1048Juan DemoTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 627,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 527
+      },
+      "after": {
+        "text": "Adelanto reparación #1048Juan DemoTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 627,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 527
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 2414,
+        "requiredScroll": 1594,
+        "scrollToRecordTop": 2314
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 2414,
+        "requiredScroll": 1594,
+        "scrollToRecordTop": 2314
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "repairs",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "#1048Apple iPhone 13Pantalla dañadaJuan Demo1155550102En reparaciónTotal $ 120.000Pagado $ 40.000Sal",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "#1048Apple iPhone 13Pantalla dañadaJuan Demo1155550102En reparaciónTotal $ 120.000Pagado $ 40.000Sal",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "clients",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Juan Demo11555501022Apple iPhone 1313 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "after": {
+        "text": "Juan Demo11555501022Apple iPhone 1313 de oct de 2026",
+        "documentTop": 372,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 272
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048Juan DemoReparacionesTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 597,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 497
+      },
+      "after": {
+        "text": "Adelanto reparación #1048Juan DemoReparacionesTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 597,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 497
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "commerce",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Cargador USB-CAccesorios12 en stock$ 5.000$ 10.000$ 5.000",
+        "documentTop": 880,
+        "requiredScroll": 60,
+        "scrollToRecordTop": 780
+      },
+      "after": {
+        "text": "Cargador USB-CAccesorios12 en stock$ 5.000$ 10.000$ 5.000",
+        "documentTop": 904,
+        "requiredScroll": 84,
+        "scrollToRecordTop": 804
+      },
+      "delta": 24,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "pos",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Cargador USB-CAccesorios12$ 10.000",
+        "documentTop": 370,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 270
+      },
+      "after": {
+        "text": "Cargador USB-CAccesorios12$ 10.000",
+        "documentTop": 362,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 262
+      },
+      "delta": -8,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "equipment",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "SamsungGalaxy A54Listo para vender$ 120.000$ 180.000Estimado",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "after": {
+        "text": "SamsungGalaxy A54Listo para vender$ 120.000$ 180.000Estimado",
+        "documentTop": 617,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 517
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "warranties",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Reparación #1048Garantía de demostraciónJuan Demo1155550102Apple iPhone 13ActivaVence el 13 de nov d",
+        "documentTop": 429,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 329
+      },
+      "after": {
+        "text": "Reparación #1048Garantía de demostraciónJuan Demo1155550102Apple iPhone 13ActivaVence el 13 de nov d",
+        "documentTop": 429,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 329
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": false
+    },
+    {
+      "screen": "settings",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "",
+        "documentTop": 575,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 475
+      },
+      "after": {
+        "text": "",
+        "documentTop": 575,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 475
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "subscription",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "platform",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "blocked",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": null,
+      "after": null,
+      "delta": null,
+      "apiFinancialValuesMatch": null,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "dashboard-limited",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1443,
+        "requiredScroll": 623,
+        "scrollToRecordTop": 1343
+      },
+      "after": {
+        "text": "Adelanto reparación #1048",
+        "documentTop": 1443,
+        "requiredScroll": 623,
+        "scrollToRecordTop": 1343
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-repairs",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Reparación #1048Juan DemoApple iPhone 132 movimientos+$ 40.000−$ 50.000−$ 10.00013/10/202609:00",
+        "documentTop": 654,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 554
+      },
+      "after": {
+        "text": "Reparación #1048Juan DemoApple iPhone 132 movimientos+$ 40.000−$ 50.000−$ 10.00013/10/202609:00",
+        "documentTop": 654,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 554
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    },
+    {
+      "screen": "cash-equipment",
+      "viewport": "1440",
+      "mode": "dark",
+      "before": {
+        "text": "Adelanto reparación #1048Juan DemoTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 627,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 527
+      },
+      "after": {
+        "text": "Adelanto reparación #1048Juan DemoTransferencia13/10/202609:00Ingreso+$ 40.000",
+        "documentTop": 627,
+        "requiredScroll": 0,
+        "scrollToRecordTop": 527
+      },
+      "delta": 0,
+      "apiFinancialValuesMatch": true,
+      "actualAmountNodesMatch": true
+    }
+  ]
+}

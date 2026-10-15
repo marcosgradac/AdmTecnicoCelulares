@@ -62,9 +62,9 @@ export function CommerceProductsSection({ canManage, onNewProduct, onEditProduct
   }, [debouncedSearch, page, revision, retry])
 
   return (
-    <Card sx={{ mt: 3 }}>
-      <CardContent>
-        <Box sx={{ mb: 2.5 }}>
+    <Card sx={{ mt: { xs: 0, md: 3 } }}>
+      <CardContent sx={theme => ({ [theme.breakpoints.down('md')]: { p: 1.5, '&:last-child': { pb: 1.5 }, '& .MuiTextField-root .MuiInputBase-root': { minHeight: 44 }, '& .MuiTextField-root .MuiIconButton-root': { minWidth: 44, minHeight: 44 } } })}>
+        <Box sx={{ mb: { xs: 1.5, md: 2.5 } }}>
           <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Productos</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Administrá el stock, costos y precios de todos tus productos.

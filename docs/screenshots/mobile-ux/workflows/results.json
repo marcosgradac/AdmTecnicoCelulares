@@ -1,0 +1,282 @@
+[
+  {
+    "name": "pos",
+    "width": 360,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 360,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 360,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 360,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 360,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 360,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 360,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 360,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 360,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 360,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 390,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 390,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 390,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 390,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 390,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 390,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 390,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 390,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 390,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 390,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 768,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 768,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 768,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 768,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 768,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 768,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 768,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 768,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 768,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 768,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 1440,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 1440,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 1440,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 1440,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 1440,
+    "mode": "light",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "pos",
+    "width": 1440,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "team",
+    "width": 1440,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "warranties",
+    "width": 1440,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "repair",
+    "width": 1440,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  },
+  {
+    "name": "category",
+    "width": 1440,
+    "mode": "dark",
+    "passed": true,
+    "requestDelta": 0
+  }
+]

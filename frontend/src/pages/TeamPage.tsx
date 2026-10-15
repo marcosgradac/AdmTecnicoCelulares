@@ -2,14 +2,14 @@ import { FilterBar, FormSection } from '../components/admin/AdminPatterns'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import axios from 'axios'
 import {
-  Alert, Avatar, Box, Button, Card, CardContent, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
+  Accordion, AccordionDetails, AccordionSummary, Alert, Avatar, Box, Button, Card, CardContent, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, MenuItem, Select,
   Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField,
   Typography, useMediaQuery, useTheme,
 } from '@mui/material'
 import {
   AddRounded, DeleteOutlineRounded, EditRounded, KeyRounded, SearchRounded,
-  VisibilityOffRounded, VisibilityRounded,
+  ExpandMoreRounded, VisibilityOffRounded, VisibilityRounded,
 } from '@mui/icons-material'
 import { PageHeader } from '../components/common/PageHeader'
 import { FormDrawer } from '../components/common/FormDrawer'
@@ -42,13 +42,20 @@ const permissionGroups = [
   { module: 'Configuración', options: [['settings.access','Acceder a configuración'],['settings.business.update','Editar negocio']] },
 ] as const
 function PermissionFields({ value, onChange, disabled = false }: { value: string[]; onChange: (value: string[]) => void; disabled?: boolean }) {
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
   const toggle = (permission: string, checked: boolean) => onChange(checked ? [...value, permission] : value.filter(item => item !== permission))
   return <FormSection title="Permisos del técnico" description="Accesos asignados a esta persona.">
     <Box display="grid" gridTemplateColumns="minmax(0,1fr)" gap={1.5} alignItems="start">
-      {permissionGroups.map(group => <Box key={group.module} sx={{ p: 1.5, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'var(--td-elevated, #FAFAFE)' }}>
-        <Typography variant="subtitle2" fontWeight={800} mb={.5}>{group.module}</Typography>
-        <Stack>{group.options.map(([permission, label]) => <FormControlLabel key={permission} sx={{ m: 0, minWidth: 0, '& .MuiFormControlLabel-label': { fontSize: '.85rem', lineHeight: 1.4, overflowWrap: 'anywhere' } }} control={<Checkbox size="small" checked={value.includes(permission)} disabled={disabled} onChange={event => toggle(permission, event.target.checked)} />} label={label} />)}</Stack>
-      </Box>)}
+      {permissionGroups.map(group => {
+        const selected = group.options.filter(([permission]) => value.includes(permission)).length
+        const fields = <Stack>{group.options.map(([permission, label]) => <FormControlLabel key={permission} sx={{ m: 0, minWidth: 0, minHeight: { xs: 44, md: 'auto' }, '& .MuiFormControlLabel-label': { fontSize: '.85rem', lineHeight: 1.4, overflowWrap: 'anywhere' } }} control={<Checkbox size="small" checked={value.includes(permission)} disabled={disabled} onChange={event => toggle(permission, event.target.checked)} />} label={label} />)}</Stack>
+        return mobile ? <Accordion key={group.module} disableGutters elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', bgcolor: 'var(--td-elevated, #FAFAFE)', '&:before': { display: 'none' } }}>
+          <AccordionSummary expandIcon={<ExpandMoreRounded />} sx={{ minHeight: 48, '& .MuiAccordionSummary-content': { gap: 1, alignItems: 'center', justifyContent: 'space-between' } }}>
+            <Typography variant="subtitle2" fontWeight={800}>{group.module}</Typography><Typography variant="caption" color="text.secondary">{selected}/{group.options.length} asignados</Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>{fields}</AccordionDetails>
+        </Accordion> : <Box key={group.module} sx={{ p: 1.5, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'var(--td-elevated, #FAFAFE)' }}><Typography variant="subtitle2" fontWeight={800} mb={.5}>{group.module}</Typography>{fields}</Box>
+      })}
     </Box>
   </FormSection>
 }
@@ -66,7 +73,7 @@ function PasswordRules({ value }: { value: string }) {
 
 export function TeamPage() {
   const theme = useTheme()
-  const mobile = useMediaQuery(theme.breakpoints.down('lg'))
+  const mobile = useMediaQuery(theme.breakpoints.down('md'))
   const [users, setUsers] = useState<TeamMember[]>([])
   const [filters, setFilters] = useState<{ search: string; role: '' | TeamRole; isActive: '' | 'true' | 'false' }>({ search: '', role: '', isActive: '' })
   const [loading, setLoading] = useState(true)
@@ -110,7 +117,7 @@ export function TeamPage() {
       <FormControl sx={{ minWidth: 180 }}><InputLabel>Estado</InputLabel><Select label="Estado" value={filters.isActive} onChange={event => setFilters(value => ({ ...value, isActive: event.target.value as '' | 'true' | 'false' }))}><MenuItem value="">Todos</MenuItem><MenuItem value="true">Activo</MenuItem><MenuItem value="false">Inactivo</MenuItem></Select></FormControl>
     </FilterBar></CardContent></Card>
     {loading ? <UiState loading /> : error ? <UiState title="No pudimos cargar los empleados" description={error} action={() => void load()} /> : users.length === 0 ? <UiState title="No encontramos empleados" description="Probá cambiar los filtros o agregá una persona." /> : mobile
-      ? <Stack spacing={1.5}>{users.map(member => <Card key={member.id}><CardContent><Stack direction="row" justifyContent="space-between">{identity(member)}{actions(member)}</Stack><Stack direction="row" gap={1} mt={2} flexWrap="wrap"><Chip size="small" label={roleLabel(member.role)} color={member.role === 'OWNER' ? 'primary' : 'default'} /><Chip size="small" label={member.isActive ? 'Activo' : 'Inactivo'} color={member.isActive ? 'success' : 'default'} /><Chip size="small" label={member.phone || 'Sin teléfono'} /></Stack><Typography variant="caption" color="text.secondary" display="block" mt={1.5}>{member.role === 'OWNER' ? 'Acceso completo' : member.permissions.length + ' permisos asignados'} · Alta: {formatDate(member.createdAt)}</Typography></CardContent></Card>)}</Stack>
+      ? <Stack spacing={1}>{users.map(member => <Card key={member.id}><CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, '& .MuiIconButton-root': { minWidth: 44, minHeight: 44 } }}><Stack direction="row" justifyContent="space-between">{identity(member)}{actions(member)}</Stack><Stack direction="row" gap={.75} mt={1} flexWrap="wrap"><Chip size="small" label={roleLabel(member.role)} color={member.role === 'OWNER' ? 'primary' : 'default'} /><Chip size="small" label={member.isActive ? 'Activo' : 'Inactivo'} color={member.isActive ? 'success' : 'default'} /><Chip size="small" label={member.phone || 'Sin teléfono'} /></Stack><Typography variant="caption" color="text.secondary" display="block" mt={1}>{member.role === 'OWNER' ? 'Acceso completo' : member.permissions.length + ' permisos asignados'} · Alta: {formatDate(member.createdAt)}</Typography></CardContent></Card>)}</Stack>
       : <TableContainer component={Card}><Table><TableHead><TableRow><TableCell>Empleado</TableCell><TableCell>Permisos</TableCell><TableCell>Teléfono</TableCell><TableCell>Rol</TableCell><TableCell>Estado</TableCell><TableCell>Fecha de alta</TableCell><TableCell align="right">Acciones</TableCell></TableRow></TableHead><TableBody>{users.map(member => <TableRow key={member.id} hover><TableCell>{identity(member)}</TableCell><TableCell><Typography variant="body2">{member.role === 'OWNER' ? 'Acceso completo' : member.permissions.length + ' permisos asignados'}</Typography></TableCell><TableCell>{member.phone || '—'}</TableCell><TableCell><Chip size="small" label={roleLabel(member.role)} color={member.role === 'OWNER' ? 'primary' : 'default'} /></TableCell><TableCell><Chip size="small" label={member.isActive ? 'Activo' : 'Inactivo'} color={member.isActive ? 'success' : 'default'} /></TableCell><TableCell>{formatDate(member.createdAt)}</TableCell><TableCell align="right">{actions(member)}</TableCell></TableRow>)}</TableBody></Table></TableContainer>}
     <CreateMemberDrawer open={createOpen} onClose={() => setCreateOpen(false)} onCompleted={() => completed('Empleado creado correctamente.')} />
     <EditMemberDrawer member={editing} onClose={() => setEditing(null)} onCompleted={() => completed('Empleado actualizado correctamente.')} onDelete={member => { setEditing(null); setDeleting(member) }} />

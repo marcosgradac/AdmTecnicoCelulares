@@ -1,5 +1,6 @@
+import { MobileCarousel } from '../common/MobileCarousel'
 import { ArrowForwardRounded, BuildRounded, CheckCircleOutlineRounded, ChevronRightRounded, Inventory2Rounded, PhoneIphoneRounded } from '@mui/icons-material'
-import { Box, Button, Card, CardContent, Chip, List, ListItemButton, Stack, Typography } from '@mui/material'
+import { Box, Button, Card, CardContent, Chip, List, ListItemButton, Stack, Typography, useMediaQuery, useTheme } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 import { GRADIENT_TEXT_SX, FINANCIAL_COLORS } from '../../theme/tokens'
 import type { ReactNode } from 'react'
@@ -13,9 +14,9 @@ export function AttentionPanel({ groups }: { groups: DashboardOverview['attentio
   return <Card id="necesitan-atencion" sx={{ scrollMarginTop: 90 }}><CardContent>
     <Typography variant="h2" sx={GRADIENT_TEXT_SX}>Necesitan atención</Typography><Typography variant="body2" color="text.secondary" mt={.5} mb={2}>Pendientes actuales, sin importar cuándo ingresaron.</Typography>
     {!groups.length ? <UiState icon={<CheckCircleOutlineRounded />} title="Sin pendientes de atención" description="No hay casos en las condiciones revisadas." /> : <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))', xl: 'repeat(3, minmax(0, 1fr))' }, gap: 2 }}>
-      {groups.map(group => <Box key={group.key} id={`atencion-${group.key}`} sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 3, minWidth: 0, scrollMarginTop: 90 }}>
+      {groups.map(group => <Box key={group.key} id={`atencion-${group.key}`} sx={{ p: {xs:1.5,md:2}, border: '1px solid', borderColor: 'divider', borderRadius: 3, minWidth: 0, scrollMarginTop: 90 }}>
         <Stack direction="row" alignItems="center" gap={1}><Typography variant="subtitle2" fontWeight={750} sx={{ flex: 1 }}>{group.title}</Typography><Chip size="small" color={group.key === 'delayed' ? 'warning' : 'primary'} label={group.count} /></Stack>
-        <List disablePadding sx={{ mt: 1 }}>{group.items.map(item => <ListItemButton key={item.id} component={RouterLink} to={item.href} sx={{ px: 0, py: 1, minHeight: 52, borderRadius: 2, gap: 1 }}><Box minWidth={0} flex={1}><Typography variant="body2" fontWeight={650} sx={{ overflowWrap: 'anywhere' }}>{item.title}</Typography><Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{item.detail}</Typography></Box><ArrowForwardRounded sx={{ fontSize: 16, color: 'text.secondary' }} /></ListItemButton>)}</List>
+        <List disablePadding sx={{ mt: 1 }}>{group.items.map(item => <ListItemButton key={item.id} component={RouterLink} to={item.href} sx={{ px: 0, py: {xs:.5,md:1}, minHeight: {xs:44,md:52}, borderRadius: 2, gap: 1 }}><Box minWidth={0} flex={1}><Typography variant="body2" fontWeight={650} sx={{ overflowWrap: 'anywhere' }}>{item.title}</Typography><Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{item.detail}</Typography></Box><ArrowForwardRounded sx={{ fontSize: 16, color: 'text.secondary' }} /></ListItemButton>)}</List>
         <Button component={RouterLink} to={group.href} size="small" endIcon={<ArrowForwardRounded />}>Abrir {group.key === 'equipment' ? 'equipos' : group.key === 'warranty' ? 'garantías' : 'reparaciones'}</Button>
         {group.count > group.items.length && <Typography variant="caption" color="text.secondary" display="block">Mostrando {group.items.length} de {group.count} casos.</Typography>}
       </Box>)}
@@ -30,11 +31,11 @@ function ModuleValue({ label, value, color }: { label: string; value: string | n
   return <Stack direction="row" justifyContent="space-between" gap={2}><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="body2" fontWeight={750} color={color === 'success.main' ? FINANCIAL_COLORS.income : color === 'error.main' ? FINANCIAL_COLORS.expense : color} textAlign="right" sx={{ overflowWrap: 'anywhere', minWidth: 0 }}>{value}</Typography></Stack>
 }
 export function ModuleSummaries({ modules }: { modules: DashboardOverview['modules'] }) {
-  return <Box><Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, mb: .5 }}>Tus módulos</Typography><Typography variant="body2" color="text.secondary" mb={2}>Operaciones del período y disponibilidad actual.</Typography><Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${modules.commerce ? 3 : 2}, minmax(0, 1fr))` }, gap: 2 }}>
+  return <Box><Typography variant="h2" sx={{ ...GRADIENT_TEXT_SX, mb: .5 }}>Tus módulos</Typography><Typography variant="body2" color="text.secondary" mb={2}>Operaciones del período y disponibilidad actual.</Typography><MobileCarousel label="Tus módulos" desktopSx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: `repeat(${modules.commerce ? 3 : 2}, minmax(0, 1fr))` }, gap: 2 }}>
     <ModuleCard title="Reparaciones" href="/admin/reparaciones" icon={<BuildRounded />}><ModuleValue label="Ingresaron en el período" value={modules.repairs.received} /><ModuleValue label="Cobrado en el período" color="success.main" value={formatMoney(modules.repairs.income)} /><ModuleValue label="Activas ahora" value={modules.repairs.active} /></ModuleCard>
     {modules.commerce && <ModuleCard title="Comercio" href="/admin/comercio" icon={<Inventory2Rounded />}><ModuleValue label="Ventas del período" value={modules.commerce.sales} /><ModuleValue label="Importe vendido" color="success.main" value={formatMoney(modules.commerce.revenue)} /><ModuleValue label="Margen bruto de ventas" color={modules.commerce.grossProfit < 0 ? 'error.main' : modules.commerce.grossProfit > 0 ? 'success.main' : 'text.primary'} value={formatMoney(modules.commerce.grossProfit)} /><Typography variant="caption" color="text.secondary">Antes de egresos comerciales.</Typography></ModuleCard>}
     <ModuleCard title="Venta de equipos" href="/admin/venta-equipos" icon={<PhoneIphoneRounded />}><ModuleValue label="Ventas registradas en el período" value={modules.equipment.sales} /><ModuleValue label="Ganancia de esas ventas" color={modules.equipment.profit < 0 ? 'error.main' : modules.equipment.profit > 0 ? 'success.main' : 'text.primary'} value={formatMoney(modules.equipment.profit)} /><ModuleValue label="Listos para vender ahora" value={modules.equipment.ready} /><ModuleValue label="Equipos sin vender" value={modules.equipment.inProcess} /></ModuleCard>
-  </Box></Box>
+  </MobileCarousel></Box>
 }
 
 const movementTz = 'America/Argentina/Buenos_Aires'
@@ -47,6 +48,8 @@ const activityColumns = { xs: 'auto minmax(0, 1fr) auto', md: 'minmax(0, 2.2fr) 
 const activityHeadCell = { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--td-muted, #9AA0AE)', lineHeight: 1.4 } as const
 
 export function RecentActivity({ items }: { items: DashboardOverview['activity'] }) {
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
+  const shownItems = mobile ? items.slice(0, 3) : items
   return <Card><CardContent>
     <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} justifyContent="space-between" gap={1} mb={2}>
       <Box minWidth={0}><Typography variant="h2" sx={GRADIENT_TEXT_SX}>Últimos movimientos</Typography><Typography variant="body2" color="text.secondary" mt={.5}>Los movimientos más recientes del período seleccionado.</Typography></Box>
@@ -61,7 +64,7 @@ export function RecentActivity({ items }: { items: DashboardOverview['activity']
         <Typography variant="caption" sx={{ ...activityHeadCell, textAlign: 'right' }}>Importe</Typography>
         <Typography variant="caption" sx={{ ...activityHeadCell, textAlign: 'right' }}>Acción</Typography>
       </Box>
-      <List disablePadding sx={{ display: 'grid', gap: { xs: 1.5, md: 0 }, py: 0 }}>{items.map(item => {
+      <List disablePadding sx={{ display: 'grid', gap: { xs: 1.5, md: 0 }, py: 0 }}>{shownItems.map(item => {
         const income = item.type === 'INCOME'
         return <ListItemButton key={item.id} component={RouterLink} to={item.href} sx={{ display: 'grid', gridTemplateColumns: activityColumns, gap: { xs: 1, md: 1.5 }, alignItems: 'center', px: { xs: 1.5, md: 2 }, py: { xs: 1.25, md: 1.5 }, border: { xs: '1px solid', md: 0 }, borderBottom: '1px solid', borderColor: TABLE_BORDER, borderRadius: { xs: 2, md: 0 }, minWidth: 0, transition: 'background-color .15s ease', '&:last-child': { borderBottomWidth: { md: 0 } }, '&:hover svg': { color: 'primary.main' } }}>
           <Box sx={{ gridArea: { xs: '1 / 1 / 2 / 3', md: '1 / 1 / 2 / 2' }, minWidth: 0 }}><Typography variant="body2" fontWeight={700} sx={{ overflowWrap: 'anywhere' }}>{item.description}</Typography></Box>

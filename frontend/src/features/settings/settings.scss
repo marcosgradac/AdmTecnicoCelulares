@@ -8,3 +8,17 @@
 .business-logo__content { min-width: 0; flex: 1; }
 @media (max-width: 899px) { .settings-layout { grid-template-columns: 1fr; }.settings-menu { position: static; }.settings-content { min-width: 0; } }
 @media (max-width: 599px) { .business-logo { align-items: flex-start; padding: 15px; }.business-logo > .MuiAvatar-root { width: 84px; height: 84px; flex-basis: 84px; }.business-logo__content .MuiButton-root { width: 100%; } }
+
+@media (max-width: 899px) {
+  .settings-layout { gap: 16px; }
+  .settings-menu { display: flex; gap: 4px; overflow-x: auto; padding: 4px; position: relative; top: auto; border-radius: 12px; scroll-padding-inline: 4px; }
+  .settings-menu button { flex: 0 0 auto; min-height: 44px; padding: 10px 12px; white-space: nowrap; }
+  .settings-menu button[aria-current='location'] { color: var(--td-primary); background: var(--td-primary-soft); }
+  .settings-menu button > span { gap: 7px; }
+  .settings-menu button small, .settings-menu button > svg { display: none; }
+  .settings-menu button > span > svg { font-size: 20px; }
+  .settings-menu button:focus-visible { outline: 2px solid var(--td-primary); outline-offset: -2px; }
+  .settings-content > .settings-section { margin-top: 0 !important; }
+  .settings-section .MuiCardContent-root { padding: 18px; }
+  .settings-section .MuiButton-root { min-height: 44px; }
+}
