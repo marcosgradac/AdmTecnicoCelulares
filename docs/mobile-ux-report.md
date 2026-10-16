@@ -1,6 +1,6 @@
 # TecnoDesk — Mobile UX 2.0
 
-Estado: implementación y revisión visual local completadas; preparada para PR en borrador. CI remoto se consulta sobre el SHA publicado.
+Estado: PR #22 en borrador. Reproducción Linux confirmada y corrección de sincronización de la prueba preparada. La aprobación depende de los checks del último SHA en el PR; la matriz histórica no acredita por sí sola Linux.
 
 Rama: `feature/mobile-ux-carousels`. Base: `origin/main` en `6aa00849b46d3916d05834e459404474d3d5fee3`, que ya incluye el tema oscuro del PR #21. Worktree aislado; los cambios de otros trabajos se conservaron.
 
@@ -67,7 +67,7 @@ Verificadas localmente:
 - Logo y colores financieros: 84 casos desktop/390/360, ambos temas, resultados positivos/negativos/cero y contraste; icono original intacto.
 
 <!-- MATRIX_START -->
-- Matriz: **900/900**, 450 antes + 450 después, 45 rutas/escenarios/hashes × cinco anchos × dos temas. Sin overflow inesperado, errores de aplicación, peticiones externas ni escrituras.
+- Matriz histórica y repetición local tras la corrección (Chrome/Windows): **900/900**, 450 antes + 450 después, 45 rutas/escenarios/hashes × cinco anchos × dos temas. Sin overflow inesperado, errores de aplicación, peticiones externas ni escrituras.
 - Paridad de peticiones iniciales: **450/450 pares** con los mismos métodos y rutas. Las interacciones de carrusel y pestañas verifican ausencia de consultas adicionales.
 - Valores financieros semánticos: **70/70 pares** con snapshots disponibles, sin diferencias.
 - Workflows: 40 casos sobre carrito/pagos locales, permisos, reclamos, secciones de reparación y menú de categorías; resultados individuales en el enlace inferior. Se volvió a verificar POS después del ajuste de cabecera.
@@ -90,17 +90,27 @@ La revisión visual detectó y corrigió la expansión intrínseca de los grids 
 | Caja clara | [Captura](screenshots/mobile-ux/before-light-360-cash.png) | [Captura](screenshots/mobile-ux/after-light-360-cash.png) |
 | Reventa oscura | [Captura](screenshots/mobile-ux/before-dark-360-equipment.png) | [Captura](screenshots/mobile-ux/after-dark-360-equipment.png) |
 | Configuración oscura | [Captura](screenshots/mobile-ux/before-dark-360-settings.png) | [Captura](screenshots/mobile-ux/after-dark-360-settings.png) |
-| Punto de venta claro | [Captura](screenshots/mobile-ux/before-light-360-pos.png) | [Captura](screenshots/mobile-ux/after-light-360-pos.png) |
+| Punto de venta claro, 390 px | [Captura](screenshots/mobile-ux/before-light-390-pos.png) | [Captura](screenshots/mobile-ux/after-light-390-pos.png) |
 
-La carpeta incluye las mismas pantallas a 390 y 1440 px, ambos temas, y diálogos reales de edición, pago, venta y eliminación sin confirmar operaciones.
+Se conservan 24 PNG representativos: Dashboard/Caja/Reventa/Configuración a 360 px en ambos temas, Comercio/POS a 390 px claro y Dashboard desktop a 1440 px en ambos temas, siempre antes/después. Los 641 PNG restantes se preservaron localmente en artifacts/mobile-ux/original-captures/, fuera de Git. Las nuevas capturas de rutas, diálogos, fallos y diagnósticos se generan en artifacts/mobile-ux/ y se publican como artefacto mobile-browser-<run_id> de GitHub Actions durante 14 días.
 
 ## Demo local
 
-`http://127.0.0.1:5299/admin`
+`http://127.0.0.1:5173/admin`
 
-Se solicitó abrir el navegador integrado. También puede abrirse la URL en Chrome; su lanzamiento automático fue bloqueado por la política de la herramienta. Para cambiar de tema: Mi negocio → Apariencia. Datos ficticios en memoria; las escrituras financieras devuelven 405. No se necesita backend, credenciales ni base externa. Reiniciar la demo restablece sus datos.
+La revisión local usa Vite, API en 127.0.0.1:3001 y PostgreSQL en 127.0.0.1:55449, con datos ficticios y sin acceso a producción. El lanzador temporal está fuera de los archivos versionados y mantiene la sesión local abierta. Para cambiar de tema: Mi negocio → Apariencia.
 
-Para levantarla desde `frontend`: `npm run demo:mobile-ux`. Debe mantenerse ejecutándose mientras se revisa.
+La alternativa sintética reproducible sigue disponible desde frontend con `npm run demo:mobile-ux`; utiliza otra URL y no requiere base de datos.
+
+## Corrección del gesto vertical en CI
+
+Reproducción real: Ubuntu 24.04.5, Node 22 y Chromium de Playwright 1.62.1, [ejecución de diagnóstico](https://github.com/marcosgradac/AdmTecnicoCelulares/actions/runs/38830684855/job/116748515749), SHA b51978f. Las ocho combinaciones afectadas fallaron con la aserción original y sin cambios de producto. [Evidencia resumida](screenshots/mobile-ux/linux-touch-reproduction.json).
+
+En los ocho casos el punto estaba dentro del carrusel, pero scrollLeft todavía avanzaba hacia 996 px durante el gesto vertical (por ejemplo 921 → 996). El segundo toque frenaba la inercia del primero; no era una prueba independiente de desplazamiento vertical. Un control con el bundle de producto original, cambiando sólo la espera por reposo horizontal real, aprobó 8/8 en Windows.
+
+Corrección: esperar posición de snap y estabilidad de scrollLeft durante 160 ms, recalcular el punto y comprobar hit testing antes de cada gesto. Se conservan las aserciones de desplazamiento horizontal y vertical y se espera el reposo de página. No se modificó MobileCarousel ni los contenedores. La regresión Linux repite las cuatro rutas en ambos temas tres veces (24 casos), y exige que ninguna omita el scroll vertical a 768 px.
+
+Los resultados nuevos se guardan fuera de Git y se adjuntan incluso cuando falla CI. La matriz histórica del primer commit se conserva identificada como evidencia de Windows; no sustituye los resultados de esta corrección.
 
 ## Límites de la verificación
 
@@ -148,6 +158,10 @@ Chrome/Chromium real con anchos y gestos táctiles emulados; no se probó un dis
 - `frontend/src/pages/RepairsPage.tsx`
 - `frontend/src/pages/TeamPage.tsx`
 - `frontend/src/pages/dashboard/DashboardPage.tsx`
+- `frontend/tests/mobile-native-touch.cjs`
+- `frontend/tests/mobile-native-touch-regression.cjs`
+- `frontend/tests/mobile-touch-diagnostics.cjs`
+- `frontend/tests/premium-final-visual.cjs`
 - `frontend/tests/mobile-carousel.cjs`
 - `frontend/tests/mobile-carousel.fixture.html`
 - `frontend/tests/mobile-carousel.fixture.tsx`
@@ -161,5 +175,5 @@ Chrome/Chromium real con anchos y gestos táctiles emulados; no se probó un dis
 - `frontend/tests/repair-flow.cjs`
 - `frontend/vercel.json`
 
-Las capturas y resultados nuevos están en `docs/screenshots/mobile-ux/`. No se modificaron las capturas de PR anteriores.
+La selección histórica de 24 PNG está en `docs/screenshots/mobile-ux/`. Las ejecuciones nuevas escriben `artifacts/mobile-ux/` y CI las adjunta durante 14 días. No se modificaron las capturas de PR anteriores.
 <!-- FILES_END -->

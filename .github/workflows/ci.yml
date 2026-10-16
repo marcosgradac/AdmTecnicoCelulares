@@ -95,6 +95,7 @@ jobs:
         working-directory: frontend
     env:
       VITE_API_URL: http://127.0.0.1:3000
+      PREMIUM_FINAL_OUTPUT_DIR: ${{ github.workspace }}/artifacts/mobile-ux/financial-checks
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -142,6 +143,8 @@ jobs:
           MOBILE_UX_VIEWPORTS: '360,390,430,768,1440'
           MOBILE_UX_SCREENS: dashboard,cash,cash-repairs,cash-equipment,equipment,settings,commerce,pos,dashboard-limited,commerce-limited
         run: npm run test:mobile-ux
+      - name: Tablet native gesture regression (three repetitions, no skipped routes)
+        run: node tests/mobile-native-touch-regression.cjs
       - name: Personal preference, sessions and nested themes (real React, mocked API)
         run: npm run test:theme-preference
       - name: Full visual themes desktop and mobile (real App, mocked API)
@@ -165,5 +168,5 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mobile-browser-${{ github.run_id }}
-          path: docs/screenshots/mobile-ux
+          path: artifacts/mobile-ux
           retention-days: 14

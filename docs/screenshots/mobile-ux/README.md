@@ -1,11 +1,9 @@
-# Mobile UX browser evidence
+# Evidencia de Mobile UX
 
-Run `node frontend/tests/mobile-ux-browser.cjs` from the repository root. It serves the immutable baseline at 5290 and a fresh isolated AFTER test build at 5330. API data is synthetic and all nonlocal requests are aborted.
+Se conservan 24 PNG representativos antes/después. Las medidas y matrices originales corresponden al SHA 4df0567 en Chrome/Windows; no acreditan el gesto vertical en Linux.
 
-Optional environment variables: `MOBILE_UX_PHASES=before` or `after`, `MOBILE_UX_VIEWPORTS=360,390,430,768,1440`, `MOBILE_UX_SCREENS=dashboard,cash,settings`, `PLAYWRIGHT_BROWSER_CHANNEL=chrome`. Phase-specific runs preserve the other phase's matrix records. Missing baseline output skips baseline captures explicitly; comparisons remain null rather than fabricating evidence. A full comparison requires the prepared immutable baseline bundle.
+Ejecutar `npm run test:mobile-ux` desde frontend. Las nuevas capturas y resultados van a `artifacts/mobile-ux/`, ignorado por Git. Se mantienen MOBILE_UX_PHASES, MOBILE_UX_VIEWPORTS y MOBILE_UX_SCREENS. Sin filtros se verifican cinco anchos y ambos temas. El baseline anterior requiere el bundle inmutable preparado; si falta se informa y no se inventan comparaciones.
 
-`matrix.json` contains layout, requests, runtime failures, block offsets and screenshot paths. `measurements.json` pairs identical route/theme/viewport records. Negative documentTop delta indicates less scrolling. Anchor names are recorded because a missing or changed anchor cannot support a valid numerical comparison. Financial text equality checks extracted formatted amounts, including mounted carousel cards.
+GitHub Actions adjunta `mobile-browser-<run_id>` durante 14 días, incluso si falla una prueba. Incluye capturas de 768 px y evidencias de fallos. Las pruebas usan API sintética y bloquean peticiones externas.
 
-Captures cover both themes at 360, 390 and 1440. 430 and 768 run the same route and overflow audit. Financial writes are refused. Dialogs are opened without submission.
-
-The optional local demo is `node frontend/tests/mobile-ux-demo.cjs`, port 5299. It seeds a synthetic owner automatically. Appearance controls are in Configuración → Mi negocio. Restarting resets fixture memory. No production API is reachable.
+Los PNG retirados siguen preservados localmente en `artifacts/mobile-ux/original-captures/`. La demo real local usa http://127.0.0.1:5173/admin con API y PostgreSQL locales.

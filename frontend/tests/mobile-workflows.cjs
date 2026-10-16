@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path')
 const {chromium}=require('playwright')
 const {openScreen,createFixtureServer}=require('./premium-theme-browser.cjs')
-const out=path.resolve(__dirname,'../../docs/screenshots/mobile-ux/workflows')
+const out=path.resolve(__dirname,'../../artifacts/mobile-ux/workflows')
 const flows={
  pos:{route:'/admin/punto-de-venta',ready:'Punto de venta',async run(page,width){
   await page.getByRole('button',{name:'Agregar Cargador USB-C al carrito',exact:true}).filter({visible:true}).click()
