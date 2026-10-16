@@ -43,6 +43,13 @@ export function CategoryCard({ category, canManage, selected = false, onSelect, 
   return (
     <Card
       variant="outlined"
+      role="button"
+      tabIndex={0}
+      aria-label={`Abrir categoría ${category.name}`}
+      onKeyDown={event => {
+        if (event.target !== event.currentTarget) return
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(category) }
+      }}
       onClick={() => onSelect(category)}
       sx={{
         width: '100%',
@@ -91,7 +98,7 @@ export function CategoryCard({ category, canManage, selected = false, onSelect, 
                 '&:hover, &:focus-within': { opacity: 1 },
                 // Menú más discreto: gris neutral y hover circular suave.
                 color: 'text.disabled',
-                '& .MuiIconButton-root': { color: 'inherit' },
+                '& .MuiIconButton-root': { color: 'inherit', '@media (max-width: 899px)': { minWidth: 44, minHeight: 44 } },
                 '& .MuiIconButton-root::before': { borderRadius: '50%' },
                 '& .MuiIconButton-root:hover::before': { backgroundColor: 'rgba(23,26,35,.06)' },
                 '& .MuiIconButton-root.Mui-focusVisible::before': { backgroundColor: 'rgba(23,26,35,.09)' },

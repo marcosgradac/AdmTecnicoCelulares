@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   Box, Button, Card, CardContent, Chip, CircularProgress, Stack, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography,
+  TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography, useMediaQuery, useTheme,
 } from '@mui/material'
 import { DeleteOutlineRounded } from '@mui/icons-material'
 import { cancelCommerceSale, getCommerceSales, type CommercePaymentMethod, type CommerceSale } from '../../services/commerce'
@@ -33,6 +33,7 @@ function SaleStatusChip({ cancelled }: { cancelled: boolean }) {
  * restaura el stock y deja la reversión en Caja.
  */
 export function CommerceSalesTable({ revision, canManage, onCancelled }: { revision: number; canManage: boolean; onCancelled: () => void }) {
+  const mobile = useMediaQuery(useTheme().breakpoints.down('md'))
   const [items, setItems] = useState<CommerceSale[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -81,7 +82,23 @@ export function CommerceSalesTable({ revision, canManage, onCancelled }: { revis
         {loading ? <UiState loading />
           : error ? <UiState title="No pudimos cargar las ventas" description={error} action={load} actionLabel="Reintentar" />
             : items.length === 0 ? <UiState title="Todavía no hay ventas" description="Cuando confirmes una venta va a aparecer acá." />
-              : (
+              : mobile ? (
+                <Stack spacing={1}>{items.map(sale => {
+                  const cancelled = Boolean(sale.cancelledAt)
+                  const units = sale.lines.reduce((sum, line) => sum + line.quantity, 0)
+                  return <Box key={sale.id} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2, minWidth: 0, '& .MuiIconButton-root': { minWidth: 44, minHeight: 44 } }}>
+                    <Stack direction="row" justifyContent="space-between" gap={1} alignItems="center">
+                      <Typography variant="body2" fontWeight={750}>Venta #{sale.id.slice(-6).toUpperCase()}</Typography>
+                      {canManage && !cancelled && <RowActionsMenu label={`Acciones de la venta #${sale.id.slice(-6).toUpperCase()}`} actions={[{ label: 'Cancelar venta', icon: <DeleteOutlineRounded />, destructive: true, onClick: () => setConfirming(sale) }]} />}
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between" gap={1} alignItems="center" flexWrap="wrap" mb={.75}>
+                      <SaleStatusChip cancelled={cancelled} /><Typography fontWeight={800} sx={{ color: cancelled ? 'text.disabled' : 'success.main', fontVariantNumeric: 'tabular-nums' }}>{formatMoney(sale.total)}</Typography>
+                    </Stack>
+                    <Typography variant="caption" color="text.secondary">{formatShortDate(sale.createdAt)} · {formatShortTime(sale.createdAt)} · {paymentLabels[sale.paymentMethod]}</Typography>
+                    <Typography variant="body2" sx={{ overflowWrap: 'anywhere', mt: .5 }}>{units} {units === 1 ? 'producto' : 'productos'} · {sale.lines.map(line => `${line.productName} × ${line.quantity}`).join(', ')}</Typography>
+                  </Box>
+                })}</Stack>
+              ) : (
                 <TableContainer>
                   <Table sx={{ minWidth: 800, '& .MuiTableCell-root': { borderBottom: `1px solid ${TABLE_BORDER}` }, '& .MuiTableCell-head': { fontSize: 10.5, fontWeight: 800, letterSpacing: '.07em', textTransform: 'uppercase', color: 'text.secondary', lineHeight: 1.4, py: 1, background: 'transparent' } }}>
                     <TableHead>

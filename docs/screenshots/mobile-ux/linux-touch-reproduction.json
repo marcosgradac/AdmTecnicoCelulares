@@ -1,0 +1,304 @@
+{
+  "reproduction": {
+    "sha": "b51978f4c3ebb8d2a50988168ebbc3288b969bca",
+    "job": "https://github.com/marcosgradac/AdmTecnicoCelulares/actions/runs/38830684855/job/116748515749",
+    "environment": "Ubuntu 24.04.5, Node 22, Playwright 1.62.1 bundled Chromium",
+    "productChanges": false,
+    "cases": [
+      {
+        "screen": "dashboard",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          921,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "cash",
+        "label": "Resumen de Caja",
+        "pointInsideTrack": true,
+        "horizontal": [
+          925,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "dashboard-limited",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          911,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "cash-equipment",
+        "label": "Resumen de Caja de equipos",
+        "pointInsideTrack": true,
+        "horizontal": [
+          927,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "dashboard",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          915,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "cash",
+        "label": "Resumen de Caja",
+        "pointInsideTrack": true,
+        "horizontal": [
+          892,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "dashboard-limited",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          914,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      },
+      {
+        "screen": "cash-equipment",
+        "label": "Resumen de Caja de equipos",
+        "pointInsideTrack": true,
+        "horizontal": [
+          914,
+          996
+        ],
+        "vertical": [
+          0,
+          0
+        ],
+        "events": [
+          "touchstart",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchmove",
+          "touchend"
+        ]
+      }
+    ]
+  },
+  "controlledExperiment": {
+    "environment": "Windows Chrome, identical product bundle, only horizontal-rest wait injected into temporary harness",
+    "passed": 8,
+    "cases": [
+      {
+        "screen": "dashboard",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          332,
+          332
+        ],
+        "vertical": [
+          0,
+          105
+        ]
+      },
+      {
+        "screen": "cash",
+        "label": "Resumen de Caja",
+        "pointInsideTrack": true,
+        "horizontal": [
+          996,
+          996
+        ],
+        "vertical": [
+          0,
+          179
+        ]
+      },
+      {
+        "screen": "dashboard-limited",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          332,
+          332
+        ],
+        "vertical": [
+          0,
+          105
+        ]
+      },
+      {
+        "screen": "cash-equipment",
+        "label": "Resumen de Caja de equipos",
+        "pointInsideTrack": true,
+        "horizontal": [
+          996,
+          996
+        ],
+        "vertical": [
+          0,
+          176
+        ]
+      },
+      {
+        "screen": "dashboard",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          332,
+          332
+        ],
+        "vertical": [
+          0,
+          105
+        ]
+      },
+      {
+        "screen": "cash",
+        "label": "Resumen de Caja",
+        "pointInsideTrack": true,
+        "horizontal": [
+          332,
+          332
+        ],
+        "vertical": [
+          0,
+          179
+        ]
+      },
+      {
+        "screen": "dashboard-limited",
+        "label": "Resumen del dashboard",
+        "pointInsideTrack": true,
+        "horizontal": [
+          332,
+          332
+        ],
+        "vertical": [
+          0,
+          178
+        ]
+      },
+      {
+        "screen": "cash-equipment",
+        "label": "Resumen de Caja de equipos",
+        "pointInsideTrack": true,
+        "horizontal": [
+          332,
+          332
+        ],
+        "vertical": [
+          0,
+          105
+        ]
+      }
+    ]
+  }
+}

@@ -243,7 +243,7 @@ async function historyOf(payments, history = []) {
   })
   await detail.settle()
   const root = detail.root()
-  const card = collect(root, node => node.type === 'CardContent' && node.props.children?.some?.(child => child?.props?.children === 'Historial'))
+  const card = collect(root, node => node.type === 'RecordDetailSection' && node.props.title === 'Historial')
   assert.equal(card.length, 1, 'la tarjeta de historial esta una sola vez')
   const text = JSON.stringify(card[0])
   const count = label => (text.match(new RegExp(`"${label}"`, 'g')) ?? []).length

@@ -1,0 +1,581 @@
+{
+  "records": [
+    {
+      "name": "light-desktop-dashboard",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-cash",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-cash-repair",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-cash-equipment",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-login",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-register",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-landing",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-settings",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-desktop-dashboard-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "light-desktop-cash-equipment-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "light-desktop-dashboard-profit-0",
+      "passed": true
+    },
+    {
+      "name": "light-desktop-cash-equipment-profit-0",
+      "passed": true
+    },
+    {
+      "name": "light-desktop-dashboard-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "light-desktop-cash-equipment-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "dark-desktop-dashboard",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-cash",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-cash-repair",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-cash-equipment",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-login",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-register",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-landing",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-settings",
+      "overflow": false,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-desktop-dashboard-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "dark-desktop-cash-equipment-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "dark-desktop-dashboard-profit-0",
+      "passed": true
+    },
+    {
+      "name": "dark-desktop-cash-equipment-profit-0",
+      "passed": true
+    },
+    {
+      "name": "dark-desktop-dashboard-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "dark-desktop-cash-equipment-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "light-mobile-dashboard",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-cash",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-cash-repair",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-cash-equipment",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-login",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-register",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-landing",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-settings",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-mobile-dashboard-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "light-mobile-cash-equipment-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "light-mobile-dashboard-profit-0",
+      "passed": true
+    },
+    {
+      "name": "light-mobile-cash-equipment-profit-0",
+      "passed": true
+    },
+    {
+      "name": "light-mobile-dashboard-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "light-mobile-cash-equipment-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "dark-mobile-dashboard",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-cash",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-cash-repair",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-cash-equipment",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-login",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-register",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-landing",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-settings",
+      "overflow": false,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-mobile-dashboard-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "dark-mobile-cash-equipment-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "dark-mobile-dashboard-profit-0",
+      "passed": true
+    },
+    {
+      "name": "dark-mobile-cash-equipment-profit-0",
+      "passed": true
+    },
+    {
+      "name": "dark-mobile-dashboard-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "dark-mobile-cash-equipment-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "light-narrow-dashboard",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-cash",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-cash-repair",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-cash-equipment",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-login",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-register",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-landing",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-settings",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(248, 249, 252)",
+      "bodyColor": "rgb(23, 26, 35)",
+      "whitePanels": []
+    },
+    {
+      "name": "light-narrow-dashboard-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "light-narrow-cash-equipment-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "light-narrow-dashboard-profit-0",
+      "passed": true
+    },
+    {
+      "name": "light-narrow-cash-equipment-profit-0",
+      "passed": true
+    },
+    {
+      "name": "light-narrow-dashboard-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "light-narrow-cash-equipment-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "dark-narrow-dashboard",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-cash",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-cash-repair",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-cash-equipment",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-login",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-register",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-landing",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-settings",
+      "overflow": false,
+      "scrollWidth": 360,
+      "viewport": 360,
+      "bodyBackground": "rgb(13, 17, 27)",
+      "bodyColor": "rgb(243, 245, 250)",
+      "whitePanels": []
+    },
+    {
+      "name": "dark-narrow-dashboard-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "dark-narrow-cash-equipment-profit--5000",
+      "passed": true
+    },
+    {
+      "name": "dark-narrow-dashboard-profit-0",
+      "passed": true
+    },
+    {
+      "name": "dark-narrow-cash-equipment-profit-0",
+      "passed": true
+    },
+    {
+      "name": "dark-narrow-dashboard-profit-5000",
+      "passed": true
+    },
+    {
+      "name": "dark-narrow-cash-equipment-profit-5000",
+      "passed": true
+    }
+  ],
+  "failures": []
+}

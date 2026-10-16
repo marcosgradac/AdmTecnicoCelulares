@@ -1,5 +1,6 @@
 import { CheckCircleRounded, GroupsRounded, PaymentsRounded, RocketLaunchRounded, StorefrontRounded, TrendingUpRounded } from '@mui/icons-material'
 import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material'
+import { MobileCarousel } from '../../../components/common/MobileCarousel'
 import { StatCard } from '../../../components/common/StatCard'
 import { GRADIENT_TEXT_SX } from '../../../theme/tokens'
 import { formatARS, formatDate } from '../../billing/billing.utils'
@@ -32,9 +33,9 @@ export function DashboardSection({ refreshToken, onOpenBusiness }: { refreshToke
   ]
   return <Stack spacing={3}>
     {dashboard.loading && <RefreshingBar />}
-    <Box display="grid" gap={2} gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(5, minmax(0, 1fr))' }}>
+    <MobileCarousel label="Métricas de plataforma" itemLabels={kpis.map(kpi => kpi.label)} desktopSx={{ display: 'grid', gap: 2, gridTemplateColumns: { md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(5, minmax(0, 1fr))' } }}>
       {kpis.map(kpi => <StatCard key={kpi.label} {...kpi} />)}
-    </Box>
+    </MobileCarousel>
     <Typography variant="body2" color="text.secondary" display="flex" alignItems="center" gap={.75}>
       <GroupsRounded fontSize="small" sx={{ color: 'primary.main' }} />
       {data.owners} propietarios y {data.technicians} técnicos registrados en la plataforma.

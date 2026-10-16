@@ -89,12 +89,13 @@ jobs:
   frontend:
     name: Frontend CI
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: frontend
     env:
       VITE_API_URL: http://127.0.0.1:3000
+      PREMIUM_FINAL_OUTPUT_DIR: ${{ github.workspace }}/artifacts/mobile-ux/financial-checks
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -133,6 +134,17 @@ jobs:
         run: npm run test:api-domain-prep
       - name: Install Chromium for isolated browser tests
         run: npx playwright install --with-deps chromium
+      - name: Mobile carousel native interactions and preserved settings drafts
+        run: npm run test:mobile-carousel && npm run test:mobile-settings && npm run test:mobile-workflows
+      - name: Mobile UX routes (both themes, synthetic API)
+        env:
+          MOBILE_UX_PHASES: after
+          MOBILE_UX_DIAGNOSTICS: 'true'
+          MOBILE_UX_VIEWPORTS: '360,390,430,768,1440'
+          MOBILE_UX_SCREENS: dashboard,cash,cash-repairs,cash-equipment,equipment,settings,commerce,pos,dashboard-limited,commerce-limited
+        run: npm run test:mobile-ux
+      - name: Tablet native gesture regression (three repetitions, no skipped routes)
+        run: node tests/mobile-native-touch-regression.cjs
       - name: Personal preference, sessions and nested themes (real React, mocked API)
         run: npm run test:theme-preference
       - name: Full visual themes desktop and mobile (real App, mocked API)
@@ -151,3 +163,10 @@ jobs:
         run: npm run test:browser-hardening
       - name: Compiled CSP compatibility (isolated resource fixtures)
         run: npm run test:csp-compatibility
+      - name: Upload mobile browser evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mobile-browser-${{ github.run_id }}
+          path: artifacts/mobile-ux
+          retention-days: 14

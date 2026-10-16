@@ -1,0 +1,10 @@
+/* Isolated synthetic server. Baseline output is immutable and never rebuilt here. */
+const fs=require('node:fs'),path=require('node:path'),http=require('node:http')
+async function serveBuilt(port,out){
+ const html=fs.readFileSync(path.join(out,'tests/premium-theme-browser.html'))
+ const mime={'.js':'application/javascript','.css':'text/css','.svg':'image/svg+xml','.woff2':'font/woff2','.png':'image/png','.webp':'image/webp','.ico':'image/x-icon'}
+ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://127.0.0.1');if(url.pathname.startsWith('/api/')){res.writeHead(404);res.end('Synthetic API interception required');return}if(req.headers.accept?.includes('text/html')){res.setHeader('Content-Type','text/html');res.end(html);return}let file;try{file=path.resolve(out,'.'+decodeURIComponent(url.pathname))}catch{res.writeHead(400);res.end();return}if(!file.startsWith(out+path.sep)||!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404);res.end();return}res.setHeader('Content-Type',mime[path.extname(file)]||'application/octet-stream');fs.createReadStream(file).pipe(res)})
+ await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',resolve)});return {close:()=>new Promise(resolve=>server.close(resolve))}
+}
+async function createMobileServer({port=5330,before=false}={}){const root=path.resolve(__dirname,'..'),out=path.join(root,'node_modules/.cache',before?'premium-theme-built-5290':'mobile-ux-built-'+port);if(!before&&!(process.env.MOBILE_UX_REUSE_BUILD==='true'&&fs.existsSync(path.join(out,'tests/premium-theme-browser.html')))){process.env.VITE_API_URL='http://127.0.0.1:'+port;const {build}=await import('vite'),react=(await import('@vitejs/plugin-react')).default;await build({root,configFile:false,plugins:[react()],mode:'test',build:{outDir:out,emptyOutDir:true,rollupOptions:{input:path.join(__dirname,'premium-theme-browser.html')}}})}return serveBuilt(port,out)}
+module.exports={createMobileServer,serveBuilt}

@@ -1,8 +1,9 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
-import { Box, Button, Card, CardContent, Chip, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography, useMediaQuery, useTheme, type ChipProps } from '@mui/material'
+import { Box, Button, Card, CardContent, Chip, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip, Typography, useMediaQuery, useTheme, type ChipProps } from '@mui/material'
 import { AddRounded, CheckCircleRounded, DeleteOutlineRounded, EditRounded, ExpandMoreRounded, OpenInNewRounded, VerifiedRounded, WarningAmberRounded } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/common/PageHeader'
+import { MobileCarousel } from '../../components/common/MobileCarousel'
 import { StatCard } from '../../components/common/StatCard'
 import { UiState } from '../../components/common/UiState'
 import { ListPagination, RecordCard, RecordField } from '../../components/admin/AdminPatterns'
@@ -47,7 +48,7 @@ const pendingClaims = (item: WarrantyRepair) => item.warrantyClaims.filter(claim
 function ClaimsSummary({ item, expanded, onToggle }: { item: WarrantyRepair; expanded: boolean; onToggle: () => void }) {
   const total = item.warrantyClaims.length, open = pendingClaims(item)
   if (!total) return <Typography variant="body2" color="text.secondary">Sin reclamos</Typography>
-  return <Button size="small" color={open ? 'warning' : 'inherit'} onClick={onToggle} aria-expanded={expanded} endIcon={<ExpandMoreRounded sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />} sx={{ px: 1, minHeight: 32, fontWeight: 650, whiteSpace: 'nowrap' }}>
+  return <Button size="small" color={open ? 'warning' : 'inherit'} onClick={onToggle} aria-expanded={expanded} endIcon={<ExpandMoreRounded sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />} sx={{ px: 1, minHeight: { xs: 44, md: 32 }, fontWeight: 650, whiteSpace: 'nowrap' }}>
     {total} {total === 1 ? 'reclamo' : 'reclamos'}{open ? ` · ${open} sin resolver` : ''}
   </Button>
 }
@@ -70,12 +71,17 @@ export function WarrantiesPage() {
   const toggle = (id: string) => setExpanded(value => value === id ? null : id)
   const actions = (item: WarrantyRepair) => { const state = stateOf(item, now); return <RowActionsMenu label={`Acciones de garantía #${item.number}`} actions={[{ label: 'Ver reparación', icon: <OpenInNewRounded />, onClick: () => navigate(`/admin/reparaciones/${item.id}`) }, { label: 'Editar garantía', disabled: !canEdit || !item.warrantyEnabled, icon: <EditRounded />, onClick: () => setEditing(item) }, { label: 'Registrar reclamo', icon: <AddRounded />, disabled: !canEdit || state === 'none' || state === 'pending' || state === 'expired', onClick: () => setSelected(item.id) }, { label: 'Eliminar garantía', disabled: !canEdit, icon: <DeleteOutlineRounded />, destructive: true, dividerBefore: true, onClick: () => setRemoving(item) }]} /> }
   return <Box><PageHeader eyebrow="POSTVENTA" title="Garantías" description="Controlá vigencias y reclamos sin perder el vínculo con la reparación original." />
-    <Grid container spacing={1.5} mb={2.2}><Grid size={{ xs: 6, lg: 3 }}><StatCard label="Garantías activas" value={String(active.length)} icon={<VerifiedRounded />} /></Grid><Grid size={{ xs: 6, lg: 3 }}><StatCard label="Vencen en 7 días" value={String(expiring.length)} icon={<WarningAmberRounded />} tone="warning" /></Grid><Grid size={{ xs: 6, lg: 3 }}><StatCard label="Reclamos abiertos" value={String(openClaims.length)} icon={<AddRounded />} tone="info" /></Grid><Grid size={{ xs: 6, lg: 3 }}><StatCard label="Finalizadas" value={String(items.length - active.length)} icon={<CheckCircleRounded />} tone="success" /></Grid></Grid>
+    <Box sx={{ mb: 2.2 }}><MobileCarousel label="Métricas de garantías" desktopSx={{ display: 'grid', gridTemplateColumns: { md: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' }, gap: 1.5 }}>
+      <StatCard label="Garantías activas" value={String(active.length)} icon={<VerifiedRounded />} />
+      <StatCard label="Vencen en 7 días" value={String(expiring.length)} icon={<WarningAmberRounded />} tone="warning" />
+      <StatCard label="Reclamos abiertos" value={String(openClaims.length)} icon={<AddRounded />} tone="info" />
+      <StatCard label="Finalizadas" value={String(items.length - active.length)} icon={<CheckCircleRounded />} tone="success" />
+    </MobileCarousel></Box>
     {loading ? <Card><UiState loading /></Card> : error ? <Card><UiState title="No pudimos cargar las garantías" description={error} action={() => void load()} /></Card> : !items.length ? <Card><UiState icon={<VerifiedRounded sx={{ fontSize: 44, color: 'primary.light' }} />} title="Todavía no hay garantías configuradas" description="Podés definir una garantía al crear una reparación. Empezará automáticamente cuando la marques como Entregada." /></Card> : <Card><CardContent>
       {mobile ? <Stack spacing={1.5}>{pageItems.map(item => { const state = stateOf(item, now), validity = validityOf(item, now); return <RecordCard key={item.id} title={`${item.deviceBrand} ${item.deviceModel}`} subtitle={`Reparación #${item.number} · ${item.client.name}${item.client.phone ? ` · ${item.client.phone}` : ''}`} status={<Chip size="small" color={stateConfig[state].color} label={stateConfig[state].label} />} actions={actions(item)}>
         <RecordField label="Vigencia" color={validity.tone}>{validity.primary}{validity.secondary && <Typography component="span" variant="caption" display="block" color="text.secondary" fontWeight={500}>{validity.secondary}</Typography>}</RecordField>
         <RecordField label="Reclamos">{item.warrantyClaims.length ? `${item.warrantyClaims.length} ${item.warrantyClaims.length === 1 ? 'reclamo' : 'reclamos'}` : 'Sin reclamos'}{pendingClaims(item) > 0 && <Typography component="span" variant="caption" display="block" color="warning.main" fontWeight={500}>{pendingClaims(item)} sin resolver</Typography>}</RecordField>
-        {item.warrantyClaims.length > 0 && <Box sx={{ gridColumn: '1 / -1' }}><ClaimsSummary item={item} expanded={expanded === item.id} onToggle={() => toggle(item.id)} /><Collapse in={expanded === item.id} unmountOnExit><Box pt={1.2}><ClaimList item={item} onSaved={() => void load()} /></Box></Collapse></Box>}
+        {item.warrantyClaims.length > 0 && <Box sx={{ gridColumn: '1 / -1' }}><ClaimsSummary item={item} expanded={expanded === item.id} onToggle={() => toggle(item.id)} /><Collapse in={expanded === item.id}><Box pt={1.2}><ClaimList item={item} onSaved={() => void load()} /></Box></Collapse></Box>}
       </RecordCard> })}</Stack> : <TableContainer><Table sx={{ minWidth: 820 }}>
         <TableHead><TableRow><TableCell>Reparación</TableCell><TableCell>Cliente</TableCell><TableCell>Equipo</TableCell><TableCell>Estado</TableCell><TableCell>Vigencia</TableCell><TableCell>Reclamos</TableCell><TableCell align="right">Acciones</TableCell></TableRow></TableHead>
         <TableBody>{pageItems.map(item => { const state = stateOf(item, now), validity = validityOf(item, now); return <Fragment key={item.id}>
@@ -88,7 +94,7 @@ export function WarrantiesPage() {
             <TableCell><ClaimsSummary item={item} expanded={expanded === item.id} onToggle={() => toggle(item.id)} /></TableCell>
             <TableCell align="right">{actions(item)}</TableCell>
           </TableRow>
-          {item.warrantyClaims.length > 0 && <TableRow><TableCell colSpan={7} sx={{ py: 0, bgcolor: 'var(--td-hover, #FAF9FF)', borderBottom: expanded === item.id ? undefined : 0 }}><Collapse in={expanded === item.id} unmountOnExit><Box py={1.5}><ClaimList item={item} onSaved={() => void load()} /></Box></Collapse></TableCell></TableRow>}
+          {item.warrantyClaims.length > 0 && <TableRow><TableCell colSpan={7} sx={{ py: 0, bgcolor: 'var(--td-hover, #FAF9FF)', borderBottom: expanded === item.id ? undefined : 0 }}><Collapse in={expanded === item.id}><Box py={1.5}><ClaimList item={item} onSaved={() => void load()} /></Box></Collapse></TableCell></TableRow>}
         </Fragment> })}</TableBody>
       </Table></TableContainer>}
       <ListPagination count={items.length} page={current} rowsPerPage={PER_PAGE} onPageChange={setPage} />
