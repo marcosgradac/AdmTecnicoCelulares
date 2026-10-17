@@ -32,7 +32,8 @@
     "test:mobile-settings": "node tests/mobile-settings.cjs",
     "test:mobile-ux": "node tests/mobile-ux-browser.cjs",
     "demo:mobile-ux": "node tests/mobile-ux-demo.cjs",
-    "test:mobile-workflows": "node tests/mobile-workflows.cjs"
+    "test:mobile-workflows": "node tests/mobile-workflows.cjs",
+    "test:seo": "node --test tests/seo-policy.test.mjs && node tests/seo-browser.cjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

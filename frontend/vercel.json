@@ -1,5 +1,14 @@
 {
-  "git": { "deploymentEnabled": { "codex/repair-hard-delete-main": false, "codex/remove-repair-cancellation": false, "codex/equipment-resale-details-delete": false, "feature/premium-dark-mode": false, "feature/mobile-ux-carousels": false } },
+  "git": {
+    "deploymentEnabled": {
+      "codex/repair-hard-delete-main": false,
+      "codex/remove-repair-cancellation": false,
+      "codex/equipment-resale-details-delete": false,
+      "feature/premium-dark-mode": false,
+      "feature/mobile-ux-carousels": false,
+      "codex/seo-search-console": false
+    }
+  },
   "rewrites": [
     {
       "source": "/s/:clientSlug/:token",
@@ -24,8 +33,172 @@
       "destination": "https://api.tecnodeskpro.com/api/tracking-preview/:token"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "source": "/terminos-y-condiciones",
+      "destination": "/terminos-y-condiciones.html"
+    },
+    {
+      "source": "/politica-de-privacidad",
+      "destination": "/politica-de-privacidad.html"
+    },
+    {
+      "source": "/terminos",
+      "destination": "/terminos-y-condiciones.html"
+    },
+    {
+      "source": "/privacidad",
+      "destination": "/politica-de-privacidad.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/register",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/registro",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/olvide-mi-contrasena",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/restablecer-contrasena",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/s/:clientSlug/:token",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/seguimiento/:token",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/platform-admin",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/reparaciones",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/reparaciones/nueva",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/reparaciones/:id",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/clientes",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/clientes/:id",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/comercio",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/punto-de-venta",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/venta-equipos",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/caja",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/reportes",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/perfil",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/empleados",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/suscripcion",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/equipo",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/equipos/:path*",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/estadisticas",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/garantias",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/configuracion",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/configuracion/soporte",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/admin/sin-modulos",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/inicio",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/reparaciones",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/reparaciones/nueva",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/reparaciones/:id",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/clientes",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/clientes/:id",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/caja",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/reportes",
+      "destination": "/app.html"
     }
   ],
   "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -54,6 +227,384 @@
         }
       ],
       "source": "/(.*)"
+    },
+    {
+      "source": "/login",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/register",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/registro",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/olvide-mi-contrasena",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/restablecer-contrasena",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/s/:clientSlug/:token",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/seguimiento/:token",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/platform-admin",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/reparaciones",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/reparaciones/nueva",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/reparaciones/:id",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/clientes",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/clientes/:id",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/comercio",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/punto-de-venta",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/venta-equipos",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/caja",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/reportes",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/perfil",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/empleados",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/suscripcion",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/equipo",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/equipos/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/estadisticas",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/garantias",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/configuracion",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/configuracion/soporte",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin/sin-modulos",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/inicio",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/dashboard",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/reparaciones",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/reparaciones/nueva",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/reparaciones/:id",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/clientes",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/clientes/:id",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/caja",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/reportes",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/app.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/404.html",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
     }
   ]
 }

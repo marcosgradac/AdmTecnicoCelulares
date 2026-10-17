@@ -196,8 +196,11 @@ self.addEventListener('fetch', event => {
       (async () => {
         try {
           const response = await fetch(request)
-          const cache = await caches.open(PRECACHE)
-          cache.put('/index.html', response.clone())
+          // A real SEO 404 must never replace the working offline app shell.
+          if (response.ok) {
+            const cache = await caches.open(PRECACHE)
+            cache.put('/index.html', response.clone())
+          }
           return response
         } catch {
           const cached = await caches.match('/index.html', { ignoreSearch: true })

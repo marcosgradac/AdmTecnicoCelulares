@@ -1,3 +1,5 @@
+import { SeoMetadata } from './seo/SeoMetadata'
+import { NotFoundPage } from './seo/NotFoundPage'
 import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Outlet, Route, Routes, useParams } from 'react-router-dom'
 import { Box, CircularProgress } from '@mui/material'
@@ -52,7 +54,7 @@ const RouteFallback=({children}:{children:ReactNode})=>
   <Suspense fallback={<Box minHeight={240} display="grid" sx={{placeItems:'center'}}><CircularProgress size={28}/></Box>}>{children}</Suspense>
 const DashboardRoute=()=> <Suspense fallback={<Box minHeight={240} display="grid" sx={{placeItems:'center'}}><CircularProgress size={28}/></Box>}><DashboardPage/></Suspense>
 
-export default function App(){return <><ScrollToTop/><InstallPrompt/><UpdateNotice/><Routes>
+export default function App(){return <><SeoMetadata/><ScrollToTop/><InstallPrompt/><UpdateNotice/><Routes>
   <Route path="/" element={<PublicLandingLayout/>}><Route index element={<LandingPage/>}/></Route>
   <Route path="/login" element={<LoginPage/>}/><Route path="/register" element={<RegisterPage/>}/><Route path="/registro" element={<Navigate to="/register" replace/>}/>
   <Route path="/olvide-mi-contrasena" element={<ForgotPasswordPage/>}/><Route path="/restablecer-contrasena" element={<ResetPasswordPage/>}/>
@@ -78,4 +80,5 @@ export default function App(){return <><ScrollToTop/><InstallPrompt/><UpdateNoti
     <Route path="/inicio" element={<Navigate to="/admin" replace/>}/><Route path="/dashboard" element={<Navigate to="/admin" replace/>}/><Route path="/reparaciones" element={<Navigate to="/admin/reparaciones" replace/>}/><Route path="/reparaciones/nueva" element={<Navigate to="/admin/reparaciones?new=1" replace/>}/><Route path="/reparaciones/:id" element={<ParamRedirect base="/admin/reparaciones"/>}/>
     <Route path="/clientes" element={<Navigate to="/admin/clientes" replace/>}/><Route path="/clientes/:id" element={<ParamRedirect base="/admin/clientes"/>}/><Route path="/caja" element={<Navigate to="/admin/caja" replace/>}/><Route path="/reportes" element={<Navigate to="/admin/reportes" replace/>}/>
   </Route>
+  <Route path="*" element={<NotFoundPage/>}/>
 </Routes></>}
