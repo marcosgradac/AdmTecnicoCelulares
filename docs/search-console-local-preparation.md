@@ -89,6 +89,7 @@ No se recomienda cambiar de host como requisito para Search Console. Si el propi
 - `frontend/src/seo/pages.json`
 - `frontend/tests/seo-browser.cjs`
 - `frontend/tests/seo-policy.test.mjs`
+- `backend/tests/tracking-preview.ts`
 
 ## Resultados de las comprobaciones locales
 
@@ -125,3 +126,7 @@ Antes del push se inspeccionó Vercel en modo de sólo lectura: el proyecto `adm
 La [documentación de Vercel](https://vercel.com/docs/project-configuration/git-configuration) establece que esa exclusión por rama evita el despliegue automático al recibir commits. Se comprobarán también el estado de despliegues y los checks remotos después del push. El commit utiliza la marca `[skip render]` para evitar un despliegue automático de Render; no omite GitHub Actions.
 
 El riesgo de `og:url` con token/slug en las previews existentes sigue abierto para revisión independiente. La autorización del PR no implica aceptación de cambios de backend ni autorización de publicación productiva.
+
+## Ampliación autorizada a 21 archivos
+
+Backend CI detectó una aserción antigua de backend/tests/tracking-preview.ts que exigía /index.html incluso para HTML públicos específicos y entradas privadas. El propietario autorizó explícitamente ese test como archivo 21. Sólo se actualizan sus expectativas de resolución de rutas; se modela el index estático de la raíz y se agregan comprobaciones de que rutas inexistentes no tengan rewrite. Todas las aserciones HTTP, privacidad, selección mínima de datos, tokens, WhatsApp/Facebook y límites anteriores quedan intactas. No se modifica código productivo del backend. Se ejecuta nuevamente la suite real con Prisma simulado y los checks completos Backend CI/Frontend CI en el mismo PR.
