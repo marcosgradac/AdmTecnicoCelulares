@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { LandingHeader } from '../components/LandingHeader';
 import { LandingFooter } from '../components/LandingFooter';
 import { FloatingWhatsApp } from '../components/FloatingWhatsApp';
@@ -13,10 +12,6 @@ import '../components/redesign/redesign.scss';
 
 export function LandingPage(){
   useScrollReveal();
-  useEffect(()=>{
-    document.title='TecnoDesk | Gestión técnica';
-    document.querySelector('meta[name="description"]')?.setAttribute('content','Gestioná reparaciones, clientes, cobros, garantías, comercio y equipos desde TecnoDesk, el sistema de gestión para servicios técnicos.')
-  },[]);
   return <div className="landing-page landing-redesign">
     <LandingHeader/>
     <main>

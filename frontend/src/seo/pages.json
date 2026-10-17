@@ -1,0 +1,14 @@
+{
+  "/": {
+    "title": "TecnoDesk | Software de gestión para servicios técnicos",
+    "description": "Gestioná reparaciones, clientes, cobros, garantías, comercio y reventa de equipos con TecnoDesk, el software de gestión para servicios técnicos."
+  },
+  "/terminos-y-condiciones": {
+    "title": "Términos y condiciones | TecnoDesk",
+    "description": "Consultá los términos y condiciones de uso de TecnoDesk, la plataforma de gestión para servicios técnicos."
+  },
+  "/politica-de-privacidad": {
+    "title": "Política de privacidad | TecnoDesk",
+    "description": "Conocé cómo TecnoDesk trata y protege la información utilizada en su plataforma de gestión para servicios técnicos."
+  }
+}

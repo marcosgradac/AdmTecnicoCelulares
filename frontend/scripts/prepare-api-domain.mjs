@@ -18,7 +18,10 @@ export function prepareApiRewrites(config, origin) {
     ['/seguimiento/:token', '/api/tracking-preview/:token'],
   ]
   for (const [source, destination] of previews) {
-    const matches = candidate.rewrites?.filter(rule => rule.source === source) ?? []
+    // A normal browser entry point may share the tracking path. Only the
+    // existing user-agent preview proxy is an API-origin preparation target.
+    const matches = candidate.rewrites?.filter(rule => rule.source === source
+      && rule.has?.some(condition => condition.type === 'header' && condition.key === 'user-agent')) ?? []
     if (matches.length !== 1 || !matches[0].has?.some(condition =>
       condition.type === 'header' && condition.key === 'user-agent')) {
       throw new Error('Expected exactly two existing bot preview rewrites; review configuration manually')

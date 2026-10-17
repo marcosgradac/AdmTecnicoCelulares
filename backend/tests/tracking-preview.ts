@@ -107,21 +107,24 @@ async function main() {
           condition.type === 'header' && condition.key === 'user-agent' && new RegExp(`^(?:${condition.value})$`).test(userAgent)))) continue
         return names.reduce((url: string, name, index) => url.replaceAll(`:${name}`, match[index + 1]), rule.destination)
       }
-      return undefined
+      // Root is a static index document; other unmatched paths are genuine 404s.
+      return path === '/' ? '/index.html' : undefined
     }
+    const expectedDocuments: Record<string, string> = { '/': '/index.html', '/login': '/app.html', '/admin': '/app.html', '/politica-de-privacidad': '/politica-de-privacidad.html' }
     for (const agent of ['facebookexternalhit/1.1', 'Facebot', 'WhatsApp/2.24', 'WhatsApp/2.24 iOS']) {
       assert.equal(destination('/s/cliente/AbCdEf012345_-xy', agent), 'https://api.tecnodeskpro.com/api/tracking-preview/AbCdEf012345_-xy?clientSlug=cliente')
       for (const token of ['AbCdEf012345_-xy', 'a'.repeat(64)]) {
         assert.equal(destination(`/seguimiento/${token}`, agent), `https://api.tecnodeskpro.com/api/tracking-preview/${token}`)
         assert.equal(destination(`/s/cliente/${token}`, agent), `https://api.tecnodeskpro.com/api/tracking-preview/${token}?clientSlug=cliente`)
       }
-      for (const path of ['/', '/login', '/admin', '/politica-de-privacidad']) assert.equal(destination(path, agent), '/index.html')
+      for (const path of ['/', '/login', '/admin', '/politica-de-privacidad']) assert.equal(destination(path, agent), expectedDocuments[path] ?? '/app.html')
     }
     for (const agent of ['Mozilla/5.0 Chrome/130', '', 'UnknownBot']) {
       for (const path of ['/s/cliente/AbCdEf012345_-xy', '/seguimiento/AbCdEf012345_-xy', '/', '/login', '/admin', '/politica-de-privacidad'])
-        assert.equal(destination(path, agent), '/index.html')
+        assert.equal(destination(path, agent), expectedDocuments[path] ?? '/app.html')
     }
-    console.log('VERCEL RULE RESOLUTION PASSED: Meta/WhatsApp modern + legacy links and unchanged browser/SPA routes.')
+    for (const path of ['/missing', '/admin/missing', '/s/malformed', '/missing.txt']) assert.equal(destination(path, 'Mozilla/5.0'), undefined)
+    console.log('VERCEL RULE RESOLUTION PASSED: Meta/WhatsApp modern + legacy links and SEO browser routes with genuine unknown-path 404s.')
     console.log('TRACKING PREVIEW HTTP PASSED: A–I, minimal SELECT, escaping, absolute/relative/data/fallback logos, generic invalid tokens, legacy URL and unchanged risk counters; no DB connection or writes.')
   } finally {
     prisma.repair.findUnique = original

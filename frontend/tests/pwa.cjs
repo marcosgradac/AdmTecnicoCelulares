@@ -352,7 +352,7 @@ test('7. En iOS standalone no se ofrece instalar', () => {
  * registra cada escritura. No se reimplementa la lógica: se corre el mismo
  * archivo que se publica.
  */
-async function runServiceWorker({ buildId = 'test-build-id' } = {}) {
+async function runServiceWorker({ buildId = 'test-build-id', fetchStatus = 200 } = {}) {
   // Se lee el TEMPLATE y se inyecta el BUILD_ID con el MISMO `renderServiceWorker`
   // que usa el build. Así la prueba ejercita el archivo que se publica y, a la
   // vez, verifica que la sustitución funcione de verdad.
@@ -405,7 +405,7 @@ async function runServiceWorker({ buildId = 'test-build-id' } = {}) {
     URL,
     Response,
     console,
-    fetch: async () => ({ ok: true, type: 'basic', clone: () => ({}) }),
+    fetch: async () => ({ ok: fetchStatus >= 200 && fetchStatus < 300, status: fetchStatus, type: 'basic', clone: () => ({}) }),
     Promise,
   })
 
@@ -1196,6 +1196,13 @@ test('26. El service worker deja /s/* fuera de caché, como /seguimiento', async
 })
 
 // ---------------------------------------------------------------------------
+
+test('SEO: un 404 de navegación no sustituye la app shell offline', async () => {
+  const sw = await runServiceWorker({ fetchStatus: 404 })
+  const response = await sw.fetchAndSettle({ url: 'https://tecnodeskpro.com/missing', method: 'GET', mode: 'navigate', destination: 'document' })
+  assert.equal(response.status, 404)
+  assert.deepEqual(sw.writes, [], 'no cachear el documento 404 como index.html')
+})
 
 async function main() {
   let failures = 0
