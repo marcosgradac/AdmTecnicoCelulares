@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:register-validation": "node tests/register-validation.cjs",
     "dev": "vite",
     "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
