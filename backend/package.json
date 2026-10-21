@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "test:register-validation": "node tests/helpers/repair-hard-delete-postgres.mjs register-validation.ts",
     "backup:local": "node scripts/backup/cli.mjs",
     "backup:stream": "node scripts/backup/stream-cli.mjs",
     "test:backup": "node tests/backup-unit.mjs && node tests/backup-engine.mjs && node tests/backup-recovery.mjs",

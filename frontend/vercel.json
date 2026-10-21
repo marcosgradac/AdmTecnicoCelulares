@@ -6,7 +6,8 @@
       "codex/equipment-resale-details-delete": false,
       "feature/premium-dark-mode": false,
       "feature/mobile-ux-carousels": false,
-      "codex/seo-search-console": false
+      "codex/seo-search-console": false,
+      "codex/register-validation": false
     }
   },
   "rewrites": [

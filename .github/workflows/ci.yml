@@ -42,6 +42,8 @@ jobs:
         run: npm run test
       - name: Health checks (mocked Prisma)
         run: npm run test:health-checks
+      - name: Registration validation and security (disposable local PostgreSQL)
+        run: npm run test:register-validation
       - name: Tracking preview (mocked Prisma)
         run: npm run test:tracking-preview
       - name: Tracking preview rate limiting (mocked Prisma)
@@ -134,6 +136,10 @@ jobs:
         run: npm run test:api-domain-prep
       - name: Install Chromium for isolated browser tests
         run: npx playwright install --with-deps chromium
+      - name: Registration validation (real form, synthetic API and Turnstile)
+        env:
+          REGISTER_SCREENSHOTS: ${{ github.workspace }}/artifacts/registration
+        run: npm run test:register-validation
       - name: Mobile carousel native interactions and preserved settings drafts
         run: npm run test:mobile-carousel && npm run test:mobile-settings && npm run test:mobile-workflows
       - name: Mobile UX routes (both themes, synthetic API)
@@ -168,5 +174,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mobile-browser-${{ github.run_id }}
-          path: artifacts/mobile-ux
+          path: |
+            artifacts/mobile-ux
+            artifacts/registration
           retention-days: 14
